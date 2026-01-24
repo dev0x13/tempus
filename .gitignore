@@ -1,0 +1,32 @@
+# Build directories
+build/
+cmake-build-*/
+
+# Conan
+CMakeUserPresets.json
+graph_info.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Local settings
+.claude/
+
+# macOS
+.DS_Store
+
+# AI slop
+AGENTS.md
+CLAUDE.md
+openspec/

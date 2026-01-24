@@ -1,0 +1,64 @@
+#pragma once
+
+#include "database/Database.hpp"
+#include "repositories/ActivityRepository.hpp"
+#include "repositories/FactRepository.hpp"
+#include "services/TimeTrackingService.hpp"
+#include "services/StatisticsService.hpp"
+#include "services/ExportService.hpp"
+#include "ui/ImGuiApp.hpp"
+#include "tray/SystemTray.hpp"
+#include <memory>
+#include <atomic>
+
+namespace timetracker::app {
+
+class Application {
+public:
+    Application();
+    ~Application();
+
+    // Non-copyable, non-movable
+    Application(const Application&) = delete;
+    Application& operator=(const Application&) = delete;
+    Application(Application&&) = delete;
+    Application& operator=(Application&&) = delete;
+
+    // Initialize all components
+    bool init();
+
+    // Run the application
+    void run();
+
+    // Request shutdown
+    void quit();
+
+private:
+    // Database
+    std::unique_ptr<database::Database> db_;
+
+    // Repositories
+    std::shared_ptr<repositories::ActivityRepository> activityRepo_;
+    std::shared_ptr<repositories::FactRepository> factRepo_;
+
+    // Services
+    std::shared_ptr<services::TimeTrackingService> timeService_;
+    std::shared_ptr<services::StatisticsService> statsService_;
+    std::shared_ptr<services::ExportService> exportService_;
+
+    // UI
+    std::unique_ptr<ui::ImGuiApp> uiApp_;
+
+    // System tray
+    std::unique_ptr<tray::SystemTray> systemTray_;
+
+    std::atomic<bool> running_{false};
+
+    void initDatabase();
+    void initRepositories();
+    void initServices();
+    void initUI();
+    void initSystemTray();
+};
+
+} // namespace timetracker::app

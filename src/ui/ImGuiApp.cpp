@@ -1,0 +1,204 @@
+#include "ImGuiApp.hpp"
+#include "Theme.hpp"
+#include "views/OverviewView.hpp"
+#include "views/EditorView.hpp"
+#include "views/TotalsView.hpp"
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
+#include <stdexcept>
+
+namespace timetracker::ui {
+
+static void glfwErrorCallback(int error, const char* description) {
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+ImGuiApp::ImGuiApp(
+    std::shared_ptr<services::TimeTrackingService> timeService,
+    std::shared_ptr<services::StatisticsService> statsService,
+    std::shared_ptr<services::ExportService> exportService)
+    : timeService_(std::move(timeService))
+    , statsService_(std::move(statsService))
+    , exportService_(std::move(exportService)) {}
+
+ImGuiApp::~ImGuiApp() {
+    cleanup();
+}
+
+bool ImGuiApp::init(int width, int height, const char* title) {
+    glfwSetErrorCallback(glfwErrorCallback);
+
+    if (!glfwInit()) {
+        return false;
+    }
+
+    // GL 3.3 + GLSL 130
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    window_ = glfwCreateWindow(width, height, title, nullptr, nullptr);
+    if (!window_) {
+        glfwTerminate();
+        return false;
+    }
+
+    glfwMakeContextCurrent(window_);
+    glfwSwapInterval(1);  // Enable vsync
+
+    // Initialize GLEW
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        fprintf(stderr, "GLEW Error: %s\n", glewGetErrorString(err));
+        glfwDestroyWindow(window_);
+        glfwTerminate();
+        return false;
+    }
+
+    // Setup ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    // Apply custom theme
+    Theme::apply();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window_, true);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
+    // Create views
+    overviewView_ = std::make_unique<OverviewView>(timeService_);
+    editorView_ = std::make_unique<EditorView>(timeService_);
+    totalsView_ = std::make_unique<TotalsView>(statsService_, exportService_);
+
+    // Set up close callback
+    glfwSetWindowUserPointer(window_, this);
+    glfwSetWindowCloseCallback(window_, [](GLFWwindow* window) {
+        auto* app = static_cast<ImGuiApp*>(glfwGetWindowUserPointer(window));
+        if (app->closeCallback_) {
+            glfwSetWindowShouldClose(window, GLFW_FALSE);
+            app->closeCallback_();
+        }
+    });
+
+    return true;
+}
+
+void ImGuiApp::run() {
+    while (!glfwWindowShouldClose(window_)) {
+        glfwPollEvents();
+
+        // Skip rendering if window is minimized
+        if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
+            continue;
+        }
+
+        render();
+    }
+}
+
+void ImGuiApp::render() {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // Get window size
+    int width, height;
+    glfwGetWindowSize(window_, &width, &height);
+
+    // Create main window filling entire screen
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(static_cast<float>(width), static_cast<float>(height)));
+
+    ImGuiWindowFlags windowFlags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    ImGui::Begin("Main", nullptr, windowFlags);
+
+    // Tab bar
+    if (ImGui::BeginTabBar("MainTabs")) {
+        if (ImGui::BeginTabItem("Overview")) {
+            currentTab_ = 0;
+            overviewView_->render();
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Editor")) {
+            currentTab_ = 1;
+            editorView_->render();
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Totals")) {
+            currentTab_ = 2;
+            totalsView_->render();
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+
+    // Rendering
+    ImGui::Render();
+    int display_w, display_h;
+    glfwGetFramebufferSize(window_, &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+    glClearColor(0.1f, 0.1f, 0.12f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(window_);
+}
+
+void ImGuiApp::requestClose() {
+    glfwSetWindowShouldClose(window_, GLFW_TRUE);
+}
+
+void ImGuiApp::show() {
+    glfwShowWindow(window_);
+    glfwFocusWindow(window_);
+}
+
+void ImGuiApp::hide() {
+    glfwHideWindow(window_);
+}
+
+bool ImGuiApp::isVisible() const {
+    return glfwGetWindowAttrib(window_, GLFW_VISIBLE) != 0;
+}
+
+void ImGuiApp::minimizeToTray() {
+    hide();
+}
+
+void ImGuiApp::setCloseCallback(std::function<void()> callback) {
+    closeCallback_ = std::move(callback);
+}
+
+void ImGuiApp::cleanup() {
+    if (window_) {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
+        glfwDestroyWindow(window_);
+        glfwTerminate();
+        window_ = nullptr;
+    }
+}
+
+} // namespace timetracker::ui

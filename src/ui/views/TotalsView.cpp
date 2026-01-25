@@ -1,6 +1,7 @@
 #include "TotalsView.hpp"
 #include "utils/TimeUtils.hpp"
 #include "utils/Platform.hpp"
+#include "ui/widgets/DatePicker.hpp"
 #include "imgui.h"
 #include <cstring>
 
@@ -15,6 +16,10 @@ TotalsView::TotalsView(
     int64_t now = utils::TimeUtils::now();
     displayStartTime_ = utils::TimeUtils::startOfMonth(now);
     displayEndTime_ = utils::TimeUtils::endOfDay(now);
+
+    // Initialize date picker arrays
+    widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+    widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
 
     refreshStatistics();
 }
@@ -33,18 +38,8 @@ void TotalsView::renderDateSelector() {
     ImGui::Text("Date Range:");
     ImGui::SameLine();
 
-    auto startTm = utils::TimeUtils::toLocalTime(displayStartTime_);
-    auto endTm = utils::TimeUtils::toLocalTime(displayEndTime_);
-
-    char startDateStr[32], endDateStr[32];
-    snprintf(startDateStr, sizeof(startDateStr), "%04d-%02d-%02d",
-             startTm.tm_year + 1900, startTm.tm_mon + 1, startTm.tm_mday);
-    snprintf(endDateStr, sizeof(endDateStr), "%04d-%02d-%02d",
-             endTm.tm_year + 1900, endTm.tm_mon + 1, endTm.tm_mday);
-
-    ImGui::SetNextItemWidth(100);
-    if (ImGui::InputText("##startDate", startDateStr, sizeof(startDateStr), ImGuiInputTextFlags_EnterReturnsTrue)) {
-        displayStartTime_ = utils::TimeUtils::parseDate(startDateStr);
+    if (widgets::DatePicker::renderWithCalendar("##totalsStartDate", displayStartDate_)) {
+        displayStartTime_ = widgets::DatePicker::dateToTimestamp(displayStartDate_);
         refreshStatistics();
     }
 
@@ -52,9 +47,8 @@ void TotalsView::renderDateSelector() {
     ImGui::Text("to");
     ImGui::SameLine();
 
-    ImGui::SetNextItemWidth(100);
-    if (ImGui::InputText("##endDate", endDateStr, sizeof(endDateStr), ImGuiInputTextFlags_EnterReturnsTrue)) {
-        displayEndTime_ = utils::TimeUtils::endOfDay(utils::TimeUtils::parseDate(endDateStr));
+    if (widgets::DatePicker::renderWithCalendar("##totalsEndDate", displayEndDate_)) {
+        displayEndTime_ = utils::TimeUtils::endOfDay(widgets::DatePicker::dateToTimestamp(displayEndDate_));
         refreshStatistics();
     }
 
@@ -64,6 +58,8 @@ void TotalsView::renderDateSelector() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshStatistics();
     }
     ImGui::SameLine();
@@ -71,6 +67,8 @@ void TotalsView::renderDateSelector() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfMonth(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshStatistics();
     }
     ImGui::SameLine();
@@ -78,6 +76,8 @@ void TotalsView::renderDateSelector() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now - 30 * 24 * 3600);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshStatistics();
     }
 

@@ -21,6 +21,8 @@ private:
     std::vector<models::Fact> entries_;
     int64_t displayStartTime_{0};
     int64_t displayEndTime_{0};
+    int displayStartDate_[3]{};  // year, month, day
+    int displayEndDate_[3]{};
     int selectedEntry_{-1};
 
     // Edit form state

@@ -1,5 +1,6 @@
 #include "EditorView.hpp"
 #include "utils/TimeUtils.hpp"
+#include "ui/widgets/DatePicker.hpp"
 #include "imgui.h"
 #include <cstring>
 
@@ -15,6 +16,10 @@ EditorView::EditorView(std::shared_ptr<services::TimeTrackingService> timeServic
     displayStartTime_ = utils::TimeUtils::startOfDay(now);
     displayEndTime_ = utils::TimeUtils::endOfDay(now);
 
+    // Initialize date picker arrays
+    widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+    widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
+
     refreshEntries();
 }
 
@@ -25,18 +30,8 @@ void EditorView::render() {
     ImGui::Text("Date Range:");
     ImGui::SameLine();
 
-    auto startTm = utils::TimeUtils::toLocalTime(displayStartTime_);
-    auto endTm = utils::TimeUtils::toLocalTime(displayEndTime_);
-
-    char startDateStr[32], endDateStr[32];
-    snprintf(startDateStr, sizeof(startDateStr), "%04d-%02d-%02d",
-             startTm.tm_year + 1900, startTm.tm_mon + 1, startTm.tm_mday);
-    snprintf(endDateStr, sizeof(endDateStr), "%04d-%02d-%02d",
-             endTm.tm_year + 1900, endTm.tm_mon + 1, endTm.tm_mday);
-
-    ImGui::SetNextItemWidth(100);
-    if (ImGui::InputText("##startDate", startDateStr, sizeof(startDateStr), ImGuiInputTextFlags_EnterReturnsTrue)) {
-        displayStartTime_ = utils::TimeUtils::parseDate(startDateStr);
+    if (widgets::DatePicker::renderWithCalendar("##displayStartDate", displayStartDate_)) {
+        displayStartTime_ = widgets::DatePicker::dateToTimestamp(displayStartDate_);
         refreshEntries();
     }
 
@@ -44,9 +39,8 @@ void EditorView::render() {
     ImGui::Text("to");
     ImGui::SameLine();
 
-    ImGui::SetNextItemWidth(100);
-    if (ImGui::InputText("##endDate", endDateStr, sizeof(endDateStr), ImGuiInputTextFlags_EnterReturnsTrue)) {
-        displayEndTime_ = utils::TimeUtils::endOfDay(utils::TimeUtils::parseDate(endDateStr));
+    if (widgets::DatePicker::renderWithCalendar("##displayEndDate", displayEndDate_)) {
+        displayEndTime_ = utils::TimeUtils::endOfDay(widgets::DatePicker::dateToTimestamp(displayEndDate_));
         refreshEntries();
     }
 
@@ -56,6 +50,8 @@ void EditorView::render() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();
     }
     ImGui::SameLine();
@@ -63,6 +59,8 @@ void EditorView::render() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();
     }
     ImGui::SameLine();
@@ -70,6 +68,8 @@ void EditorView::render() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfMonth(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();
     }
 
@@ -163,44 +163,30 @@ void EditorView::renderEditForm() {
 
         ImGui::Spacing();
         ImGui::Text("Start:");
-        ImGui::SetNextItemWidth(60);
-        ImGui::InputInt("##startYear", &editStartDate_[0]);
+        widgets::DatePicker::renderWithCalendar("##editStartDate", editStartDate_);
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startMonth", &editStartDate_[1]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startDay", &editStartDate_[2]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startHour", &editStartTime_[0]);
+        ImGui::InputInt("##startHour", &editStartTime_[0], 0);
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startMin", &editStartTime_[1]);
+        ImGui::InputInt("##startMin", &editStartTime_[1], 0);
 
         ImGui::Spacing();
         ImGui::Checkbox("Ongoing", &editIsOngoing_);
 
         if (!editIsOngoing_) {
             ImGui::Text("End:");
-            ImGui::SetNextItemWidth(60);
-            ImGui::InputInt("##endYear", &editEndDate_[0]);
+            widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
             ImGui::SameLine();
             ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endMonth", &editEndDate_[1]);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endDay", &editEndDate_[2]);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endHour", &editEndTime_[0]);
+            ImGui::InputInt("##endHour", &editEndTime_[0], 0);
             ImGui::SameLine();
             ImGui::Text(":");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endMin", &editEndTime_[1]);
+            ImGui::InputInt("##endMin", &editEndTime_[1], 0);
         }
 
         ImGui::Spacing();
@@ -234,41 +220,27 @@ void EditorView::renderAddForm() {
 
         ImGui::Spacing();
         ImGui::Text("Start:");
-        ImGui::SetNextItemWidth(60);
-        ImGui::InputInt("##addStartYear", &addStartDate_[0]);
+        widgets::DatePicker::renderWithCalendar("##addStartDate", addStartDate_);
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartMonth", &addStartDate_[1]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartDay", &addStartDate_[2]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartHour", &addStartTime_[0]);
+        ImGui::InputInt("##addStartHour", &addStartTime_[0], 0);
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartMin", &addStartTime_[1]);
+        ImGui::InputInt("##addStartMin", &addStartTime_[1], 0);
 
         ImGui::Spacing();
         ImGui::Text("End:");
-        ImGui::SetNextItemWidth(60);
-        ImGui::InputInt("##addEndYear", &addEndDate_[0]);
+        widgets::DatePicker::renderWithCalendar("##addEndDate", addEndDate_);
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndMonth", &addEndDate_[1]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndDay", &addEndDate_[2]);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndHour", &addEndTime_[0]);
+        ImGui::InputInt("##addEndHour", &addEndTime_[0], 0);
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndMin", &addEndTime_[1]);
+        ImGui::InputInt("##addEndMin", &addEndTime_[1], 0);
 
         ImGui::Spacing();
         ImGui::Separator();

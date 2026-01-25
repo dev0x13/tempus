@@ -12,6 +12,7 @@ find_package(GLEW REQUIRED)
 find_package(SQLiteCpp REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(portable-file-dialogs REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # ImGui backends
 set(IMGUI_BACKENDS
@@ -29,6 +30,7 @@ set(SOURCES
     src/services/TimeTrackingService.cpp
     src/services/StatisticsService.cpp
     src/services/ExportService.cpp
+    src/services/SettingsService.cpp
     src/ui/ImGuiApp.cpp
     src/ui/views/OverviewView.cpp
     src/ui/views/EditorView.cpp
@@ -56,6 +58,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SQLiteCpp
     OpenGL::GL
     portable-file-dialogs::portable-file-dialogs
+    nlohmann_json::nlohmann_json
 )
 
 # Platform-specific settings

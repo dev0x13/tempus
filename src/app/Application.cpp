@@ -12,6 +12,7 @@ Application::~Application() {
 
 bool Application::init() {
     try {
+        initSettings();
         initDatabase();
         initRepositories();
         initServices();
@@ -104,6 +105,14 @@ void Application::initSystemTray() {
 
     // Connect tray to UI for periodic updates
     uiApp_->setSystemTray(systemTray_.get());
+}
+
+void Application::initSettings() {
+    settingsService_ = std::make_unique<services::SettingsService>();
+
+    if (!settingsService_->loadSettings()) {
+        std::cerr << "Warning: Failed to load settings, using defaults" << std::endl;
+    }
 }
 
 } // namespace timetracker::app

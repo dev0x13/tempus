@@ -6,6 +6,7 @@
 #include "services/TimeTrackingService.hpp"
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
+#include "services/SettingsService.hpp"
 #include "ui/ImGuiApp.hpp"
 #include "tray/SystemTray.hpp"
 #include <memory>
@@ -34,6 +35,9 @@ public:
     void quit();
 
 private:
+    // Settings
+    std::unique_ptr<services::SettingsService> settingsService_;
+
     // Database
     std::unique_ptr<database::Database> db_;
 
@@ -54,6 +58,7 @@ private:
 
     std::atomic<bool> running_{false};
 
+    void initSettings();
     void initDatabase();
     void initRepositories();
     void initServices();

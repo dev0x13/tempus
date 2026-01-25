@@ -42,14 +42,11 @@ public:
     }
 
     static std::filesystem::path getDatabasePath() {
-        return getDataDirectory() / "data.db";
+        return std::filesystem::current_path() / "data.db";
     }
 
     static void ensureDataDirectoryExists() {
-        auto dataDir = getDataDirectory();
-        if (!std::filesystem::exists(dataDir)) {
-            std::filesystem::create_directories(dataDir);
-        }
+        // Database is now in executable folder, no separate data directory needed
     }
 
     static std::filesystem::path getAssetsDirectory() {

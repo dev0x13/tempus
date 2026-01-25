@@ -11,6 +11,7 @@ struct Fact {
     int64_t activityId{0};
     int64_t startTime{0};                // Unix timestamp
     std::optional<int64_t> endTime;      // Null for ongoing
+    bool exportedToYoutrack{false};      // Whether exported to YouTrack
 
     // Cached activity name (not stored in DB, populated by joins)
     std::string activityName;

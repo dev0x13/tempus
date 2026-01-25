@@ -28,10 +28,12 @@ static void glfwErrorCallback(int error, const char* description) {
 ImGuiApp::ImGuiApp(
     std::shared_ptr<services::TimeTrackingService> timeService,
     std::shared_ptr<services::StatisticsService> statsService,
-    std::shared_ptr<services::ExportService> exportService)
+    std::shared_ptr<services::ExportService> exportService,
+    std::shared_ptr<services::YouTrackExportService> youTrackExportService)
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
-    , exportService_(std::move(exportService)) {}
+    , exportService_(std::move(exportService))
+    , youTrackExportService_(std::move(youTrackExportService)) {}
 
 ImGuiApp::~ImGuiApp() {
     cleanup();
@@ -86,7 +88,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     // Create views
     overviewView_ = std::make_unique<OverviewView>(timeService_);
     editorView_ = std::make_unique<EditorView>(timeService_);
-    totalsView_ = std::make_unique<TotalsView>(statsService_, exportService_);
+    totalsView_ = std::make_unique<TotalsView>(statsService_, exportService_, youTrackExportService_);
 
     // Create quick add dialog
     quickAddDialog_ = std::make_unique<widgets::QuickAddDialog>(timeService_);

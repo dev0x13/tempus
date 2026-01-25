@@ -14,6 +14,7 @@ SQLite::Database& Database::getHandle() {
 
 void Database::initSchema() {
     createTables();
+    migrateSchema();
     createIndexes();
 }
 
@@ -39,9 +40,29 @@ void Database::createTables() {
             activity_id INTEGER NOT NULL,
             start_time INTEGER NOT NULL,
             end_time INTEGER,
+            exported_to_youtrack INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (activity_id) REFERENCES activities(id)
         )
     )");
+}
+
+void Database::migrateSchema() {
+    // Check if exported_to_youtrack column exists in facts table
+    SQLite::Statement query(*db_, "PRAGMA table_info(facts)");
+    bool hasExportedColumn = false;
+
+    while (query.executeStep()) {
+        std::string columnName = query.getColumn(1).getString();
+        if (columnName == "exported_to_youtrack") {
+            hasExportedColumn = true;
+            break;
+        }
+    }
+
+    // Add exported_to_youtrack column if it doesn't exist
+    if (!hasExportedColumn) {
+        db_->exec("ALTER TABLE facts ADD COLUMN exported_to_youtrack INTEGER NOT NULL DEFAULT 0");
+    }
 }
 
 void Database::createIndexes() {
@@ -67,6 +88,12 @@ void Database::createIndexes() {
     db_->exec(R"(
         CREATE INDEX IF NOT EXISTS idx_facts_end_time
         ON facts(end_time)
+    )");
+
+    // Index for export status filtering
+    db_->exec(R"(
+        CREATE INDEX IF NOT EXISTS idx_facts_exported
+        ON facts(exported_to_youtrack)
     )");
 }
 

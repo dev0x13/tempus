@@ -3,6 +3,7 @@
 #include "services/TimeTrackingService.hpp"
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
+#include "services/YouTrackExportService.hpp"
 #include <memory>
 #include <functional>
 
@@ -28,7 +29,8 @@ public:
     ImGuiApp(
         std::shared_ptr<services::TimeTrackingService> timeService,
         std::shared_ptr<services::StatisticsService> statsService,
-        std::shared_ptr<services::ExportService> exportService);
+        std::shared_ptr<services::ExportService> exportService,
+        std::shared_ptr<services::YouTrackExportService> youTrackExportService);
     ~ImGuiApp();
 
     // Non-copyable, non-movable
@@ -74,6 +76,7 @@ private:
     std::shared_ptr<services::TimeTrackingService> timeService_;
     std::shared_ptr<services::StatisticsService> statsService_;
     std::shared_ptr<services::ExportService> exportService_;
+    std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
 
     // Views
     std::unique_ptr<OverviewView> overviewView_;

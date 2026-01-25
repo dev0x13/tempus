@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <string>
 #include <optional>
+#include <map>
 
 namespace timetracker::services {
 
@@ -58,6 +59,24 @@ public:
      * @return path to settings.json (in executable directory)
      */
     std::filesystem::path getSettingsPath() const;
+
+    /**
+     * Get YouTrack base URL from settings.
+     * @return YouTrack URL or empty string if not configured
+     */
+    std::string getYouTrackUrl() const;
+
+    /**
+     * Get YouTrack authentication token from settings.
+     * @return YouTrack token or empty string if not configured
+     */
+    std::string getYouTrackToken() const;
+
+    /**
+     * Get activity alias mapping from settings.
+     * @return Map of activity names to YouTrack issue IDs
+     */
+    std::map<std::string, std::string> getActivityAliases() const;
 
 private:
     nlohmann::json settings_;

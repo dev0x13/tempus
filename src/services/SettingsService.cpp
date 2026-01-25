@@ -94,15 +94,70 @@ std::filesystem::path SettingsService::getSettingsPath() const {
 }
 
 nlohmann::json SettingsService::createDefaultSettings() const {
-    // Currently, no settings are defined, so return an empty JSON object
-    // Future settings can be added here as the application evolves
-    return nlohmann::json::object();
+    // Default settings with YouTrack configuration
+    nlohmann::json defaults = nlohmann::json::object();
+    defaults["youtrack"] = {
+        {"url", ""},
+        {"token", ""},
+        {"activityAliases", nlohmann::json::object()}
+    };
+    return defaults;
 }
 
 bool SettingsService::validateSettings(const nlohmann::json& json) const {
-    // For now, we just check that it's a valid JSON object
-    // Future validation rules can be added here as settings are defined
-    return json.is_object();
+    // Check that it's a valid JSON object
+    if (!json.is_object()) {
+        return false;
+    }
+
+    // Validate YouTrack settings structure if present
+    if (json.contains("youtrack")) {
+        const auto& yt = json["youtrack"];
+        if (!yt.is_object()) {
+            return false;
+        }
+        // Check required fields exist and are strings/objects
+        if (yt.contains("url") && !yt["url"].is_string()) {
+            return false;
+        }
+        if (yt.contains("token") && !yt["token"].is_string()) {
+            return false;
+        }
+        if (yt.contains("activityAliases") && !yt["activityAliases"].is_object()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+std::string SettingsService::getYouTrackUrl() const {
+    if (settings_.contains("youtrack") && settings_["youtrack"].contains("url")) {
+        return settings_["youtrack"]["url"].get<std::string>();
+    }
+    return "";
+}
+
+std::string SettingsService::getYouTrackToken() const {
+    if (settings_.contains("youtrack") && settings_["youtrack"].contains("token")) {
+        return settings_["youtrack"]["token"].get<std::string>();
+    }
+    return "";
+}
+
+std::map<std::string, std::string> SettingsService::getActivityAliases() const {
+    std::map<std::string, std::string> aliases;
+    if (settings_.contains("youtrack") && settings_["youtrack"].contains("activityAliases")) {
+        const auto& aliasesJson = settings_["youtrack"]["activityAliases"];
+        if (aliasesJson.is_object()) {
+            for (auto it = aliasesJson.begin(); it != aliasesJson.end(); ++it) {
+                if (it.value().is_string()) {
+                    aliases[it.key()] = it.value().get<std::string>();
+                }
+            }
+        }
+    }
+    return aliases;
 }
 
 } // namespace timetracker::services

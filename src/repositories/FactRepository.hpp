@@ -22,6 +22,11 @@ public:
     std::vector<models::Fact> findRecent(int limit = 10) override;
     void stopOngoing(int64_t endTime) override;
 
+    // YouTrack export status management
+    void markFactsAsExported(const std::vector<int64_t>& factIds);
+    void resetExportStatus(int64_t startTime, int64_t endTime);
+    std::vector<models::Fact> getExportedFacts(int64_t startTime, int64_t endTime);
+
 private:
     database::Database& db_;
 

@@ -7,6 +7,7 @@
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
 #include "services/SettingsService.hpp"
+#include "services/YouTrackExportService.hpp"
 #include "ui/ImGuiApp.hpp"
 #include "tray/SystemTray.hpp"
 #include <memory>
@@ -49,6 +50,7 @@ private:
     std::shared_ptr<services::TimeTrackingService> timeService_;
     std::shared_ptr<services::StatisticsService> statsService_;
     std::shared_ptr<services::ExportService> exportService_;
+    std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
 
     // UI
     std::unique_ptr<ui::ImGuiApp> uiApp_;

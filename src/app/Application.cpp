@@ -67,10 +67,11 @@ void Application::initServices() {
     timeService_ = std::make_shared<services::TimeTrackingService>(activityRepo_, factRepo_);
     statsService_ = std::make_shared<services::StatisticsService>(factRepo_);
     exportService_ = std::make_shared<services::ExportService>(factRepo_);
+    youTrackExportService_ = std::make_shared<services::YouTrackExportService>(*settingsService_, *factRepo_);
 }
 
 void Application::initUI() {
-    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_);
+    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_);
 
     if (!uiApp_->init(900, 600, "Time Tracker")) {
         throw std::runtime_error("Failed to initialize UI");

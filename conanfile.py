@@ -13,6 +13,7 @@ class TimeTrackerRecipe(ConanFile):
         self.requires("sqlitecpp/3.3.1")
         self.requires("portable-file-dialogs/0.1.0")
         self.requires("nlohmann_json/3.11.3")
+        self.requires("cpr/1.10.5")
 
     def layout(self):
         cmake_layout(self)

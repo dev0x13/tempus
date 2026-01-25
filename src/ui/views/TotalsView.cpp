@@ -1,5 +1,6 @@
 #include "TotalsView.hpp"
 #include "utils/TimeUtils.hpp"
+#include "utils/Platform.hpp"
 #include "imgui.h"
 #include <cstring>
 
@@ -10,17 +11,10 @@ TotalsView::TotalsView(
     std::shared_ptr<services::ExportService> exportService)
     : statsService_(std::move(statsService))
     , exportService_(std::move(exportService)) {
-    memset(exportPath_, 0, sizeof(exportPath_));
-
     // Default to this month
     int64_t now = utils::TimeUtils::now();
     displayStartTime_ = utils::TimeUtils::startOfMonth(now);
     displayEndTime_ = utils::TimeUtils::endOfDay(now);
-
-    // Set default export path
-    auto tm = utils::TimeUtils::toLocalTime(now);
-    snprintf(exportPath_, sizeof(exportPath_), "time-tracker-export-%04d%02d%02d.csv",
-             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
     refreshStatistics();
 }
@@ -31,10 +25,6 @@ void TotalsView::render() {
     renderDateSelector();
     ImGui::Separator();
     renderTabs();
-
-    if (showExportDialog_) {
-        renderExportDialog();
-    }
 
     ImGui::EndChild();
 }
@@ -241,38 +231,32 @@ void TotalsView::renderExportButton() {
     float width = ImGui::GetContentRegionAvail().x;
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width - 100);
     if (ImGui::Button("Export CSV", ImVec2(100, 0))) {
-        showExportDialog_ = true;
+        performExport();
     }
 }
 
-void TotalsView::renderExportDialog() {
-    ImGui::OpenPopup("Export to CSV");
+void TotalsView::performExport() {
+    // Generate default filename with current date
+    int64_t now = utils::TimeUtils::now();
+    auto tm = utils::TimeUtils::toLocalTime(now);
+    char defaultFilename[64];
+    snprintf(defaultFilename, sizeof(defaultFilename), "time-tracker-export-%04d-%02d-%02d.csv",
+             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(450, 150));
+    // Show native file save dialog
+    auto selectedPath = utils::Platform::showSaveFileDialog(
+        "Export to CSV",
+        defaultFilename,
+        {"CSV Files", "*.csv", "All Files", "*"}
+    );
 
-    if (ImGui::BeginPopupModal("Export to CSV", &showExportDialog_, ImGuiWindowFlags_NoResize)) {
-        ImGui::Text("Export Path:");
-        ImGui::SetNextItemWidth(-1);
-        ImGui::InputText("##exportPath", exportPath_, sizeof(exportPath_));
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        if (ImGui::Button("Export", ImVec2(100, 0))) {
-            if (exportService_->exportToCsvFile(exportPath_, displayStartTime_, displayEndTime_)) {
-                showExportDialog_ = false;
-            }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(100, 0))) {
-            showExportDialog_ = false;
-        }
-
-        ImGui::EndPopup();
+    // User cancelled the dialog
+    if (!selectedPath.has_value()) {
+        return;
     }
+
+    // Export to selected path
+    exportService_->exportToCsvFile(selectedPath->string(), displayStartTime_, displayEndTime_);
 }
 
 void TotalsView::refreshStatistics() {

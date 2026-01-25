@@ -27,10 +27,6 @@ private:
     models::Statistics stats_;
     bool statsValid_{false};
 
-    // Export state
-    char exportPath_[512]{};
-    bool showExportDialog_{false};
-
     void renderDateSelector();
     void renderTabs();
     void renderActivityTotals();
@@ -38,8 +34,8 @@ private:
     void renderWeeklyTotals();
     void renderMonthlyTotals();
     void renderExportButton();
-    void renderExportDialog();
     void refreshStatistics();
+    void performExport();
 };
 
 } // namespace timetracker::ui

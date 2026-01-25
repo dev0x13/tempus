@@ -1,7 +1,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <filesystem>
+#include <optional>
+#include <portable-file-dialogs.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -64,6 +67,31 @@ public:
         }
 
         return assetsPath;
+    }
+
+    static std::optional<std::filesystem::path> showSaveFileDialog(
+            const std::string& title,
+            const std::string& defaultFilename,
+            const std::vector<std::string>& filters = {"CSV Files", "*.csv"}) {
+        auto result = pfd::save_file(
+            title,
+            defaultFilename,
+            filters,
+            pfd::opt::force_overwrite
+        ).result();
+
+        if (result.empty()) {
+            return std::nullopt;
+        }
+
+        std::filesystem::path path(result);
+
+        // Ensure .csv extension if not present
+        if (path.extension() != ".csv") {
+            path += ".csv";
+        }
+
+        return path;
     }
 };
 

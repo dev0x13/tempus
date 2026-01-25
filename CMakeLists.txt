@@ -11,6 +11,7 @@ find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(SQLiteCpp REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(portable-file-dialogs REQUIRED)
 
 # ImGui backends
 set(IMGUI_BACKENDS
@@ -53,6 +54,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     GLEW::GLEW
     SQLiteCpp
     OpenGL::GL
+    portable-file-dialogs::portable-file-dialogs
 )
 
 # Platform-specific settings

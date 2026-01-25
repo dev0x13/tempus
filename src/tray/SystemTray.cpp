@@ -4,253 +4,455 @@
 #ifdef _WIN32
 #include <shellapi.h>
 #include <windowsx.h>
+#else
+#include <gtk/gtk.h>
+#include <libayatana-appindicator/app-indicator.h>
+#include <limits.h>
+#include <unistd.h>
 #endif
 
 namespace timetracker::tray {
 
-SystemTray::SystemTray(std::shared_ptr<services::TimeTrackingService> timeService)
+SystemTray::SystemTray(
+    std::shared_ptr<services::TimeTrackingService> timeService)
     : timeService_(std::move(timeService)) {}
 
 SystemTray::~SystemTray() {
 #ifdef _WIN32
-    cleanupWindows();
+  cleanupWindows();
 #else
-    cleanupLinux();
+  cleanupLinux();
 #endif
 }
 
 bool SystemTray::init() {
 #ifdef _WIN32
-    return initWindows();
+  return initWindows();
 #else
-    return initLinux();
+  return initLinux();
 #endif
 }
 
 void SystemTray::update() {
-    // Check current tracking status
-    auto current = timeService_->getCurrentTracking();
-    bool nowTracking = current.has_value();
+  // Check current tracking status
+  auto current = timeService_->getCurrentTracking();
+  bool nowTracking = current.has_value();
 
-    if (nowTracking != isTracking_) {
-        isTracking_ = nowTracking;
+  if (nowTracking != isTracking_) {
+    isTracking_ = nowTracking;
 #ifdef _WIN32
-        updateWindows();
+    updateWindows();
 #else
-        updateLinux();
+    updateLinux();
 #endif
-    }
+  }
 }
 
 void SystemTray::setShowWindowCallback(std::function<void()> callback) {
-    showWindowCallback_ = std::move(callback);
+  showWindowCallback_ = std::move(callback);
 }
 
 void SystemTray::setExitCallback(std::function<void()> callback) {
-    exitCallback_ = std::move(callback);
+  exitCallback_ = std::move(callback);
 }
 
 void SystemTray::setShowQuickAddCallback(std::function<void()> callback) {
-    showQuickAddCallback_ = std::move(callback);
+  showQuickAddCallback_ = std::move(callback);
 }
 
-bool SystemTray::isRunning() const {
-    return running_;
-}
+bool SystemTray::isRunning() const { return running_; }
 
 std::vector<std::string> SystemTray::getRecentActivities() {
-    // Get last 5 unique activities
-    // For now, return empty - will be implemented when we add activity history to TimeTrackingService
-    return {};
+  // Get last 5 unique activities
+  // For now, return empty - will be implemented when we add activity history to
+  // TimeTrackingService
+  return {};
 }
 
 #ifdef _WIN32
 
-LRESULT CALLBACK SystemTray::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    SystemTray* tray = reinterpret_cast<SystemTray*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+LRESULT CALLBACK SystemTray::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
+                                        LPARAM lParam) {
+  SystemTray *tray =
+      reinterpret_cast<SystemTray *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-    if (uMsg == WM_TRAYICON) {
-        if (LOWORD(lParam) == WM_LBUTTONUP) {
-            // Left click - show quick add dialog
-            if (tray && tray->showQuickAddCallback_) {
-                tray->showQuickAddCallback_();
-            }
-        } else if (LOWORD(lParam) == WM_RBUTTONUP) {
-            // Right click - show context menu
-            if (tray) {
-                tray->showContextMenuWindows();
-            }
-        }
-        return 0;
+  if (uMsg == WM_TRAYICON) {
+    if (LOWORD(lParam) == WM_LBUTTONUP) {
+      // Left click - show quick add dialog
+      if (tray && tray->showQuickAddCallback_) {
+        tray->showQuickAddCallback_();
+      }
+    } else if (LOWORD(lParam) == WM_RBUTTONUP) {
+      // Right click - show context menu
+      if (tray) {
+        tray->showContextMenuWindows();
+      }
     }
+    return 0;
+  }
 
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+  return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 bool SystemTray::initWindows() {
-    // Register window class for message handling
-    WNDCLASSEXW wc = {};
-    wc.cbSize = sizeof(WNDCLASSEXW);
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = GetModuleHandle(nullptr);
-    wc.lpszClassName = L"TimeTrackerTrayClass";
-    RegisterClassExW(&wc);
+  // Register window class for message handling
+  WNDCLASSEXW wc = {};
+  wc.cbSize = sizeof(WNDCLASSEXW);
+  wc.lpfnWndProc = WindowProc;
+  wc.hInstance = GetModuleHandle(nullptr);
+  wc.lpszClassName = L"TimeTrackerTrayClass";
+  RegisterClassExW(&wc);
 
-    // Create hidden message window
-    messageWindow_ = CreateWindowExW(
-        0, L"TimeTrackerTrayClass", L"TimeTrackerTray",
-        0, 0, 0, 0, 0,
-        HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr
-    );
+  // Create hidden message window
+  messageWindow_ = CreateWindowExW(
+      0, L"TimeTrackerTrayClass", L"TimeTrackerTray", 0, 0, 0, 0, 0,
+      HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr);
 
-    if (!messageWindow_) {
-        std::cerr << "Failed to create tray message window" << std::endl;
-        return false;
-    }
+  if (!messageWindow_) {
+    std::cerr << "Failed to create tray message window" << std::endl;
+    return false;
+  }
 
-    SetWindowLongPtr(messageWindow_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+  SetWindowLongPtr(messageWindow_, GWLP_USERDATA,
+                   reinterpret_cast<LONG_PTR>(this));
 
-    // Create simple icons (will use default icon for now)
-    idleIcon_ = LoadIcon(nullptr, IDI_APPLICATION);
-    activeIcon_ = LoadIcon(nullptr, IDI_INFORMATION);
+  // Create simple icons (will use default icon for now)
+  idleIcon_ = LoadIcon(nullptr, IDI_APPLICATION);
+  activeIcon_ = LoadIcon(nullptr, IDI_INFORMATION);
 
-    // Initialize NOTIFYICONDATA
-    ZeroMemory(&nid_, sizeof(nid_));
-    nid_.cbSize = sizeof(NOTIFYICONDATAW);
-    nid_.hWnd = messageWindow_;
-    nid_.uID = TRAY_ID;
-    nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-    nid_.uCallbackMessage = WM_TRAYICON;
-    nid_.hIcon = idleIcon_;
-    wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
+  // Initialize NOTIFYICONDATA
+  ZeroMemory(&nid_, sizeof(nid_));
+  nid_.cbSize = sizeof(NOTIFYICONDATAW);
+  nid_.hWnd = messageWindow_;
+  nid_.uID = TRAY_ID;
+  nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+  nid_.uCallbackMessage = WM_TRAYICON;
+  nid_.hIcon = idleIcon_;
+  wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
 
-    // Add tray icon
-    if (!Shell_NotifyIconW(NIM_ADD, &nid_)) {
-        std::cerr << "Failed to add tray icon" << std::endl;
-        DestroyWindow(messageWindow_);
-        return false;
-    }
+  // Add tray icon
+  if (!Shell_NotifyIconW(NIM_ADD, &nid_)) {
+    std::cerr << "Failed to add tray icon" << std::endl;
+    DestroyWindow(messageWindow_);
+    return false;
+  }
 
-    running_ = true;
-    return true;
+  running_ = true;
+  return true;
 }
 
 void SystemTray::cleanupWindows() {
-    if (running_) {
-        Shell_NotifyIconW(NIM_DELETE, &nid_);
-        running_ = false;
-    }
+  if (running_) {
+    Shell_NotifyIconW(NIM_DELETE, &nid_);
+    running_ = false;
+  }
 
-    if (messageWindow_) {
-        DestroyWindow(messageWindow_);
-        messageWindow_ = nullptr;
-    }
+  if (messageWindow_) {
+    DestroyWindow(messageWindow_);
+    messageWindow_ = nullptr;
+  }
 }
 
 void SystemTray::updateWindows() {
-    if (!running_) return;
+  if (!running_)
+    return;
 
-    nid_.hIcon = isTracking_ ? activeIcon_ : idleIcon_;
+  nid_.hIcon = isTracking_ ? activeIcon_ : idleIcon_;
 
-    if (isTracking_) {
-        auto current = timeService_->getCurrentTracking();
-        if (current.has_value()) {
-            std::wstring tip = L"Time Tracker - Tracking: ";
-            // Convert activity name to wide string
-            std::string activityName = current->activityName;
-            tip += std::wstring(activityName.begin(), activityName.end());
-            wcscpy_s(nid_.szTip, tip.c_str());
-        }
-    } else {
-        wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
+  if (isTracking_) {
+    auto current = timeService_->getCurrentTracking();
+    if (current.has_value()) {
+      std::wstring tip = L"Time Tracker - Tracking: ";
+      // Convert activity name to wide string
+      std::string activityName = current->activityName;
+      tip += std::wstring(activityName.begin(), activityName.end());
+      wcscpy_s(nid_.szTip, tip.c_str());
     }
+  } else {
+    wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
+  }
 
-    Shell_NotifyIconW(NIM_MODIFY, &nid_);
+  Shell_NotifyIconW(NIM_MODIFY, &nid_);
 }
 
 void SystemTray::showContextMenuWindows() {
-    POINT pt;
-    GetCursorPos(&pt);
+  POINT pt;
+  GetCursorPos(&pt);
 
-    HMENU menu = CreatePopupMenu();
+  HMENU menu = CreatePopupMenu();
 
-    // Show/Hide Window
-    AppendMenuW(menu, MF_STRING, 1, L"Show Window");
+  // Show/Hide Window
+  AppendMenuW(menu, MF_STRING, 1, L"Show Window");
 
-    // Stop Tracking (if tracking)
-    if (isTracking_) {
-        auto current = timeService_->getCurrentTracking();
-        if (current.has_value()) {
-            std::wstring stopText = L"Stop Tracking: ";
-            std::string activityName = current->activityName;
-            stopText += std::wstring(activityName.begin(), activityName.end());
-            AppendMenuW(menu, MF_STRING, 2, stopText.c_str());
-        }
+  // Stop Tracking (if tracking)
+  if (isTracking_) {
+    auto current = timeService_->getCurrentTracking();
+    if (current.has_value()) {
+      std::wstring stopText = L"Stop Tracking: ";
+      std::string activityName = current->activityName;
+      stopText += std::wstring(activityName.begin(), activityName.end());
+      AppendMenuW(menu, MF_STRING, 2, stopText.c_str());
     }
+  }
 
+  AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+
+  // Recent Activities submenu
+  auto recentActivities = getRecentActivities();
+  if (!recentActivities.empty()) {
+    HMENU recentMenu = CreatePopupMenu();
+    for (size_t i = 0; i < recentActivities.size() && i < 5; i++) {
+      std::wstring activityW(recentActivities[i].begin(),
+                             recentActivities[i].end());
+      AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i),
+                  activityW.c_str());
+    }
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
+                L"Recent Activities");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+  }
 
-    // Recent Activities submenu
-    auto recentActivities = getRecentActivities();
-    if (!recentActivities.empty()) {
-        HMENU recentMenu = CreatePopupMenu();
-        for (size_t i = 0; i < recentActivities.size() && i < 5; i++) {
-            std::wstring activityW(recentActivities[i].begin(), recentActivities[i].end());
-            AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i), activityW.c_str());
-        }
-        AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu), L"Recent Activities");
-        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+  // Exit
+  AppendMenuW(menu, MF_STRING, 3, L"Exit");
+
+  // Required for popup menus to work correctly
+  SetForegroundWindow(messageWindow_);
+
+  UINT cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, 0,
+                            messageWindow_, nullptr);
+
+  if (cmd == 1) {
+    // Show Window
+    if (showWindowCallback_) {
+      showWindowCallback_();
     }
-
+  } else if (cmd == 2) {
+    // Stop Tracking
+    timeService_->stopTracking();
+    update();
+  } else if (cmd == 3) {
     // Exit
-    AppendMenuW(menu, MF_STRING, 3, L"Exit");
-
-    // Required for popup menus to work correctly
-    SetForegroundWindow(messageWindow_);
-
-    UINT cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, 0, messageWindow_, nullptr);
-
-    if (cmd == 1) {
-        // Show Window
-        if (showWindowCallback_) {
-            showWindowCallback_();
-        }
-    } else if (cmd == 2) {
-        // Stop Tracking
-        timeService_->stopTracking();
-        update();
-    } else if (cmd == 3) {
-        // Exit
-        if (exitCallback_) {
-            exitCallback_();
-        }
-    } else if (cmd >= 100 && cmd < 105) {
-        // Start recent activity
-        size_t index = cmd - 100;
-        if (index < recentActivities.size()) {
-            timeService_->startTracking(recentActivities[index]);
-            update();
-        }
+    if (exitCallback_) {
+      exitCallback_();
     }
+  } else if (cmd >= 100 && cmd < 105) {
+    // Start recent activity
+    size_t index = cmd - 100;
+    if (index < recentActivities.size()) {
+      timeService_->startTracking(recentActivities[index]);
+      update();
+    }
+  }
 
-    DestroyMenu(menu);
+  DestroyMenu(menu);
 }
 
 #else
 
-// Linux/GNOME stub implementation
+// Linux/libayatana-appindicator implementation
+
 bool SystemTray::initLinux() {
-    std::cerr << "System tray not yet implemented for Linux/GNOME" << std::endl;
-    // For now, just return true to allow app to continue without tray
+  // Initialize GTK (safe to call multiple times)
+  if (!gtk_init_check(nullptr, nullptr)) {
+    std::cerr << "GTK initialization failed. System tray will not be available."
+              << std::endl;
+    std::cerr << "The application will continue without tray support."
+              << std::endl;
+    return true; // Allow app to continue without tray
+  }
+
+  // Get the absolute path to the icon file
+  // AppIndicator on Unity requires absolute paths
+  char exePath[PATH_MAX];
+  ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+  if (len == -1) {
+    std::cerr << "Failed to get executable path" << std::endl;
     return true;
+  }
+  exePath[len] = '\0';
+
+  // Get directory containing executable
+  std::string exeDir(exePath);
+  size_t lastSlash = exeDir.find_last_of('/');
+  if (lastSlash != std::string::npos) {
+    exeDir = exeDir.substr(0, lastSlash);
+  }
+
+  // Construct icon path (relative to executable)
+  std::string iconPath = exeDir + "/assets/icons/tray_icon.png";
+
+  // Verify icon file exists
+  if (access(iconPath.c_str(), F_OK) != 0) {
+    std::cerr << "Warning: Icon file not found at: " << iconPath << std::endl;
+    std::cerr << "Using fallback icon theme name" << std::endl;
+    iconPath = "application-x-executable";
+  }
+
+  // Create AppIndicator
+  // The second parameter is just an ID/name when using set_icon_full later
+  indicator_ = app_indicator_new("time-tracker", "time-tracker-icon",
+                                 APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+
+  if (!indicator_) {
+    std::cerr
+        << "Failed to create AppIndicator. System tray will not be available."
+        << std::endl;
+    return true; // Allow app to continue without tray
+  }
+
+  // Set status to active (show the indicator)
+  app_indicator_set_status(indicator_, APP_INDICATOR_STATUS_ACTIVE);
+
+  // Set initial title/label
+  app_indicator_set_title(indicator_, "Time Tracker");
+
+  // Create and set menu
+  createMenuLinux();
+  app_indicator_set_menu(indicator_, GTK_MENU(menu_));
+
+  // Set initial icon and tooltip using absolute path
+  currentIconPath_ = iconPath;
+  app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
+                              "Time Tracker - Idle");
+
+  running_ = true;
+  std::cout << "System tray initialized successfully" << std::endl;
+  std::cout << "Using icon: " << currentIconPath_ << std::endl;
+  std::cout
+      << "Note: On GNOME, you may need the 'AppIndicator Support' extension"
+      << std::endl;
+
+  return true;
 }
 
-void SystemTray::cleanupLinux() {
-    // Stub
+void SystemTray::createMenuLinux() {
+  // Create menu
+  menu_ = gtk_menu_new();
+
+  // "Show Window" menu item
+  menuItemShow_ = gtk_menu_item_new_with_label("Show Window");
+  g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
+                   this);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemShow_);
+
+  // Separator
+  GtkWidget *separator1 = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
+
+  // "Stop Tracking" menu item (initially hidden)
+  menuItemStop_ = gtk_menu_item_new_with_label("Stop Tracking");
+  g_signal_connect(menuItemStop_, "activate", G_CALLBACK(onMenuStopActivate),
+                   this);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);
+  gtk_widget_set_visible(menuItemStop_, FALSE); // Hidden until tracking starts
+
+  // Separator (for when Stop is visible)
+  GtkWidget *separator2 = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator2);
+
+  // "Exit" menu item
+  menuItemExit_ = gtk_menu_item_new_with_label("Exit");
+  g_signal_connect(menuItemExit_, "activate", G_CALLBACK(onMenuExitActivate),
+                   this);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemExit_);
+
+  // Show all menu items
+  gtk_widget_show_all(menu_);
+
+  // Hide the stop item again (gtk_widget_show_all showed it)
+  gtk_widget_set_visible(menuItemStop_, FALSE);
 }
 
 void SystemTray::updateLinux() {
-    // Stub
+  if (!running_ || !indicator_)
+    return;
+
+  // Check current tracking status
+  auto current = timeService_->getCurrentTracking();
+  bool nowTracking = current.has_value();
+
+  // Update tooltip and menu based on tracking status
+  if (nowTracking) {
+    if (current.has_value()) {
+      std::string tooltip = "Time Tracker - Tracking: " + current->activityName;
+      app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
+                                  tooltip.c_str());
+
+      // Update title (shown in some environments)
+      std::string title = "Tracking: " + current->activityName;
+      app_indicator_set_title(indicator_, title.c_str());
+
+      // Update Stop menu item label with activity name
+      std::string stopLabel = "Stop Tracking: " + current->activityName;
+      gtk_menu_item_set_label(GTK_MENU_ITEM(menuItemStop_), stopLabel.c_str());
+    }
+
+    // Show the Stop menu item
+    gtk_widget_set_visible(menuItemStop_, TRUE);
+  } else {
+    // Update tooltip for idle state
+    app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
+                                "Time Tracker - Idle");
+    app_indicator_set_title(indicator_, "Time Tracker");
+
+    // Hide the Stop menu item
+    gtk_widget_set_visible(menuItemStop_, FALSE);
+  }
+}
+
+void SystemTray::cleanupLinux() {
+  if (!running_)
+    return;
+
+  // Cleanup GTK widgets
+  if (menuItemShow_) {
+    g_signal_handlers_disconnect_by_data(menuItemShow_, this);
+  }
+  if (menuItemStop_) {
+    g_signal_handlers_disconnect_by_data(menuItemStop_, this);
+  }
+  if (menuItemExit_) {
+    g_signal_handlers_disconnect_by_data(menuItemExit_, this);
+  }
+
+  if (menu_) {
+    gtk_widget_destroy(menu_);
+    menu_ = nullptr;
+  }
+
+  if (indicator_) {
+    g_object_unref(indicator_);
+    indicator_ = nullptr;
+  }
+
+  menuItemShow_ = nullptr;
+  menuItemStop_ = nullptr;
+  menuItemExit_ = nullptr;
+  running_ = false;
+}
+
+// Static GTK signal callbacks
+
+void SystemTray::onMenuShowActivate(GtkMenuItem * /*item*/, void *user_data) {
+  auto *tray = static_cast<SystemTray *>(user_data);
+  if (tray && tray->showWindowCallback_) {
+    tray->showWindowCallback_();
+  }
+}
+
+void SystemTray::onMenuStopActivate(GtkMenuItem * /*item*/, void *user_data) {
+  auto *tray = static_cast<SystemTray *>(user_data);
+  if (tray && tray->timeService_) {
+    tray->timeService_->stopTracking();
+    tray->update();
+  }
+}
+
+void SystemTray::onMenuExitActivate(GtkMenuItem * /*item*/, void *user_data) {
+  auto *tray = static_cast<SystemTray *>(user_data);
+  if (tray && tray->exitCallback_) {
+    tray->exitCallback_();
+  }
 }
 
 #endif

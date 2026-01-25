@@ -64,6 +64,19 @@ if(WIN32)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
     endif()
+elseif(UNIX AND NOT APPLE)
+    # Linux-specific dependencies for system tray
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(AYATANA REQUIRED ayatana-appindicator3-0.1)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${AYATANA_INCLUDE_DIRS}
+        ${GTK3_INCLUDE_DIRS})
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${AYATANA_LIBRARIES}
+        ${GTK3_LIBRARIES})
 endif()
 
 # Copy assets to build directory

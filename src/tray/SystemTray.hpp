@@ -8,6 +8,11 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+// Forward declarations for Linux/GTK types
+typedef struct _AppIndicator AppIndicator;
+typedef struct _GtkWidget GtkWidget;
+typedef struct _GtkMenuItem GtkMenuItem;
 #endif
 
 namespace timetracker::tray {
@@ -63,10 +68,23 @@ private:
     void showContextMenuWindows();
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 #else
-    // Linux/GNOME stub for now
+    // Linux/libayatana-appindicator implementation
+    AppIndicator* indicator_{nullptr};
+    GtkWidget* menu_{nullptr};
+    GtkWidget* menuItemShow_{nullptr};
+    GtkWidget* menuItemStop_{nullptr};
+    GtkWidget* menuItemExit_{nullptr};
+    std::string currentIconPath_;
+
     bool initLinux();
     void cleanupLinux();
     void updateLinux();
+    void createMenuLinux();
+
+    // Static GTK signal callbacks
+    static void onMenuShowActivate(GtkMenuItem* item, void* user_data);
+    static void onMenuStopActivate(GtkMenuItem* item, void* user_data);
+    static void onMenuExitActivate(GtkMenuItem* item, void* user_data);
 #endif
 
     std::vector<std::string> getRecentActivities();

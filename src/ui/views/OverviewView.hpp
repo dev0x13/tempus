@@ -1,6 +1,7 @@
 #pragma once
 
 #include "services/TimeTrackingService.hpp"
+#include "ui/widgets/ActivityAutocomplete.hpp"
 #include <memory>
 #include <string>
 
@@ -18,6 +19,7 @@ private:
 
     // Quick start input
     char activityInput_[256]{};
+    std::unique_ptr<widgets::ActivityAutocomplete> activityAutocomplete_;
 
     // Recent entries cache
     std::vector<models::Fact> recentEntries_;

@@ -6,8 +6,9 @@
 namespace timetracker::ui {
 
 OverviewView::OverviewView(std::shared_ptr<services::TimeTrackingService> timeService)
-    : timeService_(std::move(timeService)) {
+    : timeService_(timeService) {
     memset(activityInput_, 0, sizeof(activityInput_));
+    activityAutocomplete_ = std::make_unique<widgets::ActivityAutocomplete>(timeService);
 }
 
 void OverviewView::render() {
@@ -62,42 +63,17 @@ void OverviewView::renderQuickStart() {
     ImGui::Spacing();
 
     // Activity input with autocomplete
-    ImGui::SetNextItemWidth(300);
-    bool startPressed = ImGui::InputTextWithHint(
-        "##activity", "Enter activity name...",
-        activityInput_, sizeof(activityInput_),
-        ImGuiInputTextFlags_EnterReturnsTrue);
-
-    // Autocomplete dropdown
-    if (strlen(activityInput_) > 0) {
-        auto suggestions = timeService_->searchActivities(activityInput_, 5);
-        if (!suggestions.empty()) {
-            ImGui::SetNextWindowPos(
-                ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-            ImGui::SetNextWindowSize(ImVec2(300, 0));
-
-            if (ImGui::BeginPopup("##autocomplete", ImGuiWindowFlags_NoFocusOnAppearing)) {
-                for (const auto& activity : suggestions) {
-                    if (ImGui::Selectable(activity.name.c_str())) {
-                        strncpy(activityInput_, activity.name.c_str(), sizeof(activityInput_) - 1);
-                        startPressed = true;
-                    }
-                }
-                ImGui::EndPopup();
-            }
-
-            // Open popup if we have suggestions
-            if (ImGui::IsItemActive()) {
-                ImGui::OpenPopup("##autocomplete");
-            }
-        }
-    }
+    bool activitySelected = activityAutocomplete_->render("##activity", activityInput_, sizeof(activityInput_));
 
     ImGui::SameLine();
-    if (ImGui::Button("Start", ImVec2(80, 0)) || startPressed) {
-        if (strlen(activityInput_) > 0) {
-            timeService_->startTracking(activityInput_);
+    if (ImGui::Button("Start", ImVec2(80, 0)) || activitySelected) {
+        std::string activityName = activitySelected ?
+            activityAutocomplete_->getSelectedActivity() : std::string(activityInput_);
+
+        if (!activityName.empty()) {
+            timeService_->startTracking(activityName);
             memset(activityInput_, 0, sizeof(activityInput_));
+            activityAutocomplete_->clear();
             refreshRecentEntries();
         }
     }

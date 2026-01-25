@@ -8,12 +8,20 @@
 
 struct GLFWwindow;
 
+namespace timetracker::tray {
+class SystemTray;
+}
+
 namespace timetracker::ui {
 
 // Forward declarations
 class OverviewView;
 class EditorView;
 class TotalsView;
+
+namespace widgets {
+class QuickAddDialog;
+}
 
 class ImGuiApp {
 public:
@@ -52,6 +60,9 @@ public:
     // Get GLFW window handle
     GLFWwindow* getWindow() const { return window_; }
 
+    // Show quick add dialog
+    void showQuickAddDialog();
+
 private:
     GLFWwindow* window_{nullptr};
     std::function<void()> closeCallback_;
@@ -65,6 +76,9 @@ private:
     std::unique_ptr<OverviewView> overviewView_;
     std::unique_ptr<EditorView> editorView_;
     std::unique_ptr<TotalsView> totalsView_;
+
+    // Quick add dialog
+    std::unique_ptr<widgets::QuickAddDialog> quickAddDialog_;
 
     int currentTab_{0};
 

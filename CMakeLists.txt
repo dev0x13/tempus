@@ -36,6 +36,7 @@ set(SOURCES
     src/ui/widgets/DatePicker.cpp
     src/ui/widgets/ActivityAutocomplete.cpp
     src/ui/widgets/TimeInput.cpp
+    src/ui/widgets/QuickAddDialog.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     ${IMGUI_BACKENDS}

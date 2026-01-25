@@ -29,7 +29,12 @@ bool Application::init() {
 void Application::run() {
     if (!running_) return;
 
-    // Run the UI main loop
+    // Update tray icon before starting UI loop
+    if (systemTray_ && systemTray_->isRunning()) {
+        systemTray_->update();
+    }
+
+    // Run the UI main loop (this will block until window closes)
     uiApp_->run();
 }
 
@@ -70,8 +75,10 @@ void Application::initUI() {
         throw std::runtime_error("Failed to initialize UI");
     }
 
-    // Close callback - system tray not implemented yet, so just close normally
-    // TODO: When system tray is implemented, minimize to tray instead
+    // Close callback - minimize to tray instead of exiting
+    uiApp_->setCloseCallback([this]() {
+        uiApp_->minimizeToTray();
+    });
 }
 
 void Application::initSystemTray() {
@@ -89,6 +96,10 @@ void Application::initSystemTray() {
 
     systemTray_->setExitCallback([this]() {
         quit();
+    });
+
+    systemTray_->setShowQuickAddCallback([this]() {
+        uiApp_->showQuickAddDialog();
     });
 }
 

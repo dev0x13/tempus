@@ -3,6 +3,7 @@
 #include "views/OverviewView.hpp"
 #include "views/EditorView.hpp"
 #include "views/TotalsView.hpp"
+#include "widgets/QuickAddDialog.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -82,6 +83,15 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     editorView_ = std::make_unique<EditorView>(timeService_);
     totalsView_ = std::make_unique<TotalsView>(statsService_, exportService_);
 
+    // Create quick add dialog
+    quickAddDialog_ = std::make_unique<widgets::QuickAddDialog>(timeService_);
+    quickAddDialog_->setOnTrackingStarted([this]() {
+        // Refresh overview when tracking starts
+        if (overviewView_) {
+            // Views will refresh on next render
+        }
+    });
+
     // Set up close callback
     glfwSetWindowUserPointer(window_, this);
     glfwSetWindowCloseCallback(window_, [](GLFWwindow* window) {
@@ -152,6 +162,9 @@ void ImGuiApp::render() {
 
     ImGui::End();
 
+    // Render quick add dialog
+    quickAddDialog_->render();
+
     // Rendering
     ImGui::Render();
     int display_w, display_h;
@@ -187,6 +200,16 @@ void ImGuiApp::minimizeToTray() {
 
 void ImGuiApp::setCloseCallback(std::function<void()> callback) {
     closeCallback_ = std::move(callback);
+}
+
+void ImGuiApp::showQuickAddDialog() {
+    if (quickAddDialog_) {
+        quickAddDialog_->show();
+        // Also show the window if it's hidden
+        if (!isVisible()) {
+            show();
+        }
+    }
 }
 
 void ImGuiApp::cleanup() {

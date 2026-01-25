@@ -4,6 +4,7 @@
 #include "views/EditorView.hpp"
 #include "views/TotalsView.hpp"
 #include "widgets/QuickAddDialog.hpp"
+#include "tray/SystemTray.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -13,6 +14,10 @@
 #include <GLFW/glfw3.h>
 
 #include <stdexcept>
+
+#ifndef _WIN32
+#include <gtk/gtk.h>
+#endif
 
 namespace timetracker::ui {
 
@@ -109,6 +114,13 @@ void ImGuiApp::run() {
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
 
+#ifndef _WIN32
+        // Process GTK events for system tray on Linux
+        while (gtk_events_pending()) {
+            gtk_main_iteration();
+        }
+#endif
+
         // Skip rendering if window is minimized
         if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
             continue;
@@ -119,6 +131,15 @@ void ImGuiApp::run() {
 }
 
 void ImGuiApp::render() {
+    // Update system tray periodically (every second)
+    if (systemTray_ && systemTray_->isRunning()) {
+        double currentTime = glfwGetTime();
+        if (currentTime - lastTrayUpdate_ >= 1.0) {
+            systemTray_->update();
+            lastTrayUpdate_ = currentTime;
+        }
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -210,6 +231,10 @@ void ImGuiApp::showQuickAddDialog() {
             show();
         }
     }
+}
+
+void ImGuiApp::setSystemTray(tray::SystemTray* tray) {
+    systemTray_ = tray;
 }
 
 void ImGuiApp::cleanup() {

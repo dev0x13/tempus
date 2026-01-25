@@ -1,5 +1,8 @@
 #include "SystemTray.hpp"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
 
 #ifdef _WIN32
 #include <shellapi.h>
@@ -38,14 +41,17 @@ void SystemTray::update() {
   auto current = timeService_->getCurrentTracking();
   bool nowTracking = current.has_value();
 
-  if (nowTracking != isTracking_) {
-    isTracking_ = nowTracking;
+  bool statusChanged = (nowTracking != isTracking_);
+  isTracking_ = nowTracking;
+
 #ifdef _WIN32
+  if (statusChanged) {
     updateWindows();
-#else
-    updateLinux();
-#endif
   }
+#else
+  // On Linux, always update to refresh the time label
+  updateLinux();
+#endif
 }
 
 void SystemTray::setShowWindowCallback(std::function<void()> callback) {
@@ -279,18 +285,20 @@ bool SystemTray::initLinux() {
   }
 
   // Construct icon path (relative to executable)
-  std::string iconPath = exeDir + "/assets/icons/tray_icon.png";
+  std::string iconDir = exeDir + "/assets/icons";
+  std::string iconPath = iconDir + "/tray_icon.png";
+  std::string iconName = "tray_icon";
 
   // Verify icon file exists
-  if (access(iconPath.c_str(), F_OK) != 0) {
+  bool iconExists = (access(iconPath.c_str(), F_OK) == 0);
+  if (!iconExists) {
     std::cerr << "Warning: Icon file not found at: " << iconPath << std::endl;
     std::cerr << "Using fallback icon theme name" << std::endl;
-    iconPath = "application-x-executable";
+    iconName = "application-x-executable";
   }
 
   // Create AppIndicator
-  // The second parameter is just an ID/name when using set_icon_full later
-  indicator_ = app_indicator_new("time-tracker", "time-tracker-icon",
+  indicator_ = app_indicator_new("time-tracker", iconName.c_str(),
                                  APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 
   if (!indicator_) {
@@ -298,6 +306,12 @@ bool SystemTray::initLinux() {
         << "Failed to create AppIndicator. System tray will not be available."
         << std::endl;
     return true; // Allow app to continue without tray
+  }
+
+  // Set icon theme path for Unity compatibility
+  // This tells AppIndicator where to find icon files
+  if (iconExists) {
+    app_indicator_set_icon_theme_path(indicator_, iconDir.c_str());
   }
 
   // Set status to active (show the indicator)
@@ -310,14 +324,17 @@ bool SystemTray::initLinux() {
   createMenuLinux();
   app_indicator_set_menu(indicator_, GTK_MENU(menu_));
 
-  // Set initial icon and tooltip using absolute path
-  currentIconPath_ = iconPath;
-  app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
-                              "Time Tracker - Idle");
+  // Store icon name for updates
+  currentIconPath_ = iconName;
 
   running_ = true;
   std::cout << "System tray initialized successfully" << std::endl;
-  std::cout << "Using icon: " << currentIconPath_ << std::endl;
+  if (iconExists) {
+    std::cout << "Using icon: " << iconPath << std::endl;
+    std::cout << "Icon directory: " << iconDir << std::endl;
+  } else {
+    std::cout << "Using fallback icon: " << iconName << std::endl;
+  }
   std::cout
       << "Note: On GNOME, you may need the 'AppIndicator Support' extension"
       << std::endl;
@@ -328,6 +345,12 @@ bool SystemTray::initLinux() {
 void SystemTray::createMenuLinux() {
   // Create menu
   menu_ = gtk_menu_new();
+
+  // "Quick Add Activity" menu item
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label("Quick Add Activity");
+  g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
+                   this);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
 
   // "Show Window" menu item
   menuItemShow_ = gtk_menu_item_new_with_label("Show Window");
@@ -374,9 +397,21 @@ void SystemTray::updateLinux() {
   // Update tooltip and menu based on tracking status
   if (nowTracking) {
     if (current.has_value()) {
-      std::string tooltip = "Time Tracker - Tracking: " + current->activityName;
-      app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
-                                  tooltip.c_str());
+      // Calculate elapsed time
+      int64_t currentTime = std::time(nullptr);
+      int64_t elapsedSeconds = current->getDuration(currentTime);
+
+      // Format time as HH:MM
+      int hours = elapsedSeconds / 3600;
+      int minutes = (elapsedSeconds % 3600) / 60;
+
+      std::ostringstream timeStream;
+      timeStream << std::setfill('0') << std::setw(2) << hours
+                 << ":" << std::setfill('0') << std::setw(2) << minutes;
+
+      // Create label text: "Activity Name HH:MM"
+      std::string label = current->activityName + " " + timeStream.str();
+      app_indicator_set_label(indicator_, label.c_str(), nullptr);
 
       // Update title (shown in some environments)
       std::string title = "Tracking: " + current->activityName;
@@ -390,9 +425,8 @@ void SystemTray::updateLinux() {
     // Show the Stop menu item
     gtk_widget_set_visible(menuItemStop_, TRUE);
   } else {
-    // Update tooltip for idle state
-    app_indicator_set_icon_full(indicator_, currentIconPath_.c_str(),
-                                "Time Tracker - Idle");
+    // Update for idle state
+    app_indicator_set_label(indicator_, "", nullptr);
     app_indicator_set_title(indicator_, "Time Tracker");
 
     // Hide the Stop menu item
@@ -405,6 +439,9 @@ void SystemTray::cleanupLinux() {
     return;
 
   // Cleanup GTK widgets
+  if (menuItemQuickAdd_) {
+    g_signal_handlers_disconnect_by_data(menuItemQuickAdd_, this);
+  }
   if (menuItemShow_) {
     g_signal_handlers_disconnect_by_data(menuItemShow_, this);
   }
@@ -425,6 +462,7 @@ void SystemTray::cleanupLinux() {
     indicator_ = nullptr;
   }
 
+  menuItemQuickAdd_ = nullptr;
   menuItemShow_ = nullptr;
   menuItemStop_ = nullptr;
   menuItemExit_ = nullptr;
@@ -432,6 +470,13 @@ void SystemTray::cleanupLinux() {
 }
 
 // Static GTK signal callbacks
+
+void SystemTray::onMenuQuickAddActivate(GtkMenuItem * /*item*/, void *user_data) {
+  auto *tray = static_cast<SystemTray *>(user_data);
+  if (tray && tray->showQuickAddCallback_) {
+    tray->showQuickAddCallback_();
+  }
+}
 
 void SystemTray::onMenuShowActivate(GtkMenuItem * /*item*/, void *user_data) {
   auto *tray = static_cast<SystemTray *>(user_data);

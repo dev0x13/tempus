@@ -63,6 +63,9 @@ public:
     // Show quick add dialog
     void showQuickAddDialog();
 
+    // Set system tray for periodic updates
+    void setSystemTray(tray::SystemTray* tray);
+
 private:
     GLFWwindow* window_{nullptr};
     std::function<void()> closeCallback_;
@@ -79,6 +82,12 @@ private:
 
     // Quick add dialog
     std::unique_ptr<widgets::QuickAddDialog> quickAddDialog_;
+
+    // System tray (not owned)
+    tray::SystemTray* systemTray_{nullptr};
+
+    // Tray update timing
+    double lastTrayUpdate_{0.0};
 
     int currentTab_{0};
 

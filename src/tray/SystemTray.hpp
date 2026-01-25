@@ -71,6 +71,7 @@ private:
     // Linux/libayatana-appindicator implementation
     AppIndicator* indicator_{nullptr};
     GtkWidget* menu_{nullptr};
+    GtkWidget* menuItemQuickAdd_{nullptr};
     GtkWidget* menuItemShow_{nullptr};
     GtkWidget* menuItemStop_{nullptr};
     GtkWidget* menuItemExit_{nullptr};
@@ -82,6 +83,7 @@ private:
     void createMenuLinux();
 
     // Static GTK signal callbacks
+    static void onMenuQuickAddActivate(GtkMenuItem* item, void* user_data);
     static void onMenuShowActivate(GtkMenuItem* item, void* user_data);
     static void onMenuStopActivate(GtkMenuItem* item, void* user_data);
     static void onMenuExitActivate(GtkMenuItem* item, void* user_data);

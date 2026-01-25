@@ -101,6 +101,9 @@ void Application::initSystemTray() {
     systemTray_->setShowQuickAddCallback([this]() {
         uiApp_->showQuickAddDialog();
     });
+
+    // Connect tray to UI for periodic updates
+    uiApp_->setSystemTray(systemTray_.get());
 }
 
 } // namespace timetracker::app

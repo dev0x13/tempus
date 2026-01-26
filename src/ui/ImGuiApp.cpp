@@ -1,8 +1,7 @@
 #include "ImGuiApp.hpp"
 #include "Theme.hpp"
 #include "views/OverviewView.hpp"
-#include "views/EditorView.hpp"
-#include "views/TotalsView.hpp"
+#include "views/TimeEntriesView.hpp"
 #include "widgets/QuickAddDialog.hpp"
 #include "tray/SystemTray.hpp"
 
@@ -87,8 +86,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Create views
     overviewView_ = std::make_unique<OverviewView>(timeService_);
-    editorView_ = std::make_unique<EditorView>(timeService_);
-    totalsView_ = std::make_unique<TotalsView>(statsService_, exportService_, youTrackExportService_);
+    timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_);
 
     // Create quick add dialog
     quickAddDialog_ = std::make_unique<widgets::QuickAddDialog>(timeService_);
@@ -170,14 +168,9 @@ void ImGuiApp::render() {
             overviewView_->render();
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Editor")) {
+        if (ImGui::BeginTabItem("Time Entries")) {
             currentTab_ = 1;
-            editorView_->render();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Totals")) {
-            currentTab_ = 2;
-            totalsView_->render();
+            timeEntriesView_->render();
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();

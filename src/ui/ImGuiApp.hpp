@@ -17,8 +17,7 @@ namespace timetracker::ui {
 
 // Forward declarations
 class OverviewView;
-class EditorView;
-class TotalsView;
+class TimeEntriesView;
 
 namespace widgets {
 class QuickAddDialog;
@@ -80,8 +79,7 @@ private:
 
     // Views
     std::unique_ptr<OverviewView> overviewView_;
-    std::unique_ptr<EditorView> editorView_;
-    std::unique_ptr<TotalsView> totalsView_;
+    std::unique_ptr<TimeEntriesView> timeEntriesView_;
 
     // Quick add dialog
     std::unique_ptr<widgets::QuickAddDialog> quickAddDialog_;

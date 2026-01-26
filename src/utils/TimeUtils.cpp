@@ -81,15 +81,12 @@ std::string TimeUtils::formatDuration(int64_t seconds) {
 
     int64_t hours = seconds / 3600;
     int64_t minutes = (seconds % 3600) / 60;
-    int64_t secs = seconds % 60;
 
     std::ostringstream oss;
     if (hours > 0) {
-        oss << hours << "h " << minutes << "m";
-    } else if (minutes > 0) {
-        oss << minutes << "m " << secs << "s";
+        oss << hours << "h " << minutes << "min";
     } else {
-        oss << secs << "s";
+        oss << minutes << "min";
     }
     return oss.str();
 }

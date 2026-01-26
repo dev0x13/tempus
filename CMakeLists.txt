@@ -35,8 +35,7 @@ set(SOURCES
     src/services/YouTrackExportService.cpp
     src/ui/ImGuiApp.cpp
     src/ui/views/OverviewView.cpp
-    src/ui/views/EditorView.cpp
-    src/ui/views/TotalsView.cpp
+    src/ui/views/TimeEntriesView.cpp
     src/ui/widgets/DatePicker.cpp
     src/ui/widgets/ActivityAutocomplete.cpp
     src/ui/widgets/TimeInput.cpp

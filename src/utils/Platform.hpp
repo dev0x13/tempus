@@ -90,6 +90,56 @@ public:
 
         return path;
     }
+
+    static bool openFileInEditor(const std::filesystem::path& filePath, std::string& errorMessage) {
+#ifdef _WIN32
+        // Windows: Use ShellExecute with 'open' action
+        HINSTANCE result = ShellExecuteA(
+            nullptr,                    // hwnd
+            "open",                     // operation
+            filePath.string().c_str(),  // file
+            nullptr,                    // parameters
+            nullptr,                    // directory
+            SW_SHOWNORMAL              // show command
+        );
+
+        // ShellExecute returns a value > 32 on success
+        if (reinterpret_cast<intptr_t>(result) <= 32) {
+            errorMessage = "Failed to open file in editor. Error code: " + std::to_string(reinterpret_cast<intptr_t>(result));
+            return false;
+        }
+        return true;
+#elif defined(__APPLE__)
+        // macOS: Not implemented
+        errorMessage = "Opening files in editor is not supported on macOS in this version.";
+        return false;
+#else
+        // Linux: Use xdg-open
+        std::string command = "xdg-open \"" + filePath.string() + "\" 2>&1";
+        FILE* pipe = popen(command.c_str(), "r");
+        if (!pipe) {
+            errorMessage = "Failed to execute xdg-open command.";
+            return false;
+        }
+
+        // Read any error output
+        char buffer[256];
+        std::string output;
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            output += buffer;
+        }
+
+        int exitCode = pclose(pipe);
+        if (exitCode != 0) {
+            errorMessage = "xdg-open failed with exit code " + std::to_string(exitCode);
+            if (!output.empty()) {
+                errorMessage += ": " + output;
+            }
+            return false;
+        }
+        return true;
+#endif
+    }
 };
 
 } // namespace timetracker::utils

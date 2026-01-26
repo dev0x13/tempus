@@ -37,7 +37,7 @@ public:
 
 private:
     // Settings
-    std::unique_ptr<services::SettingsService> settingsService_;
+    std::shared_ptr<services::SettingsService> settingsService_;
 
     // Database
     std::unique_ptr<database::Database> db_;

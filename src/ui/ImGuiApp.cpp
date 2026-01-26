@@ -4,6 +4,7 @@
 #include "views/TimeEntriesView.hpp"
 #include "widgets/QuickAddDialog.hpp"
 #include "tray/SystemTray.hpp"
+#include "utils/Platform.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -13,6 +14,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdexcept>
+#include <iostream>
 
 #ifndef _WIN32
 #include <gtk/gtk.h>
@@ -28,11 +30,13 @@ ImGuiApp::ImGuiApp(
     std::shared_ptr<services::TimeTrackingService> timeService,
     std::shared_ptr<services::StatisticsService> statsService,
     std::shared_ptr<services::ExportService> exportService,
-    std::shared_ptr<services::YouTrackExportService> youTrackExportService)
+    std::shared_ptr<services::YouTrackExportService> youTrackExportService,
+    std::shared_ptr<services::SettingsService> settingsService)
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
     , exportService_(std::move(exportService))
-    , youTrackExportService_(std::move(youTrackExportService)) {}
+    , youTrackExportService_(std::move(youTrackExportService))
+    , settingsService_(std::move(settingsService)) {}
 
 ImGuiApp::~ImGuiApp() {
     cleanup();
@@ -160,6 +164,19 @@ void ImGuiApp::render() {
         ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::Begin("Main", nullptr, windowFlags);
+
+    // Settings button in top right corner
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.0f);
+    ImGui::SetCursorPosY(10.0f);
+    if (ImGui::Button("Settings", ImVec2(90.0f, 0.0f))) {
+        // Open settings.json in default editor
+        auto settingsPath = settingsService_->getSettingsPath();
+        std::string errorMessage;
+        if (!utils::Platform::openFileInEditor(settingsPath, errorMessage)) {
+            std::cerr << "Failed to open settings file: " << errorMessage << std::endl;
+            // Could show an ImGui popup here in the future
+        }
+    }
 
     // Tab bar
     if (ImGui::BeginTabBar("MainTabs")) {

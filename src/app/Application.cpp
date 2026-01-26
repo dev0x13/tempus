@@ -71,7 +71,7 @@ void Application::initServices() {
 }
 
 void Application::initUI() {
-    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_);
+    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, settingsService_);
 
     if (!uiApp_->init(900, 600, "Time Tracker")) {
         throw std::runtime_error("Failed to initialize UI");
@@ -109,7 +109,7 @@ void Application::initSystemTray() {
 }
 
 void Application::initSettings() {
-    settingsService_ = std::make_unique<services::SettingsService>();
+    settingsService_ = std::make_shared<services::SettingsService>();
 
     if (!settingsService_->loadSettings()) {
         std::cerr << "Warning: Failed to load settings, using defaults" << std::endl;

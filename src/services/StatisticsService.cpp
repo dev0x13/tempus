@@ -38,6 +38,9 @@ std::vector<models::ActivityTotal> StatisticsService::getTotalsByActivity(int64_
         total.activityName = fact.activityName;
         total.totalSeconds += fact.getDuration(now);
         total.count++;
+        if (fact.exportedToYoutrack) {
+            total.exportedCount++;
+        }
     }
 
     // Convert to vector and sort by total time descending

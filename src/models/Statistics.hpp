@@ -12,9 +12,22 @@ struct ActivityTotal {
     std::string activityName;
     int64_t totalSeconds{0};
     int count{0};
+    int exportedCount{0};  // Number of facts exported to YouTrack
 
     [[nodiscard]] double totalHours() const {
         return static_cast<double>(totalSeconds) / 3600.0;
+    }
+
+    [[nodiscard]] bool isFullyExported() const {
+        return count > 0 && exportedCount == count;
+    }
+
+    [[nodiscard]] bool isPartiallyExported() const {
+        return exportedCount > 0 && exportedCount < count;
+    }
+
+    [[nodiscard]] bool isNotExported() const {
+        return exportedCount == 0;
     }
 };
 

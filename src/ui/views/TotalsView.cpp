@@ -132,10 +132,11 @@ void TotalsView::renderActivityTotals() {
         return;
     }
 
-    if (ImGui::BeginTable("ActivityTotals", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (ImGui::BeginTable("ActivityTotals", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
         ImGui::TableSetupColumn("Entries", ImGuiTableColumnFlags_WidthFixed, 80);
+        ImGui::TableSetupColumn("YT Export", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableHeadersRow();
 
         for (const auto& total : stats_.byActivity) {
@@ -149,6 +150,24 @@ void TotalsView::renderActivityTotals() {
 
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%d", total.count);
+
+            ImGui::TableSetColumnIndex(3);
+            if (total.isFullyExported()) {
+                ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s", "\xE2\x9C\x93");  // ✓ checkmark (UTF-8)
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("All time exported to YouTrack");
+                }
+            } else if (total.isPartiallyExported()) {
+                ImGui::TextColored(ImVec4(0.8f, 0.6f, 0.0f, 1.0f), "%d/%d", total.exportedCount, total.count);
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%d of %d entries exported to YouTrack", total.exportedCount, total.count);
+                }
+            } else {
+                ImGui::TextDisabled("%s", "\xE2\x8A\x98");  // ⊘ empty set symbol (UTF-8)
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Not yet exported to YouTrack");
+                }
+            }
         }
 
         ImGui::EndTable();
@@ -243,21 +262,19 @@ void TotalsView::renderMonthlyTotals() {
 }
 
 void TotalsView::renderExportButton() {
-    ImGui::SameLine();
-    float width = ImGui::GetContentRegionAvail().x;
+    // Start export section on new line
+    ImGui::Spacing();
 
     // YouTrack export button
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width - 320);
     renderYouTrackExportButton();
 
-    // CSV export button
+    // CSV export button on same line
     ImGui::SameLine();
     if (ImGui::Button("Export CSV", ImVec2(100, 0))) {
         performExport();
     }
 
-    // Reset export status button (on new line)
-    ImGui::SameLine();
+    // Reset export status button on new line
     renderResetExportStatusButton();
 }
 

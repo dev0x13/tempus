@@ -268,13 +268,25 @@ void TimeEntriesView::renderEditForm() {
         ImGui::Text("Start:");
         widgets::DatePicker::renderWithCalendar("##editStartDate", editStartDate_);
         ImGui::SameLine();
+
+        // Format time with leading zeros
+        char startHourBuf[8], startMinBuf[8];
+        snprintf(startHourBuf, sizeof(startHourBuf), "%02d", editStartTime_[0]);
+        snprintf(startMinBuf, sizeof(startMinBuf), "%02d", editStartTime_[1]);
+
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startHour", &editStartTime_[0], 0);
+        if (ImGui::InputText("##startHour", startHourBuf, sizeof(startHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(startHourBuf);
+            editStartTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##startMin", &editStartTime_[1], 0);
+        if (ImGui::InputText("##startMin", startMinBuf, sizeof(startMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(startMinBuf);
+            editStartTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+        }
 
         ImGui::Spacing();
         ImGui::Checkbox("Ongoing", &editIsOngoing_);
@@ -283,13 +295,25 @@ void TimeEntriesView::renderEditForm() {
             ImGui::Text("End:");
             widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
             ImGui::SameLine();
+
+            // Format time with leading zeros
+            char endHourBuf[8], endMinBuf[8];
+            snprintf(endHourBuf, sizeof(endHourBuf), "%02d", editEndTime_[0]);
+            snprintf(endMinBuf, sizeof(endMinBuf), "%02d", editEndTime_[1]);
+
             ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endHour", &editEndTime_[0], 0);
+            if (ImGui::InputText("##endHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(endHourBuf);
+                editEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+            }
             ImGui::SameLine();
             ImGui::Text(":");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(40);
-            ImGui::InputInt("##endMin", &editEndTime_[1], 0);
+            if (ImGui::InputText("##endMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(endMinBuf);
+                editEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+            }
         }
 
         ImGui::Spacing();
@@ -330,25 +354,49 @@ void TimeEntriesView::renderAddForm() {
         ImGui::Text("Start:");
         widgets::DatePicker::renderWithCalendar("##addStartDate", addStartDate_);
         ImGui::SameLine();
+
+        // Format time with leading zeros
+        char addStartHourBuf[8], addStartMinBuf[8];
+        snprintf(addStartHourBuf, sizeof(addStartHourBuf), "%02d", addStartTime_[0]);
+        snprintf(addStartMinBuf, sizeof(addStartMinBuf), "%02d", addStartTime_[1]);
+
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartHour", &addStartTime_[0], 0);
+        if (ImGui::InputText("##addStartHour", addStartHourBuf, sizeof(addStartHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(addStartHourBuf);
+            addStartTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addStartMin", &addStartTime_[1], 0);
+        if (ImGui::InputText("##addStartMin", addStartMinBuf, sizeof(addStartMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(addStartMinBuf);
+            addStartTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+        }
 
         ImGui::Spacing();
         ImGui::Text("End:");
         widgets::DatePicker::renderWithCalendar("##addEndDate", addEndDate_);
         ImGui::SameLine();
+
+        // Format time with leading zeros
+        char addEndHourBuf[8], addEndMinBuf[8];
+        snprintf(addEndHourBuf, sizeof(addEndHourBuf), "%02d", addEndTime_[0]);
+        snprintf(addEndMinBuf, sizeof(addEndMinBuf), "%02d", addEndTime_[1]);
+
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndHour", &addEndTime_[0], 0);
+        if (ImGui::InputText("##addEndHour", addEndHourBuf, sizeof(addEndHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(addEndHourBuf);
+            addEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
         ImGui::SameLine();
         ImGui::Text(":");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(40);
-        ImGui::InputInt("##addEndMin", &addEndTime_[1], 0);
+        if (ImGui::InputText("##addEndMin", addEndMinBuf, sizeof(addEndMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(addEndMinBuf);
+            addEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+        }
 
         ImGui::Spacing();
         ImGui::Separator();

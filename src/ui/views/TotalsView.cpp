@@ -4,6 +4,7 @@
 #include "ui/widgets/DatePicker.hpp"
 #include "imgui.h"
 #include <cstring>
+#include <thread>
 
 namespace timetracker::ui {
 
@@ -132,11 +133,10 @@ void TotalsView::renderActivityTotals() {
         return;
     }
 
-    if (ImGui::BeginTable("ActivityTotals", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (ImGui::BeginTable("ActivityTotals", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
         ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 100);
         ImGui::TableSetupColumn("Entries", ImGuiTableColumnFlags_WidthFixed, 80);
-        ImGui::TableSetupColumn("YT Export", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableHeadersRow();
 
         for (const auto& total : stats_.byActivity) {
@@ -150,24 +150,6 @@ void TotalsView::renderActivityTotals() {
 
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%d", total.count);
-
-            ImGui::TableSetColumnIndex(3);
-            if (total.isFullyExported()) {
-                ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s", "\xE2\x9C\x93");  // ✓ checkmark (UTF-8)
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("All time exported to YouTrack");
-                }
-            } else if (total.isPartiallyExported()) {
-                ImGui::TextColored(ImVec4(0.8f, 0.6f, 0.0f, 1.0f), "%d/%d", total.exportedCount, total.count);
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%d of %d entries exported to YouTrack", total.exportedCount, total.count);
-                }
-            } else {
-                ImGui::TextDisabled("%s", "\xE2\x8A\x98");  // ⊘ empty set symbol (UTF-8)
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("Not yet exported to YouTrack");
-                }
-            }
         }
 
         ImGui::EndTable();
@@ -273,9 +255,6 @@ void TotalsView::renderExportButton() {
     if (ImGui::Button("Export CSV", ImVec2(100, 0))) {
         performExport();
     }
-
-    // Reset export status button on new line
-    renderResetExportStatusButton();
 }
 
 void TotalsView::performExport() {
@@ -326,12 +305,6 @@ void TotalsView::renderYouTrackExportButton() {
     }
 }
 
-void TotalsView::renderResetExportStatusButton() {
-    if (ImGui::Button("Reset Export Status", ImVec2(150, 0))) {
-        performResetExportStatus();
-    }
-}
-
 void TotalsView::performYouTrackExport() {
     // Prepare export data
     pendingWorkItems_ = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
@@ -344,11 +317,6 @@ void TotalsView::performYouTrackExport() {
 
     // Show confirmation dialog
     showExportConfirmation_ = true;
-}
-
-void TotalsView::performResetExportStatus() {
-    youTrackExportService_->resetExportStatus(displayStartTime_, displayEndTime_);
-    refreshStatistics();
 }
 
 void TotalsView::renderExportConfirmationDialog() {
@@ -386,20 +354,50 @@ void TotalsView::renderExportConfirmationDialog() {
             showExportConfirmation_ = false;
             showExportProgress_ = true;
 
-            // Perform export
-            auto result = youTrackExportService_->exportToYouTrack(pendingWorkItems_);
+            // Initialize progress tracking
+            currentProgress_ = 0;
+            totalProgress_ = static_cast<int>(pendingWorkItems_.size());
+            cancelExport_.store(false);
 
-            showExportProgress_ = false;
+            // Start async export in a separate thread
+            std::thread([this]() {
+                // Progress callback
+                auto progressCallback = [this](int current, int total) {
+                    currentProgress_ = current;
+                    totalProgress_ = total;
+                };
 
-            if (result.success) {
-                exportedMinutes_ = result.totalMinutes;
-                exportedItems_ = result.itemsExported;
-                showExportSuccess_ = true;
-                refreshStatistics();
-            } else {
-                exportErrorMessage_ = result.errorMessage;
-                showExportError_ = true;
-            }
+                // Perform export with progress callback and cancel flag
+                auto result = youTrackExportService_->exportToYouTrack(
+                    pendingWorkItems_,
+                    progressCallback,
+                    &cancelExport_
+                );
+
+                // Update UI state on main thread (will be picked up on next frame)
+                showExportProgress_ = false;
+
+                if (result.success) {
+                    exportedMinutes_ = result.totalMinutes;
+                    exportedItems_ = result.itemsExported;
+                    showExportSuccess_ = true;
+                    refreshStatistics();
+                } else {
+                    // Check if it was a cancellation
+                    if (result.errorMessage == "Export cancelled by user") {
+                        // Show cancellation message with partial export info
+                        exportErrorMessage_ = "Export cancelled. " + std::to_string(result.itemsExported) +
+                                             " of " + std::to_string(totalProgress_) + " activities exported.";
+                        // Refresh to show the partial export
+                        if (result.itemsExported > 0) {
+                            refreshStatistics();
+                        }
+                    } else {
+                        exportErrorMessage_ = result.errorMessage;
+                    }
+                    showExportError_ = true;
+                }
+            }).detach();
         }
 
         ImGui::SameLine();
@@ -412,17 +410,38 @@ void TotalsView::renderExportConfirmationDialog() {
 }
 
 void TotalsView::renderExportProgressDialog() {
-    ImGui::OpenPopup("Exporting...");
+    ImGui::OpenPopup("Exporting to YouTrack");
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(400, 150), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal("Exporting...", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar)) {
-        ImGui::Text("Exporting to YouTrack...");
+    bool open = true;
+    if (ImGui::BeginPopupModal("Exporting to YouTrack", &open, ImGuiWindowFlags_NoResize)) {
+        // Progress text
+        ImGui::Text("Exporting activity %d of %d", currentProgress_, totalProgress_);
+        ImGui::Spacing();
+
+        // Progress bar
+        float progress = totalProgress_ > 0 ? static_cast<float>(currentProgress_) / static_cast<float>(totalProgress_) : 0.0f;
+        ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f));
+        ImGui::Spacing();
+
         ImGui::Separator();
-        ImGui::Text("Please wait...");
+
+        // Cancel button
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            cancelExport_.store(true);
+            showExportProgress_ = false;
+        }
 
         ImGui::EndPopup();
+    }
+
+    // If user closed via X button
+    if (!open) {
+        cancelExport_.store(true);
+        showExportProgress_ = false;
     }
 }
 

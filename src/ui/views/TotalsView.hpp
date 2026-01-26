@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <atomic>
 
 namespace timetracker::ui {
 
@@ -44,6 +45,11 @@ private:
     int exportedMinutes_{0};
     int exportedItems_{0};
 
+    // Progress tracking
+    int currentProgress_{0};
+    int totalProgress_{0};
+    std::atomic<bool> cancelExport_{false};
+
     void renderDateSelector();
     void renderTabs();
     void renderActivityTotals();
@@ -56,11 +62,9 @@ private:
     void renderExportProgressDialog();
     void renderExportSuccessDialog();
     void renderExportErrorDialog();
-    void renderResetExportStatusButton();
     void refreshStatistics();
     void performExport();
     void performYouTrackExport();
-    void performResetExportStatus();
 };
 
 } // namespace timetracker::ui

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
+#include <atomic>
 
 namespace timetracker::services {
 
@@ -59,16 +61,14 @@ public:
     /**
      * Export aggregated work items to YouTrack.
      * @param workItems Work items to export (from prepareExport)
+     * @param progressCallback Optional callback for progress updates (current, total)
+     * @param cancelFlag Optional pointer to bool flag for cancellation check
      * @return Export result with success status and details
      */
-    ExportResult exportToYouTrack(const std::vector<AggregatedWorkItem>& workItems);
-
-    /**
-     * Reset export status for facts in date range.
-     * @param startTime Start of date range
-     * @param endTime End of date range
-     */
-    void resetExportStatus(int64_t startTime, int64_t endTime);
+    ExportResult exportToYouTrack(
+        const std::vector<AggregatedWorkItem>& workItems,
+        std::function<void(int, int)> progressCallback = nullptr,
+        const std::atomic<bool>* cancelFlag = nullptr);
 
 private:
     SettingsService& settingsService_;

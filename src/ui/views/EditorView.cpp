@@ -101,11 +101,12 @@ void EditorView::renderEntryList() {
         return;
     }
 
-    if (ImGui::BeginTable("Entries", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+    if (ImGui::BeginTable("Entries", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
         ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Start", ImGuiTableColumnFlags_WidthFixed, 140);
         ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 140);
         ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 100);
+        ImGui::TableSetupColumn("YT Export", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableSetupColumn("Actions", ImGuiTableColumnFlags_WidthFixed, 100);
         ImGui::TableHeadersRow();
 
@@ -133,6 +134,19 @@ void EditorView::renderEntryList() {
             ImGui::Text("%s", utils::TimeUtils::formatDuration(fact.getDuration(now)).c_str());
 
             ImGui::TableSetColumnIndex(4);
+            if (fact.exportedToYoutrack) {
+                ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s", "\xE2\x9C\x93");  // ✓ checkmark (UTF-8)
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Exported to YouTrack");
+                }
+            } else {
+                ImGui::TextDisabled("%s", "\xE2\x8A\x98");  // ⊘ empty set symbol (UTF-8)
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Not exported to YouTrack");
+                }
+            }
+
+            ImGui::TableSetColumnIndex(5);
             if (ImGui::SmallButton("Edit")) {
                 startEdit(fact);
             }

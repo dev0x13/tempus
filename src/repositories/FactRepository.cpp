@@ -193,31 +193,4 @@ void FactRepository::markFactsAsExported(const std::vector<int64_t>& factIds) {
     update.exec();
 }
 
-void FactRepository::resetExportStatus(int64_t startTime, int64_t endTime) {
-    SQLite::Statement update(db_.getHandle(),
-        "UPDATE facts SET exported_to_youtrack = 0 "
-        "WHERE start_time >= ? AND start_time <= ?");
-    update.bind(1, startTime);
-    update.bind(2, endTime);
-    update.exec();
-}
-
-std::vector<models::Fact> FactRepository::getExportedFacts(int64_t startTime, int64_t endTime) {
-    std::vector<models::Fact> facts;
-
-    SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
-        "FROM facts f "
-        "JOIN activities a ON f.activity_id = a.id "
-        "WHERE f.start_time >= ? AND f.start_time <= ? AND f.exported_to_youtrack = 1 "
-        "ORDER BY f.start_time DESC");
-    query.bind(1, startTime);
-    query.bind(2, endTime);
-
-    while (query.executeStep()) {
-        facts.push_back(mapRowWithActivity(query));
-    }
-    return facts;
-}
-
 } // namespace timetracker::repositories

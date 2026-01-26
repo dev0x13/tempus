@@ -103,7 +103,11 @@ std::vector<AggregatedWorkItem> YouTrackExportService::prepareExport(int64_t sta
     return result;
 }
 
-ExportResult YouTrackExportService::exportToYouTrack(const std::vector<AggregatedWorkItem>& workItems) {
+ExportResult YouTrackExportService::exportToYouTrack(
+    const std::vector<AggregatedWorkItem>& workItems,
+    std::function<void(int, int)> progressCallback,
+    const std::atomic<bool>* cancelFlag) {
+
     ExportResult result;
 
     if (!isConfigured()) {
@@ -116,12 +120,37 @@ ExportResult YouTrackExportService::exportToYouTrack(const std::vector<Aggregate
     int totalMinutes = 0;
     int itemsExported = 0;
     std::vector<int64_t> exportedFactIds;
+    int totalItems = static_cast<int>(workItems.size());
 
-    for (const auto& item : workItems) {
+    for (size_t i = 0; i < workItems.size(); ++i) {
+        // Check for cancellation
+        if (cancelFlag != nullptr && cancelFlag->load()) {
+            result.success = false;
+            result.errorMessage = "Export cancelled by user";
+            result.totalMinutes = totalMinutes;
+            result.itemsExported = itemsExported;
+
+            // Mark already exported facts before returning
+            if (!exportedFactIds.empty()) {
+                factRepository_.markFactsAsExported(exportedFactIds);
+            }
+
+            return result;
+        }
+
+        const auto& item = workItems[i];
         std::string error = postWorkItem(item.issueId, item.minutes, item.date);
         if (!error.empty()) {
             result.success = false;
             result.errorMessage = error;
+            result.totalMinutes = totalMinutes;
+            result.itemsExported = itemsExported;
+
+            // Mark already exported facts before returning
+            if (!exportedFactIds.empty()) {
+                factRepository_.markFactsAsExported(exportedFactIds);
+            }
+
             return result;
         }
 
@@ -130,6 +159,11 @@ ExportResult YouTrackExportService::exportToYouTrack(const std::vector<Aggregate
 
         // Collect fact IDs for marking as exported
         exportedFactIds.insert(exportedFactIds.end(), item.factIds.begin(), item.factIds.end());
+
+        // Report progress after each item
+        if (progressCallback) {
+            progressCallback(itemsExported, totalItems);
+        }
     }
 
     // Mark facts as exported
@@ -139,10 +173,6 @@ ExportResult YouTrackExportService::exportToYouTrack(const std::vector<Aggregate
     result.totalMinutes = totalMinutes;
     result.itemsExported = itemsExported;
     return result;
-}
-
-void YouTrackExportService::resetExportStatus(int64_t startTime, int64_t endTime) {
-    factRepository_.resetExportStatus(startTime, endTime);
 }
 
 std::string YouTrackExportService::resolveIssueId(const std::string& activityName) const {

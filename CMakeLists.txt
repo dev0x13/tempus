@@ -14,6 +14,7 @@ find_package(OpenGL REQUIRED)
 find_package(portable-file-dialogs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(cpr REQUIRED)
+find_package(ICU REQUIRED COMPONENTS uc)
 
 # ImGui backends
 set(IMGUI_BACKENDS
@@ -61,6 +62,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     portable-file-dialogs::portable-file-dialogs
     nlohmann_json::nlohmann_json
     cpr::cpr
+    ICU::uc
 )
 
 # Platform-specific settings

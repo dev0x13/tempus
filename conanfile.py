@@ -14,6 +14,7 @@ class TimeTrackerRecipe(ConanFile):
         self.requires("portable-file-dialogs/0.1.0")
         self.requires("nlohmann_json/3.11.3")
         self.requires("cpr/1.10.5")
+        self.requires("icu/74.2")
 
     def layout(self):
         cmake_layout(self)

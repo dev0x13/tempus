@@ -5,6 +5,7 @@
 #include "widgets/QuickAddDialog.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
+#include "PTSansFont.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -80,6 +81,22 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    // Load embedded PT Sans font with cyrillic support
+    ImFontConfig fontConfig;
+    fontConfig.OversampleH = 2;  // Horizontal oversampling for sharper rendering
+    fontConfig.OversampleV = 2;  // Vertical oversampling
+    fontConfig.PixelSnapH = true; // Align to pixel boundaries for crispness
+    fontConfig.FontDataOwnedByAtlas = false; // Font data is embedded, don't let ImGui free it
+
+    // Load font from embedded byte array
+    io.Fonts->AddFontFromMemoryTTF(
+        const_cast<unsigned char*>(fonts::PTSansRegular),
+        fonts::PTSansRegularSize,
+        20.0f,
+        &fontConfig,
+        io.Fonts->GetGlyphRangesCyrillic()
+    );
 
     // Apply custom theme
     Theme::apply();

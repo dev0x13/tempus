@@ -1,17 +1,19 @@
 #include "ActivityRepository.hpp"
+#include <unicode/unistr.h>
+#include <unicode/locid.h>
 #include <algorithm>
-#include <cctype>
+#include <string>
 
 namespace timetracker::repositories {
 
 ActivityRepository::ActivityRepository(database::Database& db) : db_(db) {}
 
 std::string ActivityRepository::toLower(const std::string& str) {
+    // Use ICU for proper UTF-8 case folding
+    icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(str);
+    ustr.toLower();
     std::string result;
-    result.reserve(str.size());
-    for (char c : str) {
-        result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    }
+    ustr.toUTF8String(result);
     return result;
 }
 

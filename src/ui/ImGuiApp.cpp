@@ -118,6 +118,13 @@ bool ImGuiApp::init(int width, int height, const char* title) {
             // Views will refresh on next render
         }
     });
+    quickAddDialog_->setOnDialogClosed([this]() {
+        // Hide main window if it was shown specifically for quick add
+        if (windowShownForQuickAdd_) {
+            hide();
+            windowShownForQuickAdd_ = false;
+        }
+    });
 
     // Create settings window
     settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_);
@@ -256,11 +263,12 @@ void ImGuiApp::setCloseCallback(std::function<void()> callback) {
 
 void ImGuiApp::showQuickAddDialog() {
     if (quickAddDialog_) {
-        quickAddDialog_->show();
-        // Also show the window if it's hidden
+        // Track if we need to show the window for quick add
         if (!isVisible()) {
+            windowShownForQuickAdd_ = true;
             show();
         }
+        quickAddDialog_->show();
     }
 }
 

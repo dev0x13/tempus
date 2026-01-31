@@ -84,12 +84,15 @@ LRESULT CALLBACK SystemTray::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
   if (uMsg == WM_TRAYICON) {
     if (LOWORD(lParam) == WM_LBUTTONUP) {
-      // Left click - show quick add dialog
+      // Left click - show quick add dialog.
+      // Note: On Windows, this shows the main window if hidden because ImGui
+      // requires a visible window to render. The dialog will be the focus.
       if (tray && tray->showQuickAddCallback_) {
         tray->showQuickAddCallback_();
       }
     } else if (LOWORD(lParam) == WM_RBUTTONUP) {
-      // Right click - show context menu
+      // Right click - show context menu with options to show window,
+      // stop tracking, access recent activities, and exit the application.
       if (tray) {
         tray->showContextMenuWindows();
       }
@@ -256,6 +259,12 @@ void SystemTray::showContextMenuWindows() {
 #else
 
 // Linux/libayatana-appindicator implementation
+//
+// Note: The AppIndicator API does not support left-click vs right-click
+// differentiation like Windows. Instead, it only supports a menu-based interface.
+// "Quick Add Activity" is placed as the first menu item for quick access.
+// Note: Due to ImGui architecture, the main window must be visible to render
+// the quick add dialog, so clicking "Quick Add Activity" will show the main window.
 
 bool SystemTray::initLinux() {
   // Initialize GTK (safe to call multiple times)

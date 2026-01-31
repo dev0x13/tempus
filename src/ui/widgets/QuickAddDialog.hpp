@@ -22,11 +22,15 @@ public:
     // Set callback for when tracking starts
     void setOnTrackingStarted(std::function<void()> callback);
 
+    // Set callback for when dialog is closed (OK, Cancel, or Escape)
+    void setOnDialogClosed(std::function<void()> callback);
+
 private:
     std::shared_ptr<services::TimeTrackingService> timeService_;
     bool visible_{false};
     char activityInput_[256]{};
     std::function<void()> onTrackingStarted_;
+    std::function<void()> onDialogClosed_;
 
     void renderAutocomplete();
 };

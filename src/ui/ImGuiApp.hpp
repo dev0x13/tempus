@@ -99,6 +99,9 @@ private:
 
     int currentTab_{0};
 
+    // Track if window was shown specifically for quick add dialog
+    bool windowShownForQuickAdd_{false};
+
     void render();
     void cleanup();
 };

@@ -71,10 +71,18 @@ void QuickAddDialog::show() {
 
 void QuickAddDialog::hide() {
     visible_ = false;
+    // Notify that dialog is closing
+    if (onDialogClosed_) {
+        onDialogClosed_();
+    }
 }
 
 void QuickAddDialog::setOnTrackingStarted(std::function<void()> callback) {
     onTrackingStarted_ = std::move(callback);
+}
+
+void QuickAddDialog::setOnDialogClosed(std::function<void()> callback) {
+    onDialogClosed_ = std::move(callback);
 }
 
 void QuickAddDialog::renderAutocomplete() {

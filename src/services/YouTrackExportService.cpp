@@ -13,9 +13,11 @@ namespace timetracker::services {
 
 YouTrackExportService::YouTrackExportService(
     SettingsService& settingsService,
-    repositories::FactRepository& factRepository)
+    repositories::FactRepository& factRepository,
+    repositories::YouTrackExportLogRepository& exportLogRepository)
     : settingsService_(settingsService)
-    , factRepository_(factRepository) {}
+    , factRepository_(factRepository)
+    , exportLogRepository_(exportLogRepository) {}
 
 bool YouTrackExportService::isConfigured() const {
     std::string url = settingsService_.getYouTrackUrl();
@@ -153,6 +155,16 @@ ExportResult YouTrackExportService::exportToYouTrack(
 
             return result;
         }
+
+        // Log successful export
+        int64_t currentTimestamp = std::time(nullptr);
+        exportLogRepository_.addLogEntry(
+            item.activityName,
+            item.issueId,
+            item.date,
+            item.minutes,
+            currentTimestamp
+        );
 
         totalMinutes += item.minutes;
         itemsExported++;

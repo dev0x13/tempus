@@ -4,6 +4,7 @@
 #include "views/TimeEntriesView.hpp"
 #include "widgets/QuickAddDialog.hpp"
 #include "widgets/SettingsWindow.hpp"
+#include "widgets/ExportLogWindow.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "PTSansFont.hpp"
@@ -33,12 +34,14 @@ ImGuiApp::ImGuiApp(
     std::shared_ptr<services::StatisticsService> statsService,
     std::shared_ptr<services::ExportService> exportService,
     std::shared_ptr<services::YouTrackExportService> youTrackExportService,
-    std::shared_ptr<services::SettingsService> settingsService)
+    std::shared_ptr<services::SettingsService> settingsService,
+    std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository)
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
     , exportService_(std::move(exportService))
     , youTrackExportService_(std::move(youTrackExportService))
-    , settingsService_(std::move(settingsService)) {}
+    , settingsService_(std::move(settingsService))
+    , exportLogRepository_(std::move(exportLogRepository)) {}
 
 ImGuiApp::~ImGuiApp() {
     cleanup();
@@ -129,6 +132,9 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     // Create settings window
     settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_);
 
+    // Create export log window
+    exportLogWindow_ = std::make_unique<widgets::ExportLogWindow>(exportLogRepository_);
+
     // Set up close callback
     glfwSetWindowUserPointer(window_, this);
     glfwSetWindowCloseCallback(window_, [](GLFWwindow* window) {
@@ -193,9 +199,14 @@ void ImGuiApp::render() {
 
     ImGui::Begin("Main", nullptr, windowFlags);
 
-    // Settings button in top right corner
-    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.0f);
+    // Export Log and Settings buttons in top right corner
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 210.0f);
     ImGui::SetCursorPosY(10.0f);
+    if (ImGui::Button("Export Log", ImVec2(100.0f, 0.0f))) {
+        // Open export log modal window
+        exportLogWindow_->show();
+    }
+    ImGui::SameLine();
     if (ImGui::Button("Settings", ImVec2(90.0f, 0.0f))) {
         // Open settings modal window
         settingsWindow_->show();
@@ -223,6 +234,9 @@ void ImGuiApp::render() {
 
     // Render settings window
     settingsWindow_->render();
+
+    // Render export log window
+    exportLogWindow_->render();
 
     // Rendering
     ImGui::Render();

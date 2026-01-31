@@ -29,6 +29,7 @@ set(SOURCES
     src/database/Database.cpp
     src/repositories/ActivityRepository.cpp
     src/repositories/FactRepository.cpp
+    src/repositories/YouTrackExportLogRepository.cpp
     src/services/TimeTrackingService.cpp
     src/services/StatisticsService.cpp
     src/services/ExportService.cpp
@@ -42,6 +43,7 @@ set(SOURCES
     src/ui/widgets/TimeInput.cpp
     src/ui/widgets/QuickAddDialog.cpp
     src/ui/widgets/SettingsWindow.cpp
+    src/ui/widgets/ExportLogWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     ${IMGUI_BACKENDS}

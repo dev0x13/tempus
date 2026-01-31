@@ -2,6 +2,7 @@
 
 #include "SettingsService.hpp"
 #include "repositories/FactRepository.hpp"
+#include "repositories/YouTrackExportLogRepository.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -29,7 +30,8 @@ class YouTrackExportService {
 public:
     YouTrackExportService(
         SettingsService& settingsService,
-        repositories::FactRepository& factRepository);
+        repositories::FactRepository& factRepository,
+        repositories::YouTrackExportLogRepository& exportLogRepository);
     ~YouTrackExportService() = default;
 
     // Non-copyable, non-movable
@@ -73,6 +75,7 @@ public:
 private:
     SettingsService& settingsService_;
     repositories::FactRepository& factRepository_;
+    repositories::YouTrackExportLogRepository& exportLogRepository_;
 
     /**
      * Resolve activity name to YouTrack issue ID using aliases.

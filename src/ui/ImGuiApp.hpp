@@ -5,6 +5,7 @@
 #include "services/ExportService.hpp"
 #include "services/YouTrackExportService.hpp"
 #include "services/SettingsService.hpp"
+#include "repositories/YouTrackExportLogRepository.hpp"
 #include <memory>
 #include <functional>
 
@@ -23,6 +24,7 @@ class TimeEntriesView;
 namespace widgets {
 class QuickAddDialog;
 class SettingsWindow;
+class ExportLogWindow;
 }
 
 class ImGuiApp {
@@ -32,7 +34,8 @@ public:
         std::shared_ptr<services::StatisticsService> statsService,
         std::shared_ptr<services::ExportService> exportService,
         std::shared_ptr<services::YouTrackExportService> youTrackExportService,
-        std::shared_ptr<services::SettingsService> settingsService);
+        std::shared_ptr<services::SettingsService> settingsService,
+        std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository);
     ~ImGuiApp();
 
     // Non-copyable, non-movable
@@ -81,6 +84,9 @@ private:
     std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
     std::shared_ptr<services::SettingsService> settingsService_;
 
+    // Repositories
+    std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository_;
+
     // Views
     std::unique_ptr<OverviewView> overviewView_;
     std::unique_ptr<TimeEntriesView> timeEntriesView_;
@@ -90,6 +96,9 @@ private:
 
     // Settings window
     std::unique_ptr<widgets::SettingsWindow> settingsWindow_;
+
+    // Export log window
+    std::unique_ptr<widgets::ExportLogWindow> exportLogWindow_;
 
     // System tray (not owned)
     tray::SystemTray* systemTray_{nullptr};

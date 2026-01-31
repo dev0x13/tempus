@@ -52,6 +52,18 @@ void Database::createTables() {
             value TEXT NOT NULL
         )
     )");
+
+    // YouTrack export log table
+    db_->exec(R"(
+        CREATE TABLE IF NOT EXISTS youtrack_export_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            activity_name TEXT NOT NULL,
+            issue_id TEXT NOT NULL,
+            tracked_date TEXT NOT NULL,
+            duration_minutes INTEGER NOT NULL,
+            exported_at INTEGER NOT NULL
+        )
+    )");
 }
 
 void Database::migrateSchema() {
@@ -102,6 +114,12 @@ void Database::createIndexes() {
     db_->exec(R"(
         CREATE INDEX IF NOT EXISTS idx_facts_exported
         ON facts(exported_to_youtrack)
+    )");
+
+    // Index for export log chronological queries
+    db_->exec(R"(
+        CREATE INDEX IF NOT EXISTS idx_export_log_timestamp
+        ON youtrack_export_log(exported_at DESC)
     )");
 }
 

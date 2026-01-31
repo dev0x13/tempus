@@ -3,6 +3,7 @@
 #include "database/Database.hpp"
 #include "repositories/ActivityRepository.hpp"
 #include "repositories/FactRepository.hpp"
+#include "repositories/YouTrackExportLogRepository.hpp"
 #include "services/TimeTrackingService.hpp"
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
@@ -45,6 +46,7 @@ private:
     // Repositories
     std::shared_ptr<repositories::ActivityRepository> activityRepo_;
     std::shared_ptr<repositories::FactRepository> factRepo_;
+    std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepo_;
 
     // Services
     std::shared_ptr<services::TimeTrackingService> timeService_;

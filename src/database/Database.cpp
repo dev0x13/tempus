@@ -29,7 +29,8 @@ void Database::createTables() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             search_name TEXT NOT NULL,
-            deleted INTEGER NOT NULL DEFAULT 0
+            deleted INTEGER NOT NULL DEFAULT 0,
+            description TEXT NOT NULL DEFAULT ''
         )
     )");
 
@@ -68,11 +69,11 @@ void Database::createTables() {
 
 void Database::migrateSchema() {
     // Check if exported_to_youtrack column exists in facts table
-    SQLite::Statement query(*db_, "PRAGMA table_info(facts)");
+    SQLite::Statement factsQuery(*db_, "PRAGMA table_info(facts)");
     bool hasExportedColumn = false;
 
-    while (query.executeStep()) {
-        std::string columnName = query.getColumn(1).getString();
+    while (factsQuery.executeStep()) {
+        std::string columnName = factsQuery.getColumn(1).getString();
         if (columnName == "exported_to_youtrack") {
             hasExportedColumn = true;
             break;
@@ -82,6 +83,23 @@ void Database::migrateSchema() {
     // Add exported_to_youtrack column if it doesn't exist
     if (!hasExportedColumn) {
         db_->exec("ALTER TABLE facts ADD COLUMN exported_to_youtrack INTEGER NOT NULL DEFAULT 0");
+    }
+
+    // Check if description column exists in activities table
+    SQLite::Statement activitiesQuery(*db_, "PRAGMA table_info(activities)");
+    bool hasDescriptionColumn = false;
+
+    while (activitiesQuery.executeStep()) {
+        std::string columnName = activitiesQuery.getColumn(1).getString();
+        if (columnName == "description") {
+            hasDescriptionColumn = true;
+            break;
+        }
+    }
+
+    // Add description column if it doesn't exist
+    if (!hasDescriptionColumn) {
+        db_->exec("ALTER TABLE activities ADD COLUMN description TEXT NOT NULL DEFAULT ''");
     }
 }
 

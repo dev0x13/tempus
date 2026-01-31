@@ -9,16 +9,46 @@ TimeTrackingService::TimeTrackingService(
     : activityRepo_(std::move(activityRepo))
     , factRepo_(std::move(factRepo)) {}
 
-models::Fact TimeTrackingService::startTracking(const std::string& activityName) {
+models::Fact TimeTrackingService::startTracking(const std::string& activityName, const std::string& description) {
     // Stop any ongoing tracking first
     stopTracking();
 
     // Get or create the activity
     auto activity = activityRepo_->getOrCreate(activityName);
 
+    // Update description if different
+    if (activity.description != description) {
+        activity.description = description;
+        activityRepo_->update(activity);
+    }
+
     // Create new fact with current time
     int64_t now = utils::TimeUtils::now();
     auto fact = factRepo_->create(activity.id, now);
+    fact.activityName = activity.name;
+
+    // Update cache
+    currentTracking_ = fact;
+    currentTrackingCached_ = true;
+
+    return fact;
+}
+
+models::Fact TimeTrackingService::startTracking(const std::string& activityName, int64_t startTime, const std::string& description) {
+    // Stop any ongoing tracking first
+    stopTracking();
+
+    // Get or create the activity
+    auto activity = activityRepo_->getOrCreate(activityName);
+
+    // Update description if different
+    if (activity.description != description) {
+        activity.description = description;
+        activityRepo_->update(activity);
+    }
+
+    // Create new fact with custom start time
+    auto fact = factRepo_->create(activity.id, startTime);
     fact.activityName = activity.name;
 
     // Update cache
@@ -56,15 +86,28 @@ std::optional<models::Fact> TimeTrackingService::getCurrentTracking() const {
     return currentTracking_;
 }
 
-models::Fact TimeTrackingService::addManualEntry(const std::string& activityName, int64_t startTime, int64_t endTime) {
+models::Fact TimeTrackingService::addManualEntry(const std::string& activityName, int64_t startTime, int64_t endTime, const std::string& description) {
     auto activity = activityRepo_->getOrCreate(activityName);
+
+    // Update description if different
+    if (activity.description != description) {
+        activity.description = description;
+        activityRepo_->update(activity);
+    }
+
     auto fact = factRepo_->create(activity.id, startTime, endTime);
     fact.activityName = activity.name;
     return fact;
 }
 
-void TimeTrackingService::updateEntry(const models::Fact& fact, const std::string& activityName) {
+void TimeTrackingService::updateEntry(const models::Fact& fact, const std::string& activityName, const std::string& description) {
     auto activity = activityRepo_->getOrCreate(activityName);
+
+    // Update description if different
+    if (activity.description != description) {
+        activity.description = description;
+        activityRepo_->update(activity);
+    }
 
     models::Fact updatedFact = fact;
     updatedFact.activityId = activity.id;

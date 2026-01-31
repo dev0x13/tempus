@@ -10,6 +10,7 @@
 #include <optional>
 #include <atomic>
 #include <map>
+#include <functional>
 
 namespace timetracker::ui {
 
@@ -23,6 +24,10 @@ public:
     ~TimeEntriesView() = default;
 
     void render();
+
+    // Set callbacks for external buttons
+    void setExportLogCallback(std::function<void()> callback) { exportLogCallback_ = std::move(callback); }
+    void setSettingsCallback(std::function<void()> callback) { settingsCallback_ = std::move(callback); }
 
 private:
     std::shared_ptr<services::TimeTrackingService> timeService_;
@@ -41,6 +46,7 @@ private:
     bool showEditForm_{false};
     std::optional<models::Fact> editingFact_;
     char editActivityName_[256]{};
+    char editActivityDescription_[512]{};
     int editStartDate_[3]{};  // year, month, day
     int editStartTime_[2]{};  // hour, minute
     int editEndDate_[3]{};
@@ -50,13 +56,19 @@ private:
     // Add form state
     bool showAddForm_{false};
     char addActivityName_[256]{};
+    char addActivityDescription_[512]{};
     int addStartDate_[3]{};
     int addStartTime_[2]{};
     int addEndDate_[3]{};
     int addEndTime_[2]{};
+    bool addIsOngoing_{true};
 
     // Activity breakdown state
     bool showActivityBreakdown_{false};
+
+    // External button callbacks
+    std::function<void()> exportLogCallback_;
+    std::function<void()> settingsCallback_;
 
     // YouTrack export state
     bool showExportConfirmation_{false};
@@ -73,6 +85,7 @@ private:
     int totalProgress_{0};
     std::atomic<bool> cancelExport_{false};
 
+    void renderTopButtons();
     void renderDateSelector();
     void renderEntriesScrollableArea();
     void renderDateGroupedEntries();

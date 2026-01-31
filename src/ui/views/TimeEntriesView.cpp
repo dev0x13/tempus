@@ -20,7 +20,9 @@ TimeEntriesView::TimeEntriesView(
     , youTrackExportService_(std::move(youTrackExportService)) {
 
     memset(editActivityName_, 0, sizeof(editActivityName_));
+    memset(editActivityDescription_, 0, sizeof(editActivityDescription_));
     memset(addActivityName_, 0, sizeof(addActivityName_));
+    memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
 
     // Set default date range to today
     int64_t now = utils::TimeUtils::now();
@@ -35,9 +37,14 @@ TimeEntriesView::TimeEntriesView(
 }
 
 void TimeEntriesView::render() {
-    // Refresh entries to pick up changes from other tabs (e.g., stopping timer in Overview)
+    // Refresh entries to pick up changes
     refreshEntries();
 
+    // Top button row
+    renderTopButtons();
+    ImGui::Separator();
+
+    // Date selector
     renderDateSelector();
     ImGui::Separator();
 
@@ -78,6 +85,66 @@ void TimeEntriesView::render() {
     }
     if (showExportError_) {
         renderExportErrorDialog();
+    }
+}
+
+void TimeEntriesView::renderTopButtons() {
+    // Start button
+    if (ImGui::Button("Start", ImVec2(80, 0))) {
+        startAdd();
+    }
+
+    // Stop button (always visible)
+    ImGui::SameLine();
+    auto current = timeService_->getCurrentTracking();
+    bool isTracking = current.has_value();
+    if (!isTracking) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Stop", ImVec2(80, 0))) {
+        timeService_->stopTracking();
+        refreshEntries();
+    }
+    if (!isTracking) {
+        ImGui::EndDisabled();
+    }
+
+    // Export CSV button
+    ImGui::SameLine();
+    if (ImGui::Button("Export CSV", ImVec2(120, 0))) {
+        performCsvExport();
+    }
+
+    // Export to YouTrack button
+    ImGui::SameLine();
+    bool isYouTrackConfigured = youTrackExportService_->isConfigured();
+    if (!isYouTrackConfigured) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Export to YouTrack", ImVec2(150, 0))) {
+        performYouTrackExport();
+    }
+    if (!isYouTrackConfigured) {
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("%s", youTrackExportService_->getConfigurationError().c_str());
+        }
+    }
+
+    // Export Log button
+    ImGui::SameLine();
+    if (ImGui::Button("Export Log", ImVec2(100, 0))) {
+        if (exportLogCallback_) {
+            exportLogCallback_();
+        }
+    }
+
+    // Settings button
+    ImGui::SameLine();
+    if (ImGui::Button("Settings", ImVec2(90, 0))) {
+        if (settingsCallback_) {
+            settingsCallback_();
+        }
     }
 }
 
@@ -127,36 +194,6 @@ void TimeEntriesView::renderDateSelector() {
         widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();
     }
-
-    // Export buttons on the right
-    ImGui::SameLine();
-    float width = ImGui::GetContentRegionAvail().x;
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + width - 280);
-
-    if (ImGui::Button("Export CSV", ImVec2(120, 0))) {
-        performCsvExport();
-    }
-
-    ImGui::SameLine();
-    bool isYouTrackConfigured = youTrackExportService_->isConfigured();
-    if (!isYouTrackConfigured) {
-        ImGui::BeginDisabled();
-    }
-    if (ImGui::Button("Export to YouTrack", ImVec2(150, 0))) {
-        performYouTrackExport();
-    }
-    if (!isYouTrackConfigured) {
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-            ImGui::SetTooltip("%s", youTrackExportService_->getConfigurationError().c_str());
-        }
-    }
-
-    // Add Entry button on a new line
-    ImGui::Spacing();
-    if (ImGui::Button("Add Entry", ImVec2(100, 0))) {
-        startAdd();
-    }
 }
 
 void TimeEntriesView::renderDateGroupedEntries() {
@@ -188,10 +225,16 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
             std::string duration = utils::TimeUtils::formatDuration(fact.getDuration(now));
 
+            // Build activity display name with description
+            std::string activityDisplay = fact.activityName;
+            if (!fact.activityDescription.empty()) {
+                activityDisplay += " (" + fact.activityDescription + ")";
+            }
+
             // Build the display string with spacing
             char entryLine[512];
             snprintf(entryLine, sizeof(entryLine), "%s - %-10s  %-40s  %s",
-                     startTime.c_str(), endTime.c_str(), fact.activityName.c_str(), duration.c_str());
+                     startTime.c_str(), endTime.c_str(), activityDisplay.c_str(), duration.c_str());
 
             // Make entry clickable
             ImGui::PushID(fact.id);
@@ -263,6 +306,10 @@ void TimeEntriesView::renderEditForm() {
         ImGui::Text("Activity:");
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
+
+        ImGui::Text("Description:");
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputText("##editDescription", editActivityDescription_, sizeof(editActivityDescription_));
 
         ImGui::Spacing();
         ImGui::Text("Start:");
@@ -343,12 +390,16 @@ void TimeEntriesView::renderAddForm() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(400, 280));
+    ImGui::SetNextWindowSize(ImVec2(400, 350));
 
     if (ImGui::BeginPopupModal("Add Entry", &showAddForm_, ImGuiWindowFlags_NoResize)) {
         ImGui::Text("Activity:");
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##addActivity", addActivityName_, sizeof(addActivityName_));
+
+        ImGui::Text("Description:");
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputText("##addDescription", addActivityDescription_, sizeof(addActivityDescription_));
 
         ImGui::Spacing();
         ImGui::Text("Start:");
@@ -375,27 +426,31 @@ void TimeEntriesView::renderAddForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Text("End:");
-        widgets::DatePicker::renderWithCalendar("##addEndDate", addEndDate_);
-        ImGui::SameLine();
+        ImGui::Checkbox("Ongoing", &addIsOngoing_);
 
-        // Format time with leading zeros
-        char addEndHourBuf[8], addEndMinBuf[8];
-        snprintf(addEndHourBuf, sizeof(addEndHourBuf), "%02d", addEndTime_[0]);
-        snprintf(addEndMinBuf, sizeof(addEndMinBuf), "%02d", addEndTime_[1]);
+        if (!addIsOngoing_) {
+            ImGui::Text("End:");
+            widgets::DatePicker::renderWithCalendar("##addEndDate", addEndDate_);
+            ImGui::SameLine();
 
-        ImGui::SetNextItemWidth(40);
-        if (ImGui::InputText("##addEndHour", addEndHourBuf, sizeof(addEndHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
-            int val = atoi(addEndHourBuf);
-            addEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
-        }
-        ImGui::SameLine();
-        ImGui::Text(":");
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        if (ImGui::InputText("##addEndMin", addEndMinBuf, sizeof(addEndMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
-            int val = atoi(addEndMinBuf);
-            addEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+            // Format time with leading zeros
+            char addEndHourBuf[8], addEndMinBuf[8];
+            snprintf(addEndHourBuf, sizeof(addEndHourBuf), "%02d", addEndTime_[0]);
+            snprintf(addEndMinBuf, sizeof(addEndMinBuf), "%02d", addEndTime_[1]);
+
+            ImGui::SetNextItemWidth(40);
+            if (ImGui::InputText("##addEndHour", addEndHourBuf, sizeof(addEndHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(addEndHourBuf);
+                addEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+            }
+            ImGui::SameLine();
+            ImGui::Text(":");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(40);
+            if (ImGui::InputText("##addEndMin", addEndMinBuf, sizeof(addEndMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(addEndMinBuf);
+                addEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+            }
         }
 
         ImGui::Spacing();
@@ -586,6 +641,16 @@ void TimeEntriesView::refreshEntries() {
 void TimeEntriesView::startEdit(const models::Fact& fact) {
     editingFact_ = fact;
     strncpy(editActivityName_, fact.activityName.c_str(), sizeof(editActivityName_) - 1);
+
+    // Load activity description
+    auto activities = timeService_->getAllActivities();
+    for (const auto& activity : activities) {
+        if (activity.id == fact.activityId) {
+            strncpy(editActivityDescription_, activity.description.c_str(), sizeof(editActivityDescription_) - 1);
+            break;
+        }
+    }
+
     setDateFromTimestamp(fact.startTime, editStartDate_, editStartTime_);
 
     editIsOngoing_ = !fact.endTime.has_value();
@@ -610,7 +675,7 @@ void TimeEntriesView::saveEdit() {
         fact.endTime = getTimestampFromDate(editEndDate_, editEndTime_);
     }
 
-    timeService_->updateEntry(fact, editActivityName_);
+    timeService_->updateEntry(fact, editActivityName_, editActivityDescription_);
     refreshEntries();
 }
 
@@ -623,9 +688,11 @@ void TimeEntriesView::deleteEntry() {
 
 void TimeEntriesView::startAdd() {
     memset(addActivityName_, 0, sizeof(addActivityName_));
+    memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
     int64_t now = utils::TimeUtils::now();
-    setDateFromTimestamp(now - 3600, addStartDate_, addStartTime_);  // Default to 1 hour ago
-    setDateFromTimestamp(now, addEndDate_, addEndTime_);
+    setDateFromTimestamp(now, addStartDate_, addStartTime_);  // Default to current time
+    setDateFromTimestamp(now, addEndDate_, addEndTime_);  // Initialize end time (but ongoing by default)
+    addIsOngoing_ = true;  // Default to ongoing
     showAddForm_ = true;
 }
 
@@ -633,9 +700,15 @@ void TimeEntriesView::saveAdd() {
     if (strlen(addActivityName_) == 0) return;
 
     int64_t startTime = getTimestampFromDate(addStartDate_, addStartTime_);
-    int64_t endTime = getTimestampFromDate(addEndDate_, addEndTime_);
 
-    timeService_->addManualEntry(addActivityName_, startTime, endTime);
+    if (addIsOngoing_) {
+        // Start tracking as ongoing entry
+        timeService_->startTracking(addActivityName_, startTime, addActivityDescription_);
+    } else {
+        // Add completed entry with end time
+        int64_t endTime = getTimestampFromDate(addEndDate_, addEndTime_);
+        timeService_->addManualEntry(addActivityName_, startTime, endTime, addActivityDescription_);
+    }
     refreshEntries();
 }
 

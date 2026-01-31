@@ -18,7 +18,10 @@ public:
     ~TimeTrackingService() = default;
 
     // Start tracking a new activity (stops any ongoing)
-    models::Fact startTracking(const std::string& activityName);
+    models::Fact startTracking(const std::string& activityName, const std::string& description = "");
+
+    // Start tracking with a custom start time (stops any ongoing)
+    models::Fact startTracking(const std::string& activityName, int64_t startTime, const std::string& description = "");
 
     // Stop the current tracking
     std::optional<models::Fact> stopTracking();
@@ -30,10 +33,10 @@ public:
     std::optional<models::Fact> getCurrentTracking() const;
 
     // Manual entry
-    models::Fact addManualEntry(const std::string& activityName, int64_t startTime, int64_t endTime);
+    models::Fact addManualEntry(const std::string& activityName, int64_t startTime, int64_t endTime, const std::string& description = "");
 
     // Edit an existing entry
-    void updateEntry(const models::Fact& fact, const std::string& activityName);
+    void updateEntry(const models::Fact& fact, const std::string& activityName, const std::string& description = "");
 
     // Delete an entry
     void deleteEntry(int64_t factId);

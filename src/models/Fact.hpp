@@ -13,8 +13,9 @@ struct Fact {
     std::optional<int64_t> endTime;      // Null for ongoing
     bool exportedToYoutrack{false};      // Whether exported to YouTrack
 
-    // Cached activity name (not stored in DB, populated by joins)
+    // Cached activity name and description (not stored in DB, populated by joins)
     std::string activityName;
+    std::string activityDescription;
 
     Fact() = default;
 

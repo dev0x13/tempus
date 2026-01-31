@@ -31,6 +31,9 @@ models::Fact FactRepository::mapRowWithActivity(SQLite::Statement& query) {
     if (query.getColumnCount() > 5) {
         fact.activityName = query.getColumn(5).getString();
     }
+    if (query.getColumnCount() > 6) {
+        fact.activityDescription = query.getColumn(6).getString();
+    }
     return fact;
 }
 
@@ -52,7 +55,7 @@ models::Fact FactRepository::create(int64_t activityId, int64_t startTime, std::
 
 std::optional<models::Fact> FactRepository::findById(int64_t id) {
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "WHERE f.id = ?");
@@ -68,7 +71,7 @@ std::vector<models::Fact> FactRepository::findAll() {
     std::vector<models::Fact> facts;
 
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "ORDER BY f.start_time DESC");
@@ -101,7 +104,7 @@ void FactRepository::remove(int64_t id) {
 
 std::optional<models::Fact> FactRepository::findOngoing() {
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "WHERE f.end_time IS NULL "
@@ -117,11 +120,11 @@ std::vector<models::Fact> FactRepository::findByDateRange(int64_t startTime, int
     std::vector<models::Fact> facts;
 
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "WHERE f.start_time >= ? AND f.start_time <= ? "
-        "ORDER BY f.start_time DESC");
+        "ORDER BY f.start_time ASC");
     query.bind(1, startTime);
     query.bind(2, endTime);
 
@@ -135,7 +138,7 @@ std::vector<models::Fact> FactRepository::findByActivity(int64_t activityId) {
     std::vector<models::Fact> facts;
 
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "WHERE f.activity_id = ? "
@@ -152,7 +155,7 @@ std::vector<models::Fact> FactRepository::findRecent(int limit) {
     std::vector<models::Fact> facts;
 
     SQLite::Statement query(db_.getHandle(),
-        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name "
+        "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, a.name, a.description "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
         "ORDER BY f.start_time DESC LIMIT ?");

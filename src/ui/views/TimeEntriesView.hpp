@@ -27,6 +27,7 @@ public:
 
     // Set callbacks for external buttons
     void setExportLogCallback(std::function<void()> callback) { exportLogCallback_ = std::move(callback); }
+    void setKTalkImportCallback(std::function<void()> callback) { kTalkImportCallback_ = std::move(callback); }
     void setSettingsCallback(std::function<void()> callback) { settingsCallback_ = std::move(callback); }
 
 private:
@@ -68,6 +69,7 @@ private:
 
     // External button callbacks
     std::function<void()> exportLogCallback_;
+    std::function<void()> kTalkImportCallback_;
     std::function<void()> settingsCallback_;
 
     // YouTrack export state

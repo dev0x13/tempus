@@ -12,7 +12,7 @@ public:
     virtual ~IFactRepository() = default;
 
     // CRUD operations
-    virtual models::Fact create(int64_t activityId, int64_t startTime, std::optional<int64_t> endTime = std::nullopt) = 0;
+    virtual models::Fact create(int64_t activityId, int64_t startTime, std::optional<int64_t> endTime = std::nullopt, const std::string& description = "") = 0;
     virtual std::optional<models::Fact> findById(int64_t id) = 0;
     virtual std::vector<models::Fact> findAll() = 0;
     virtual void update(const models::Fact& fact) = 0;

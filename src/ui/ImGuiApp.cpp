@@ -1,10 +1,10 @@
 #include "ImGuiApp.hpp"
 #include "Theme.hpp"
-#include "views/OverviewView.hpp"
 #include "views/TimeEntriesView.hpp"
 #include "widgets/QuickAddDialog.hpp"
 #include "widgets/SettingsWindow.hpp"
 #include "widgets/ExportLogWindow.hpp"
+#include "widgets/KTalkImportWindow.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "PTSansFont.hpp"
@@ -34,12 +34,14 @@ ImGuiApp::ImGuiApp(
     std::shared_ptr<services::StatisticsService> statsService,
     std::shared_ptr<services::ExportService> exportService,
     std::shared_ptr<services::YouTrackExportService> youTrackExportService,
+    std::shared_ptr<services::KTalkImportService> kTalkImportService,
     std::shared_ptr<services::SettingsService> settingsService,
     std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository)
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
     , exportService_(std::move(exportService))
     , youTrackExportService_(std::move(youTrackExportService))
+    , kTalkImportService_(std::move(kTalkImportService))
     , settingsService_(std::move(settingsService))
     , exportLogRepository_(std::move(exportLogRepository)) {}
 
@@ -110,17 +112,21 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     ImGui_ImplOpenGL3_Init("#version 130");
 
     // Create views
-    overviewView_ = std::make_unique<OverviewView>(timeService_);
     timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_);
+
+    // Set up callbacks for Export Log, KTalk Import, and Settings buttons
+    timeEntriesView_->setExportLogCallback([this]() {
+        exportLogWindow_->show();
+    });
+    timeEntriesView_->setKTalkImportCallback([this]() {
+        kTalkImportWindow_->show();
+    });
+    timeEntriesView_->setSettingsCallback([this]() {
+        settingsWindow_->show();
+    });
 
     // Create quick add dialog
     quickAddDialog_ = std::make_unique<widgets::QuickAddDialog>(timeService_);
-    quickAddDialog_->setOnTrackingStarted([this]() {
-        // Refresh overview when tracking starts
-        if (overviewView_) {
-            // Views will refresh on next render
-        }
-    });
     quickAddDialog_->setOnDialogClosed([this]() {
         // Hide main window if it was shown specifically for quick add
         if (windowShownForQuickAdd_) {
@@ -134,6 +140,9 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Create export log window
     exportLogWindow_ = std::make_unique<widgets::ExportLogWindow>(exportLogRepository_);
+
+    // Create KTalk import window
+    kTalkImportWindow_ = std::make_unique<widgets::KTalkImportWindow>(kTalkImportService_);
 
     // Set up close callback
     glfwSetWindowUserPointer(window_, this);
@@ -199,33 +208,8 @@ void ImGuiApp::render() {
 
     ImGui::Begin("Main", nullptr, windowFlags);
 
-    // Export Log and Settings buttons in top right corner
-    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 210.0f);
-    ImGui::SetCursorPosY(10.0f);
-    if (ImGui::Button("Export Log", ImVec2(100.0f, 0.0f))) {
-        // Open export log modal window
-        exportLogWindow_->show();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Settings", ImVec2(90.0f, 0.0f))) {
-        // Open settings modal window
-        settingsWindow_->show();
-    }
-
-    // Tab bar
-    if (ImGui::BeginTabBar("MainTabs")) {
-        if (ImGui::BeginTabItem("Overview")) {
-            currentTab_ = 0;
-            overviewView_->render();
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Time Entries")) {
-            currentTab_ = 1;
-            timeEntriesView_->render();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
-    }
+    // Main content - Time Entries view
+    timeEntriesView_->render();
 
     ImGui::End();
 
@@ -237,6 +221,9 @@ void ImGuiApp::render() {
 
     // Render export log window
     exportLogWindow_->render();
+
+    // Render KTalk import window
+    kTalkImportWindow_->render();
 
     // Rendering
     ImGui::Render();

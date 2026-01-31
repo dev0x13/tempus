@@ -101,6 +101,23 @@ void Database::migrateSchema() {
     if (!hasDescriptionColumn) {
         db_->exec("ALTER TABLE activities ADD COLUMN description TEXT NOT NULL DEFAULT ''");
     }
+
+    // Check if description column exists in facts table
+    SQLite::Statement factsDescQuery(*db_, "PRAGMA table_info(facts)");
+    bool factsHasDescriptionColumn = false;
+
+    while (factsDescQuery.executeStep()) {
+        std::string columnName = factsDescQuery.getColumn(1).getString();
+        if (columnName == "description") {
+            factsHasDescriptionColumn = true;
+            break;
+        }
+    }
+
+    // Add description column to facts if it doesn't exist
+    if (!factsHasDescriptionColumn) {
+        db_->exec("ALTER TABLE facts ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+    }
 }
 
 void Database::createIndexes() {

@@ -4,6 +4,7 @@
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
 #include "services/YouTrackExportService.hpp"
+#include "services/KTalkImportService.hpp"
 #include "services/SettingsService.hpp"
 #include "repositories/YouTrackExportLogRepository.hpp"
 #include <memory>
@@ -18,13 +19,13 @@ class SystemTray;
 namespace timetracker::ui {
 
 // Forward declarations
-class OverviewView;
 class TimeEntriesView;
 
 namespace widgets {
 class QuickAddDialog;
 class SettingsWindow;
 class ExportLogWindow;
+class KTalkImportWindow;
 }
 
 class ImGuiApp {
@@ -34,6 +35,7 @@ public:
         std::shared_ptr<services::StatisticsService> statsService,
         std::shared_ptr<services::ExportService> exportService,
         std::shared_ptr<services::YouTrackExportService> youTrackExportService,
+        std::shared_ptr<services::KTalkImportService> kTalkImportService,
         std::shared_ptr<services::SettingsService> settingsService,
         std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository);
     ~ImGuiApp();
@@ -82,13 +84,13 @@ private:
     std::shared_ptr<services::StatisticsService> statsService_;
     std::shared_ptr<services::ExportService> exportService_;
     std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
+    std::shared_ptr<services::KTalkImportService> kTalkImportService_;
     std::shared_ptr<services::SettingsService> settingsService_;
 
     // Repositories
     std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository_;
 
     // Views
-    std::unique_ptr<OverviewView> overviewView_;
     std::unique_ptr<TimeEntriesView> timeEntriesView_;
 
     // Quick add dialog
@@ -100,13 +102,14 @@ private:
     // Export log window
     std::unique_ptr<widgets::ExportLogWindow> exportLogWindow_;
 
+    // KTalk import window
+    std::unique_ptr<widgets::KTalkImportWindow> kTalkImportWindow_;
+
     // System tray (not owned)
     tray::SystemTray* systemTray_{nullptr};
 
     // Tray update timing
     double lastTrayUpdate_{0.0};
-
-    int currentTab_{0};
 
     // Track if window was shown specifically for quick add dialog
     bool windowShownForQuickAdd_{false};

@@ -10,7 +10,7 @@ public:
     explicit FactRepository(database::Database& db);
     ~FactRepository() override = default;
 
-    models::Fact create(int64_t activityId, int64_t startTime, std::optional<int64_t> endTime = std::nullopt) override;
+    models::Fact create(int64_t activityId, int64_t startTime, std::optional<int64_t> endTime = std::nullopt, const std::string& description = "") override;
     std::optional<models::Fact> findById(int64_t id) override;
     std::vector<models::Fact> findAll() override;
     void update(const models::Fact& fact) override;

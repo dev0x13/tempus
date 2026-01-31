@@ -13,18 +13,12 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
     // Stop any ongoing tracking first
     stopTracking();
 
-    // Get or create the activity
+    // Get or create the activity (without description)
     auto activity = activityRepo_->getOrCreate(activityName);
 
-    // Update description if different
-    if (activity.description != description) {
-        activity.description = description;
-        activityRepo_->update(activity);
-    }
-
-    // Create new fact with current time
+    // Create new fact with current time and description
     int64_t now = utils::TimeUtils::now();
-    auto fact = factRepo_->create(activity.id, now);
+    auto fact = factRepo_->create(activity.id, now, std::nullopt, description);
     fact.activityName = activity.name;
 
     // Update cache
@@ -38,17 +32,11 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
     // Stop any ongoing tracking first
     stopTracking();
 
-    // Get or create the activity
+    // Get or create the activity (without description)
     auto activity = activityRepo_->getOrCreate(activityName);
 
-    // Update description if different
-    if (activity.description != description) {
-        activity.description = description;
-        activityRepo_->update(activity);
-    }
-
-    // Create new fact with custom start time
-    auto fact = factRepo_->create(activity.id, startTime);
+    // Create new fact with custom start time and description
+    auto fact = factRepo_->create(activity.id, startTime, std::nullopt, description);
     fact.activityName = activity.name;
 
     // Update cache
@@ -89,13 +77,8 @@ std::optional<models::Fact> TimeTrackingService::getCurrentTracking() const {
 models::Fact TimeTrackingService::addManualEntry(const std::string& activityName, int64_t startTime, int64_t endTime, const std::string& description) {
     auto activity = activityRepo_->getOrCreate(activityName);
 
-    // Update description if different
-    if (activity.description != description) {
-        activity.description = description;
-        activityRepo_->update(activity);
-    }
-
-    auto fact = factRepo_->create(activity.id, startTime, endTime);
+    // Create fact with description (description is per-fact, not per-activity)
+    auto fact = factRepo_->create(activity.id, startTime, endTime, description);
     fact.activityName = activity.name;
     return fact;
 }

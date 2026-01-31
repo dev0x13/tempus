@@ -1,0 +1,89 @@
+#pragma once
+
+#include "TimeTrackingService.hpp"
+#include "models/KTalkConference.hpp"
+#include <string>
+#include <vector>
+#include <optional>
+#include <map>
+
+namespace timetracker {
+namespace services {
+
+struct FetchPayload {
+    std::string url;
+    std::map<std::string, std::string> headers;
+};
+
+struct ImportResult {
+    bool success{false};
+    std::string errorMessage;
+    int conferencesImported{0};
+};
+
+class KTalkImportService {
+public:
+    explicit KTalkImportService(TimeTrackingService& timeTrackingService);
+    ~KTalkImportService() = default;
+
+    // Non-copyable, non-movable
+    KTalkImportService(const KTalkImportService&) = delete;
+    KTalkImportService& operator=(const KTalkImportService&) = delete;
+    KTalkImportService(KTalkImportService&&) = delete;
+    KTalkImportService& operator=(KTalkImportService&&) = delete;
+
+    /**
+     * Parse JavaScript fetch() payload to extract URL and headers.
+     * @param payload JavaScript fetch() code as string
+     * @return FetchPayload with URL and headers, or std::nullopt if parsing fails
+     */
+    std::optional<FetchPayload> parseFetchPayload(const std::string& payload);
+
+    /**
+     * Build KTalk API URL with date range parameters.
+     * @param baseUrl Base URL (without query parameters)
+     * @param fromDate Start date in YYYY-MM-DD format
+     * @param toDate End date in YYYY-MM-DD format
+     * @return Complete API URL with query parameters
+     */
+    std::string buildApiUrl(const std::string& baseUrl, const std::string& fromDate, const std::string& toDate);
+
+    /**
+     * Fetch conferences from KTalk API.
+     * @param url API URL with date range parameters
+     * @param headers HTTP headers for authentication
+     * @return Vector of conferences or error message
+     */
+    std::pair<std::vector<models::KTalkConference>, std::string> fetchConferences(
+        const std::string& url,
+        const std::map<std::string, std::string>& headers);
+
+    /**
+     * Import conferences as time tracking entries.
+     * @param fetchPayload JavaScript fetch() payload
+     * @param fromDate Start date in YYYY-MM-DD format
+     * @param toDate End date in YYYY-MM-DD format
+     * @return Import result with success status and details
+     */
+    ImportResult importConferences(const std::string& fetchPayload, const std::string& fromDate, const std::string& toDate);
+
+private:
+    TimeTrackingService& timeTrackingService_;
+
+    /**
+     * Parse ISO 8601 timestamp to Unix timestamp.
+     * @param iso8601 ISO 8601 timestamp string (e.g., "2026-01-16T09:29:06Z")
+     * @return Unix timestamp in seconds, or 0 if parsing fails
+     */
+    int64_t parseIso8601(const std::string& iso8601);
+
+    /**
+     * Extract base URL (part before '?') from full URL.
+     * @param url Full URL
+     * @return Base URL without query parameters
+     */
+    std::string extractBaseUrl(const std::string& url);
+};
+
+}  // namespace services
+}  // namespace timetracker

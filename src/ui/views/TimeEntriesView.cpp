@@ -139,6 +139,14 @@ void TimeEntriesView::renderTopButtons() {
         }
     }
 
+    // KTalk Import button
+    ImGui::SameLine();
+    if (ImGui::Button("KTalk Import", ImVec2(110, 0))) {
+        if (kTalkImportCallback_) {
+            kTalkImportCallback_();
+        }
+    }
+
     // Settings button
     ImGui::SameLine();
     if (ImGui::Button("Settings", ImVec2(90, 0))) {

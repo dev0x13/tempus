@@ -35,8 +35,8 @@ set(SOURCES
     src/services/ExportService.cpp
     src/services/SettingsService.cpp
     src/services/YouTrackExportService.cpp
+    src/services/KTalkImportService.cpp
     src/ui/ImGuiApp.cpp
-    src/ui/views/OverviewView.cpp
     src/ui/views/TimeEntriesView.cpp
     src/ui/widgets/DatePicker.cpp
     src/ui/widgets/ActivityAutocomplete.cpp
@@ -44,6 +44,7 @@ set(SOURCES
     src/ui/widgets/QuickAddDialog.cpp
     src/ui/widgets/SettingsWindow.cpp
     src/ui/widgets/ExportLogWindow.cpp
+    src/ui/widgets/KTalkImportWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     ${IMGUI_BACKENDS}

@@ -12,10 +12,11 @@ struct Fact {
     int64_t startTime{0};                // Unix timestamp
     std::optional<int64_t> endTime;      // Null for ongoing
     bool exportedToYoutrack{false};      // Whether exported to YouTrack
+    std::string description;             // Per-fact description
 
-    // Cached activity name and description (not stored in DB, populated by joins)
+    // Cached activity name (not stored in DB, populated by joins)
     std::string activityName;
-    std::string activityDescription;
+    std::string activityDescription;     // Cached from activity (for backward compatibility)
 
     Fact() = default;
 

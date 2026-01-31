@@ -22,6 +22,7 @@ class TimeEntriesView;
 
 namespace widgets {
 class QuickAddDialog;
+class SettingsWindow;
 }
 
 class ImGuiApp {
@@ -86,6 +87,9 @@ private:
 
     // Quick add dialog
     std::unique_ptr<widgets::QuickAddDialog> quickAddDialog_;
+
+    // Settings window
+    std::unique_ptr<widgets::SettingsWindow> settingsWindow_;
 
     // System tray (not owned)
     tray::SystemTray* systemTray_{nullptr};

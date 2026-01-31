@@ -3,6 +3,7 @@
 #include "views/OverviewView.hpp"
 #include "views/TimeEntriesView.hpp"
 #include "widgets/QuickAddDialog.hpp"
+#include "widgets/SettingsWindow.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "PTSansFont.hpp"
@@ -118,6 +119,9 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         }
     });
 
+    // Create settings window
+    settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_);
+
     // Set up close callback
     glfwSetWindowUserPointer(window_, this);
     glfwSetWindowCloseCallback(window_, [](GLFWwindow* window) {
@@ -186,13 +190,8 @@ void ImGuiApp::render() {
     ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.0f);
     ImGui::SetCursorPosY(10.0f);
     if (ImGui::Button("Settings", ImVec2(90.0f, 0.0f))) {
-        // Open settings.json in default editor
-        auto settingsPath = settingsService_->getSettingsPath();
-        std::string errorMessage;
-        if (!utils::Platform::openFileInEditor(settingsPath, errorMessage)) {
-            std::cerr << "Failed to open settings file: " << errorMessage << std::endl;
-            // Could show an ImGui popup here in the future
-        }
+        // Open settings modal window
+        settingsWindow_->show();
     }
 
     // Tab bar
@@ -214,6 +213,9 @@ void ImGuiApp::render() {
 
     // Render quick add dialog
     quickAddDialog_->render();
+
+    // Render settings window
+    settingsWindow_->render();
 
     // Rendering
     ImGui::Render();

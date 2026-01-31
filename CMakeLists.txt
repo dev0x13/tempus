@@ -41,6 +41,7 @@ set(SOURCES
     src/ui/widgets/ActivityAutocomplete.cpp
     src/ui/widgets/TimeInput.cpp
     src/ui/widgets/QuickAddDialog.cpp
+    src/ui/widgets/SettingsWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     ${IMGUI_BACKENDS}

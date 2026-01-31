@@ -40,7 +40,7 @@ private:
     std::shared_ptr<services::SettingsService> settingsService_;
 
     // Database
-    std::unique_ptr<database::Database> db_;
+    std::shared_ptr<database::Database> db_;
 
     // Repositories
     std::shared_ptr<repositories::ActivityRepository> activityRepo_;

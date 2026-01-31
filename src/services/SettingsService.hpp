@@ -1,28 +1,30 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <filesystem>
 #include <string>
-#include <optional>
 #include <map>
+#include <memory>
+
+namespace timetracker::database {
+    class Database;
+}
 
 namespace timetracker::services {
 
 /**
- * Service for managing application settings stored in settings.json.
+ * Service for managing application settings stored in the database.
  *
- * Settings file location:
- * - The settings.json file is placed in the same directory as the executable.
- * - This makes settings portable and easy to find for users.
+ * Settings storage:
+ * - Settings are stored in the database 'settings' table as key-value pairs
+ * - Keys: youtrack_url, youtrack_token, activity_aliases (JSON string)
  *
  * Settings schema extensibility:
- * - Currently, the settings schema is empty (just an empty JSON object {}).
- * - New settings can be added in the future by extending this service.
- * - All settings operations are designed to be gracefully extensible.
+ * - New settings can be added by defining new keys
+ * - All settings operations are designed to be gracefully extensible
  */
 class SettingsService {
 public:
-    SettingsService();
+    explicit SettingsService(std::shared_ptr<timetracker::database::Database> database);
     ~SettingsService() = default;
 
     // Non-copyable, non-movable
@@ -32,33 +34,27 @@ public:
     SettingsService& operator=(SettingsService&&) = delete;
 
     /**
-     * Load settings from settings.json.
-     * If the file doesn't exist, creates it with default values.
-     * If the file is corrupted, logs a warning and uses defaults.
+     * Load settings from database.
+     * Also performs one-time migration from settings.json if needed.
      *
-     * @return true if settings were loaded successfully (or defaults used)
+     * @return true if settings were loaded successfully
      */
     bool loadSettings();
 
     /**
-     * Save current settings to settings.json.
-     * Uses atomic write (temp file + rename) to prevent corruption.
-     *
-     * @return true if settings were saved successfully
+     * Get a setting value by key.
+     * @param key The setting key
+     * @param defaultValue Default value if key not found
+     * @return The setting value or default
      */
-    bool saveSettings();
+    std::string getSetting(const std::string& key, const std::string& defaultValue = "") const;
 
     /**
-     * Get the current settings as a JSON object.
-     * @return const reference to the settings JSON
+     * Set a setting value by key.
+     * @param key The setting key
+     * @param value The setting value
      */
-    const nlohmann::json& getSettings() const { return settings_; }
-
-    /**
-     * Get the path to the settings file.
-     * @return path to settings.json (in executable directory)
-     */
-    std::filesystem::path getSettingsPath() const;
+    void setSetting(const std::string& key, const std::string& value);
 
     /**
      * Get YouTrack base URL from settings.
@@ -78,21 +74,40 @@ public:
      */
     std::map<std::string, std::string> getActivityAliases() const;
 
+    /**
+     * Set YouTrack URL.
+     * @param url The YouTrack base URL
+     */
+    void setYouTrackUrl(const std::string& url);
+
+    /**
+     * Set YouTrack token.
+     * @param token The YouTrack authentication token
+     */
+    void setYouTrackToken(const std::string& token);
+
+    /**
+     * Set activity aliases.
+     * @param aliases Map of activity names to YouTrack issue IDs
+     */
+    void setActivityAliases(const std::map<std::string, std::string>& aliases);
+
+    /**
+     * Migrate settings from settings.json file to database.
+     * Called automatically on first load if settings table is empty.
+     *
+     * @return true if migration succeeded or was not needed
+     */
+    bool migrateFromJsonFile();
+
 private:
-    nlohmann::json settings_;
+    std::shared_ptr<timetracker::database::Database> database_;
+    std::map<std::string, std::string> settingsCache_;
 
     /**
-     * Create default settings (empty JSON object for now).
-     * @return default settings JSON object
+     * Load all settings from database into cache.
      */
-    nlohmann::json createDefaultSettings() const;
-
-    /**
-     * Validate settings JSON structure.
-     * @param json The JSON to validate
-     * @return true if valid, false otherwise
-     */
-    bool validateSettings(const nlohmann::json& json) const;
+    void loadFromDatabase();
 };
 
 } // namespace timetracker::services

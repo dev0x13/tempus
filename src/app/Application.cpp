@@ -12,8 +12,8 @@ Application::~Application() {
 
 bool Application::init() {
     try {
-        initSettings();
         initDatabase();
+        initSettings();  // Moved after database init since it needs db
         initRepositories();
         initServices();
         initUI();
@@ -55,7 +55,7 @@ void Application::initDatabase() {
     auto dbPath = utils::Platform::getDatabasePath();
 
     // Create database
-    db_ = std::make_unique<database::Database>(dbPath.string());
+    db_ = std::make_shared<database::Database>(dbPath.string());
 }
 
 void Application::initRepositories() {
@@ -109,7 +109,7 @@ void Application::initSystemTray() {
 }
 
 void Application::initSettings() {
-    settingsService_ = std::make_shared<services::SettingsService>();
+    settingsService_ = std::make_shared<services::SettingsService>(db_);
 
     if (!settingsService_->loadSettings()) {
         std::cerr << "Warning: Failed to load settings, using defaults" << std::endl;

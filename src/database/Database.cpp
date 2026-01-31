@@ -44,6 +44,14 @@ void Database::createTables() {
             FOREIGN KEY (activity_id) REFERENCES activities(id)
         )
     )");
+
+    // Settings table
+    db_->exec(R"(
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    )");
 }
 
 void Database::migrateSchema() {

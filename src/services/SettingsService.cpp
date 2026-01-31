@@ -1,163 +1,173 @@
 #include "SettingsService.hpp"
+#include "../database/Database.hpp"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
+#include <SQLiteCpp/SQLiteCpp.h>
 
 namespace timetracker::services {
 
-SettingsService::SettingsService() : settings_(createDefaultSettings()) {}
+SettingsService::SettingsService(std::shared_ptr<timetracker::database::Database> database)
+    : database_(database) {}
 
 bool SettingsService::loadSettings() {
-    auto settingsPath = getSettingsPath();
-
-    // If file doesn't exist, create it with defaults
-    if (!std::filesystem::exists(settingsPath)) {
-        std::cout << "Settings file not found. Creating with defaults at: " << settingsPath << std::endl;
-        settings_ = createDefaultSettings();
-        return saveSettings();
-    }
-
-    // Try to read the file
     try {
-        std::ifstream file(settingsPath);
-        if (!file.is_open()) {
-            std::cerr << "Warning: Failed to open settings file. Using defaults." << std::endl;
-            settings_ = createDefaultSettings();
-            return true; // Continue with defaults
-        }
+        loadFromDatabase();
 
-        nlohmann::json loadedSettings;
-        file >> loadedSettings;
-
-        // Validate the loaded settings
-        if (!validateSettings(loadedSettings)) {
-            std::cerr << "Warning: Invalid settings file format. Using defaults." << std::endl;
-            settings_ = createDefaultSettings();
-            return true; // Continue with defaults
-        }
-
-        settings_ = loadedSettings;
-        return true;
-
-    } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Warning: Failed to parse settings file (JSON error: " << e.what() << "). Using defaults." << std::endl;
-        settings_ = createDefaultSettings();
-        return true; // Continue with defaults
-    } catch (const std::exception& e) {
-        std::cerr << "Warning: Error reading settings file (" << e.what() << "). Using defaults." << std::endl;
-        settings_ = createDefaultSettings();
-        return true; // Continue with defaults
-    }
-}
-
-bool SettingsService::saveSettings() {
-    auto settingsPath = getSettingsPath();
-
-    try {
-        // Ensure the directory exists
-        auto parentDir = settingsPath.parent_path();
-        if (!parentDir.empty() && !std::filesystem::exists(parentDir)) {
-            std::filesystem::create_directories(parentDir);
-        }
-
-        // Use atomic write: write to temp file, then rename
-        auto tempPath = settingsPath;
-        tempPath += ".tmp";
-
-        // Write to temp file
-        {
-            std::ofstream file(tempPath);
-            if (!file.is_open()) {
-                std::cerr << "Error: Failed to open temp settings file for writing: " << tempPath << std::endl;
-                return false;
+        // Check if settings are empty (first run after migration to database)
+        if (settingsCache_.empty()) {
+            // Attempt to migrate from settings.json if it exists
+            if (!migrateFromJsonFile()) {
+                // Migration failed or not needed, ensure defaults exist
+                std::cout << "Using default empty settings" << std::endl;
             }
-
-            // Pretty-print with 2-space indentation
-            file << settings_.dump(2) << std::endl;
+            // Reload after migration
+            loadFromDatabase();
         }
 
-        // Rename temp file to actual file (atomic operation)
-        std::filesystem::rename(tempPath, settingsPath);
         return true;
-
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Error: Failed to save settings file (" << e.what() << ")" << std::endl;
-        return false;
     } catch (const std::exception& e) {
-        std::cerr << "Error: Failed to save settings file (" << e.what() << ")" << std::endl;
+        std::cerr << "Error loading settings: " << e.what() << std::endl;
         return false;
     }
 }
 
-std::filesystem::path SettingsService::getSettingsPath() const {
-    // Settings file is placed in the same directory as the executable
-    return std::filesystem::current_path() / "settings.json";
+void SettingsService::loadFromDatabase() {
+    settingsCache_.clear();
+
+    try {
+        SQLite::Statement query(database_->getHandle(), "SELECT key, value FROM settings");
+
+        while (query.executeStep()) {
+            std::string key = query.getColumn(0).getString();
+            std::string value = query.getColumn(1).getString();
+            settingsCache_[key] = value;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Warning: Failed to load settings from database: " << e.what() << std::endl;
+    }
 }
 
-nlohmann::json SettingsService::createDefaultSettings() const {
-    // Default settings with YouTrack configuration
-    nlohmann::json defaults = nlohmann::json::object();
-    defaults["youtrack"] = {
-        {"url", ""},
-        {"token", ""},
-        {"activityAliases", nlohmann::json::object()}
-    };
-    return defaults;
+std::string SettingsService::getSetting(const std::string& key, const std::string& defaultValue) const {
+    auto it = settingsCache_.find(key);
+    if (it != settingsCache_.end()) {
+        return it->second;
+    }
+    return defaultValue;
 }
 
-bool SettingsService::validateSettings(const nlohmann::json& json) const {
-    // Check that it's a valid JSON object
-    if (!json.is_object()) {
-        return false;
-    }
+void SettingsService::setSetting(const std::string& key, const std::string& value) {
+    try {
+        SQLite::Statement stmt(database_->getHandle(), "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+        stmt.bind(1, key);
+        stmt.bind(2, value);
+        stmt.exec();
 
-    // Validate YouTrack settings structure if present
-    if (json.contains("youtrack")) {
-        const auto& yt = json["youtrack"];
-        if (!yt.is_object()) {
-            return false;
-        }
-        // Check required fields exist and are strings/objects
-        if (yt.contains("url") && !yt["url"].is_string()) {
-            return false;
-        }
-        if (yt.contains("token") && !yt["token"].is_string()) {
-            return false;
-        }
-        if (yt.contains("activityAliases") && !yt["activityAliases"].is_object()) {
-            return false;
-        }
+        // Update cache
+        settingsCache_[key] = value;
+    } catch (const std::exception& e) {
+        std::cerr << "Error saving setting '" << key << "': " << e.what() << std::endl;
     }
-
-    return true;
 }
 
 std::string SettingsService::getYouTrackUrl() const {
-    if (settings_.contains("youtrack") && settings_["youtrack"].contains("url")) {
-        return settings_["youtrack"]["url"].get<std::string>();
-    }
-    return "";
+    return getSetting("youtrack_url", "");
 }
 
 std::string SettingsService::getYouTrackToken() const {
-    if (settings_.contains("youtrack") && settings_["youtrack"].contains("token")) {
-        return settings_["youtrack"]["token"].get<std::string>();
-    }
-    return "";
+    return getSetting("youtrack_token", "");
 }
 
 std::map<std::string, std::string> SettingsService::getActivityAliases() const {
     std::map<std::string, std::string> aliases;
-    if (settings_.contains("youtrack") && settings_["youtrack"].contains("activityAliases")) {
-        const auto& aliasesJson = settings_["youtrack"]["activityAliases"];
-        if (aliasesJson.is_object()) {
-            for (auto it = aliasesJson.begin(); it != aliasesJson.end(); ++it) {
+    std::string aliasesJson = getSetting("activity_aliases", "{}");
+
+    try {
+        nlohmann::json j = nlohmann::json::parse(aliasesJson);
+        if (j.is_object()) {
+            for (auto it = j.begin(); it != j.end(); ++it) {
                 if (it.value().is_string()) {
                     aliases[it.key()] = it.value().get<std::string>();
                 }
             }
         }
+    } catch (const nlohmann::json::exception& e) {
+        std::cerr << "Warning: Failed to parse activity aliases JSON: " << e.what() << std::endl;
     }
+
     return aliases;
+}
+
+void SettingsService::setYouTrackUrl(const std::string& url) {
+    setSetting("youtrack_url", url);
+}
+
+void SettingsService::setYouTrackToken(const std::string& token) {
+    setSetting("youtrack_token", token);
+}
+
+void SettingsService::setActivityAliases(const std::map<std::string, std::string>& aliases) {
+    nlohmann::json j = nlohmann::json::object();
+    for (const auto& [key, value] : aliases) {
+        j[key] = value;
+    }
+    setSetting("activity_aliases", j.dump());
+}
+
+bool SettingsService::migrateFromJsonFile() {
+    std::filesystem::path settingsPath = std::filesystem::current_path() / "settings.json";
+
+    // If file doesn't exist, nothing to migrate
+    if (!std::filesystem::exists(settingsPath)) {
+        std::cout << "No settings.json file found, skipping migration" << std::endl;
+        return false;
+    }
+
+    try {
+        std::cout << "Migrating settings from settings.json to database..." << std::endl;
+
+        std::ifstream file(settingsPath);
+        if (!file.is_open()) {
+            std::cerr << "Warning: Failed to open settings.json for migration" << std::endl;
+            return false;
+        }
+
+        nlohmann::json settings;
+        file >> settings;
+
+        // Extract YouTrack settings
+        if (settings.contains("youtrack") && settings["youtrack"].is_object()) {
+            const auto& yt = settings["youtrack"];
+
+            if (yt.contains("url") && yt["url"].is_string()) {
+                setYouTrackUrl(yt["url"].get<std::string>());
+            }
+
+            if (yt.contains("token") && yt["token"].is_string()) {
+                setYouTrackToken(yt["token"].get<std::string>());
+            }
+
+            if (yt.contains("activityAliases") && yt["activityAliases"].is_object()) {
+                std::map<std::string, std::string> aliases;
+                for (auto it = yt["activityAliases"].begin(); it != yt["activityAliases"].end(); ++it) {
+                    if (it.value().is_string()) {
+                        aliases[it.key()] = it.value().get<std::string>();
+                    }
+                }
+                setActivityAliases(aliases);
+            }
+        }
+
+        std::cout << "Settings migration completed successfully" << std::endl;
+        return true;
+
+    } catch (const nlohmann::json::exception& e) {
+        std::cerr << "Warning: Failed to parse settings.json during migration (JSON error: " << e.what() << ")" << std::endl;
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "Warning: Error during settings migration (" << e.what() << ")" << std::endl;
+        return false;
+    }
 }
 
 } // namespace timetracker::services

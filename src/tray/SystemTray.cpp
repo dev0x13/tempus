@@ -110,12 +110,12 @@ bool SystemTray::initWindows() {
   wc.cbSize = sizeof(WNDCLASSEXW);
   wc.lpfnWndProc = WindowProc;
   wc.hInstance = GetModuleHandle(nullptr);
-  wc.lpszClassName = L"TimeTrackerTrayClass";
+  wc.lpszClassName = L"TempusTrayClass";
   RegisterClassExW(&wc);
 
   // Create hidden message window
   messageWindow_ = CreateWindowExW(
-      0, L"TimeTrackerTrayClass", L"TimeTrackerTray", 0, 0, 0, 0, 0,
+      0, L"TempusTrayClass", L"TempusTray", 0, 0, 0, 0, 0,
       HWND_MESSAGE, nullptr, GetModuleHandle(nullptr), nullptr);
 
   if (!messageWindow_) {
@@ -138,7 +138,7 @@ bool SystemTray::initWindows() {
   nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
   nid_.uCallbackMessage = WM_TRAYICON;
   nid_.hIcon = idleIcon_;
-  wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
+  wcscpy_s(nid_.szTip, L"Tempus - Idle");
 
   // Add tray icon
   if (!Shell_NotifyIconW(NIM_ADD, &nid_)) {
@@ -173,7 +173,7 @@ void SystemTray::updateWindows() {
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string prefix = L.get("Time Tracker - Tracking: ");
+      std::string prefix = L.get("Tempus - Tracking: ");
       std::wstring tip = std::wstring(prefix.begin(), prefix.end());
       // Convert activity name to wide string
       std::string activityName = current->activityName;
@@ -181,7 +181,7 @@ void SystemTray::updateWindows() {
       wcscpy_s(nid_.szTip, tip.c_str());
     }
   } else {
-    std::string idleStr = L.get("Time Tracker - Idle");
+    std::string idleStr = L.get("Tempus - Idle");
     std::wstring idleTip = std::wstring(idleStr.begin(), idleStr.end());
     wcscpy_s(nid_.szTip, idleTip.c_str());
   }
@@ -320,7 +320,7 @@ bool SystemTray::initLinux() {
   }
 
   // Create AppIndicator
-  indicator_ = app_indicator_new("time-tracker", iconName.c_str(),
+  indicator_ = app_indicator_new("tempus", iconName.c_str(),
                                  APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 
   if (!indicator_) {
@@ -340,7 +340,7 @@ bool SystemTray::initLinux() {
   app_indicator_set_status(indicator_, APP_INDICATOR_STATUS_ACTIVE);
 
   // Set initial title/label
-  app_indicator_set_title(indicator_, "Time Tracker");
+  app_indicator_set_title(indicator_, "Tempus");
 
   // Create and set menu
   createMenuLinux();
@@ -451,7 +451,7 @@ void SystemTray::updateLinux() {
   } else {
     // Update for idle state
     app_indicator_set_label(indicator_, "", nullptr);
-    app_indicator_set_title(indicator_, "Time Tracker");
+    app_indicator_set_title(indicator_, "Tempus");
 
     // Hide the Stop menu item
     gtk_widget_set_visible(menuItemStop_, FALSE);

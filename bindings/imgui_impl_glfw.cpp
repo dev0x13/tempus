@@ -1,5 +1,5 @@
 // dear imgui: Platform Backend for GLFW
-// Simplified implementation for time-tracker app
+// Simplified implementation for Tempus app
 
 #include "imgui_impl_glfw.h"
 #include "imgui.h"

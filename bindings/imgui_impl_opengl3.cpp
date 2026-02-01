@@ -1,5 +1,5 @@
 // dear imgui: Renderer Backend for modern OpenGL with shaders / programmatic pipeline
-// Simplified implementation for time-tracker app
+// Simplified implementation for Tempus app
 
 #include "imgui_impl_opengl3.h"
 #include "imgui.h"

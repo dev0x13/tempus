@@ -831,7 +831,7 @@ void TimeEntriesView::performCsvExport() {
     int64_t now = utils::TimeUtils::now();
     auto tm = utils::TimeUtils::toLocalTime(now);
     char defaultFilename[64];
-    snprintf(defaultFilename, sizeof(defaultFilename), "time-tracker-export-%04d-%02d-%02d.csv",
+    snprintf(defaultFilename, sizeof(defaultFilename), "tempus-export-%04d-%02d-%02d.csv",
              tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
     // Show native file save dialog

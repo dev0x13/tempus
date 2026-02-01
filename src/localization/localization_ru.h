@@ -23,7 +23,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"No", "Нет"},
 
         // Main Window
-        {"Time Tracker", "Трекер времени"},
+        {"Tempus", "Tempus"},
         {"Start", "Старт"},
         {"Stop", "Стоп"},
         {"Export CSV", "Экспорт CSV"},
@@ -86,8 +86,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Russian", "Русский"},
 
         // System Tray
-        {"Time Tracker - Idle", "Трекер времени - Простой"},
-        {"Time Tracker - Tracking: ", "Трекер времени - Отслеживание: "},
+        {"Tempus - Idle", "Tempus - Простой"},
+        {"Tempus - Tracking: ", "Tempus - Отслеживание: "},
         {"Quick Add Activity", "Быстрое добавление активности"},
         {"Show Window", "Показать окно"},
         {"Stop Tracking", "Остановить отслеживание"},

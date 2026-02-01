@@ -77,7 +77,7 @@ void Application::initUI() {
     uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, kTalkImportService_, settingsService_, exportLogRepo_);
 
     auto& L = localization::L10n();
-    if (!uiApp_->init(900, 700, L.get("Time Tracker"))) {
+    if (!uiApp_->init(900, 700, L.get("Tempus"))) {
         throw std::runtime_error("Failed to initialize UI");
     }
 

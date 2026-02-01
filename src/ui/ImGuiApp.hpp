@@ -47,7 +47,7 @@ public:
     ImGuiApp& operator=(ImGuiApp&&) = delete;
 
     // Initialize window and ImGui
-    bool init(int width = 900, int height = 600, const char* title = "Time Tracker");
+    bool init(int width = 900, int height = 600, const char* title = "Tempus");
 
     // Main loop - returns when window closes
     void run();

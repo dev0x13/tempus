@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace timetracker::ui::widgets {
 
@@ -26,6 +27,9 @@ public:
     void hide();
     bool isVisible() const { return visible_; }
 
+    // Set callback for Export Log button
+    void setExportLogCallback(std::function<void()> callback) { exportLogCallback_ = std::move(callback); }
+
 private:
     std::shared_ptr<services::SettingsService> settingsService_;
     bool visible_{false};
@@ -39,6 +43,9 @@ private:
     // Validation state
     bool hasValidationError_{false};
     std::string validationMessage_;
+
+    // Callback for Export Log button
+    std::function<void()> exportLogCallback_;
 
     // Load current settings into form fields
     void loadSettings();

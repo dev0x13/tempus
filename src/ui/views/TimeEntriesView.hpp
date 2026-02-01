@@ -26,7 +26,6 @@ public:
     void render();
 
     // Set callbacks for external buttons
-    void setExportLogCallback(std::function<void()> callback) { exportLogCallback_ = std::move(callback); }
     void setKTalkImportCallback(std::function<void()> callback) { kTalkImportCallback_ = std::move(callback); }
     void setSettingsCallback(std::function<void()> callback) { settingsCallback_ = std::move(callback); }
 
@@ -68,7 +67,6 @@ private:
     bool showActivityBreakdown_{false};
 
     // External button callbacks
-    std::function<void()> exportLogCallback_;
     std::function<void()> kTalkImportCallback_;
     std::function<void()> settingsCallback_;
 

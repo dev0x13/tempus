@@ -177,6 +177,15 @@ void SettingsWindow::renderYouTrackSettings() {
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("YouTrack permanent token for authentication");
     }
+
+    ImGui::Spacing();
+
+    // Export Log button
+    if (ImGui::Button("Export Log", ImVec2(100, 0))) {
+        if (exportLogCallback_) {
+            exportLogCallback_();
+        }
+    }
 }
 
 void SettingsWindow::renderActivityAliases() {

@@ -134,14 +134,6 @@ void TimeEntriesView::renderTopButtons() {
         }
     }
 
-    // Export Log button
-    ImGui::SameLine();
-    if (ImGui::Button("Export Log", ImVec2(100, 0))) {
-        if (exportLogCallback_) {
-            exportLogCallback_();
-        }
-    }
-
     // KTalk Import button
     ImGui::SameLine();
     if (ImGui::Button("KTalk Import", ImVec2(110, 0))) {
@@ -221,51 +213,75 @@ void TimeEntriesView::renderDateGroupedEntries() {
         ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%s", dateStr.c_str());
         ImGui::Spacing();
 
-        // Render entries for this date
-        for (const auto& fact : dateEntries) {
-            ImGui::Indent(20.0f);
+        // Render entries for this date using a table for proper alignment
+        ImGui::Indent(20.0f);
+        if (ImGui::BeginTable("EntriesTable", 4, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
+            // Set up columns
+            ImGui::TableSetupColumn("Start", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+            ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
 
-            // Format entry line: HH:MM - HH:MM  Activity Name         Duration
-            std::string startTime = utils::TimeUtils::formatTime(fact.startTime);
-            std::string endTime;
-            if (fact.endTime.has_value()) {
-                endTime = utils::TimeUtils::formatTime(*fact.endTime);
-            } else {
-                endTime = "(ongoing)";
+            for (const auto& fact : dateEntries) {
+                ImGui::TableNextRow();
+
+                // Format entry data
+                std::string startTime = utils::TimeUtils::formatTime(fact.startTime);
+                std::string endTime;
+                if (fact.endTime.has_value()) {
+                    endTime = utils::TimeUtils::formatTime(*fact.endTime);
+                } else {
+                    endTime = "(ongoing)";
+                }
+
+                std::string duration = utils::TimeUtils::formatDuration(fact.getDuration(now));
+
+                // Build activity display name with description
+                std::string activityDisplay = fact.activityName;
+                if (!fact.description.empty()) {
+                    activityDisplay += " (" + fact.description + ")";
+                }
+
+                // Check if this fact overlaps with any other fact
+                bool isOverlapping = isFactOverlapping(fact);
+
+                // Set color for overlapping facts
+                if (isOverlapping) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+                }
+
+                // Start time column
+                ImGui::TableNextColumn();
+                ImGui::PushID(fact.id);
+                if (ImGui::Selectable(startTime.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
+                    startEdit(fact);
+                }
+
+                // End time column
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", endTime.c_str());
+
+                // Activity column
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", activityDisplay.c_str());
+
+                // Duration column (right-aligned)
+                ImGui::TableNextColumn();
+                float columnWidth = ImGui::GetContentRegionAvail().x;
+                float textWidth = ImGui::CalcTextSize(duration.c_str()).x;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + columnWidth - textWidth);
+                ImGui::Text("%s", duration.c_str());
+
+                ImGui::PopID();
+
+                if (isOverlapping) {
+                    ImGui::PopStyleColor();
+                }
             }
 
-            std::string duration = utils::TimeUtils::formatDuration(fact.getDuration(now));
-
-            // Build activity display name with description
-            std::string activityDisplay = fact.activityName;
-            if (!fact.description.empty()) {
-                activityDisplay += " (" + fact.description + ")";
-            }
-
-            // Build the display string with spacing
-            char entryLine[512];
-            snprintf(entryLine, sizeof(entryLine), "%s - %-10s  %-40s  %s",
-                     startTime.c_str(), endTime.c_str(), activityDisplay.c_str(), duration.c_str());
-
-            // Check if this fact overlaps with any other fact
-            bool isOverlapping = isFactOverlapping(fact);
-
-            // Make entry clickable with red color if overlapping
-            ImGui::PushID(fact.id);
-            if (isOverlapping) {
-                // Use red color for overlapping facts
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-            }
-            if (ImGui::Selectable(entryLine, false)) {
-                startEdit(fact);
-            }
-            if (isOverlapping) {
-                ImGui::PopStyleColor();
-            }
-            ImGui::PopID();
-
-            ImGui::Unindent(20.0f);
+            ImGui::EndTable();
         }
+        ImGui::Unindent(20.0f);
 
         ImGui::Spacing();
     }

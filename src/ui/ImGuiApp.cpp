@@ -87,6 +87,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.IniFilename = nullptr;
 
     // Load embedded PT Sans font with cyrillic support
     ImFontConfig fontConfig;
@@ -114,10 +115,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     // Create views
     timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_);
 
-    // Set up callbacks for Export Log, KTalk Import, and Settings buttons
-    timeEntriesView_->setExportLogCallback([this]() {
-        exportLogWindow_->show();
-    });
+    // Set up callbacks for KTalk Import and Settings buttons
     timeEntriesView_->setKTalkImportCallback([this]() {
         kTalkImportWindow_->show();
     });
@@ -140,6 +138,11 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Create export log window
     exportLogWindow_ = std::make_unique<widgets::ExportLogWindow>(exportLogRepository_);
+
+    // Set up Export Log callback for settings window
+    settingsWindow_->setExportLogCallback([this]() {
+        exportLogWindow_->show();
+    });
 
     // Create KTalk import window
     kTalkImportWindow_ = std::make_unique<widgets::KTalkImportWindow>(kTalkImportService_);
@@ -204,7 +207,8 @@ void ImGuiApp::render() {
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoBringToFrontOnFocus;
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoScrollbar;
 
     ImGui::Begin("Main", nullptr, windowFlags);
 

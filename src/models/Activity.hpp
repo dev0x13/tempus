@@ -9,12 +9,11 @@ struct Activity {
     int64_t id{0};
     std::string name;
     std::string searchName;  // Lowercase for case-insensitive search
-    bool deleted{false};
 
     Activity() = default;
 
-    Activity(int64_t id, std::string name, std::string searchName, bool deleted = false)
-        : id(id), name(std::move(name)), searchName(std::move(searchName)), deleted(deleted) {}
+    Activity(int64_t id, std::string name, std::string searchName)
+        : id(id), name(std::move(name)), searchName(std::move(searchName)) {}
 
     explicit Activity(std::string name)
         : name(std::move(name)) {

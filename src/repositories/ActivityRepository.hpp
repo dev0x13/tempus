@@ -13,13 +13,12 @@ public:
     models::Activity create(const std::string& name) override;
     std::optional<models::Activity> findById(int64_t id) override;
     std::optional<models::Activity> findByName(const std::string& name) override;
-    std::vector<models::Activity> findAll(bool includeDeleted = false) override;
+    std::vector<models::Activity> findAll() override;
     void update(const models::Activity& activity) override;
-    void softDelete(int64_t id) override;
-    void restore(int64_t id) override;
 
     models::Activity getOrCreate(const std::string& name) override;
     std::vector<models::Activity> search(const std::string& query, int limit = 10) override;
+    void deleteIfOrphaned(int64_t activityId) override;
 
 private:
     database::Database& db_;

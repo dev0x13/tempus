@@ -28,8 +28,7 @@ void Database::createTables() {
         CREATE TABLE IF NOT EXISTS activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            search_name TEXT NOT NULL,
-            deleted INTEGER NOT NULL DEFAULT 0
+            search_name TEXT NOT NULL
         )
     )");
 
@@ -84,36 +83,37 @@ void Database::migrateSchema() {
         db_->exec("ALTER TABLE facts ADD COLUMN exported_to_youtrack INTEGER NOT NULL DEFAULT 0");
     }
 
-    // Check if description column exists in activities table (legacy)
-    // If it exists, we need to drop it (moving to per-fact descriptions)
+    // Check if description or deleted columns exist in activities table (legacy)
+    // If either exists, we need to drop them
     SQLite::Statement activitiesQuery(*db_, "PRAGMA table_info(activities)");
     bool hasActivityDescriptionColumn = false;
+    bool hasActivityDeletedColumn = false;
 
     while (activitiesQuery.executeStep()) {
         std::string columnName = activitiesQuery.getColumn(1).getString();
         if (columnName == "description") {
             hasActivityDescriptionColumn = true;
-            break;
+        } else if (columnName == "deleted") {
+            hasActivityDeletedColumn = true;
         }
     }
 
-    // Drop description column from activities if it exists
+    // Drop description and deleted columns from activities if they exist
     // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
-    if (hasActivityDescriptionColumn) {
+    if (hasActivityDescriptionColumn || hasActivityDeletedColumn) {
         db_->exec(R"(
             BEGIN TRANSACTION;
 
-            -- Create new activities table without description
+            -- Create new activities table without description or deleted
             CREATE TABLE activities_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
-                search_name TEXT NOT NULL,
-                deleted INTEGER NOT NULL DEFAULT 0
+                search_name TEXT NOT NULL
             );
 
-            -- Copy data from old table (excluding description)
-            INSERT INTO activities_new (id, name, search_name, deleted)
-            SELECT id, name, search_name, deleted FROM activities;
+            -- Copy data from old table (excluding description and deleted)
+            INSERT INTO activities_new (id, name, search_name)
+            SELECT id, name, search_name FROM activities;
 
             -- Drop old table
             DROP TABLE activities;
@@ -124,6 +124,12 @@ void Database::migrateSchema() {
             COMMIT;
         )");
     }
+
+    // Clean up orphaned activities (activities with no facts)
+    db_->exec(R"(
+        DELETE FROM activities
+        WHERE id NOT IN (SELECT DISTINCT activity_id FROM facts)
+    )");
 
     // Check if description column exists in facts table
     SQLite::Statement factsDescQuery(*db_, "PRAGMA table_info(facts)");

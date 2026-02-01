@@ -21,8 +21,7 @@ models::Activity ActivityRepository::mapRow(SQLite::Statement& query) {
     return models::Activity{
         query.getColumn(0).getInt64(),       // id
         query.getColumn(1).getString(),      // name
-        query.getColumn(2).getString(),      // search_name
-        query.getColumn(3).getInt() != 0     // deleted
+        query.getColumn(2).getString()       // search_name
     };
 }
 
@@ -36,12 +35,12 @@ models::Activity ActivityRepository::create(const std::string& name) {
     insert.exec();
 
     int64_t id = db_.getHandle().getLastInsertRowid();
-    return models::Activity{id, name, searchName, false};
+    return models::Activity{id, name, searchName};
 }
 
 std::optional<models::Activity> ActivityRepository::findById(int64_t id) {
     SQLite::Statement query(db_.getHandle(),
-        "SELECT id, name, search_name, deleted FROM activities WHERE id = ?");
+        "SELECT id, name, search_name FROM activities WHERE id = ?");
     query.bind(1, id);
 
     if (query.executeStep()) {
@@ -54,7 +53,7 @@ std::optional<models::Activity> ActivityRepository::findByName(const std::string
     std::string searchName = toLower(name);
 
     SQLite::Statement query(db_.getHandle(),
-        "SELECT id, name, search_name, deleted FROM activities WHERE search_name = ?");
+        "SELECT id, name, search_name FROM activities WHERE search_name = ?");
     query.bind(1, searchName);
 
     if (query.executeStep()) {
@@ -63,16 +62,12 @@ std::optional<models::Activity> ActivityRepository::findByName(const std::string
     return std::nullopt;
 }
 
-std::vector<models::Activity> ActivityRepository::findAll(bool includeDeleted) {
+std::vector<models::Activity> ActivityRepository::findAll() {
     std::vector<models::Activity> activities;
 
-    std::string sql = "SELECT id, name, search_name, deleted FROM activities";
-    if (!includeDeleted) {
-        sql += " WHERE deleted = 0";
-    }
-    sql += " ORDER BY name";
+    SQLite::Statement query(db_.getHandle(),
+        "SELECT id, name, search_name FROM activities ORDER BY name");
 
-    SQLite::Statement query(db_.getHandle(), sql);
     while (query.executeStep()) {
         activities.push_back(mapRow(query));
     }
@@ -83,39 +78,37 @@ void ActivityRepository::update(const models::Activity& activity) {
     std::string searchName = toLower(activity.name);
 
     SQLite::Statement update(db_.getHandle(),
-        "UPDATE activities SET name = ?, search_name = ?, deleted = ? WHERE id = ?");
+        "UPDATE activities SET name = ?, search_name = ? WHERE id = ?");
     update.bind(1, activity.name);
     update.bind(2, searchName);
-    update.bind(3, activity.deleted ? 1 : 0);
-    update.bind(4, activity.id);
-    update.exec();
-}
-
-void ActivityRepository::softDelete(int64_t id) {
-    SQLite::Statement update(db_.getHandle(),
-        "UPDATE activities SET deleted = 1 WHERE id = ?");
-    update.bind(1, id);
-    update.exec();
-}
-
-void ActivityRepository::restore(int64_t id) {
-    SQLite::Statement update(db_.getHandle(),
-        "UPDATE activities SET deleted = 0 WHERE id = ?");
-    update.bind(1, id);
+    update.bind(3, activity.id);
     update.exec();
 }
 
 models::Activity ActivityRepository::getOrCreate(const std::string& name) {
     auto existing = findByName(name);
     if (existing.has_value()) {
-        // If it was deleted, restore it
-        if (existing->deleted) {
-            restore(existing->id);
-            existing->deleted = false;
-        }
         return *existing;
     }
     return create(name);
+}
+
+void ActivityRepository::deleteIfOrphaned(int64_t activityId) {
+    // Count remaining facts for this activity
+    SQLite::Statement count(db_.getHandle(),
+        "SELECT COUNT(*) FROM facts WHERE activity_id = ?");
+    count.bind(1, activityId);
+
+    if (count.executeStep()) {
+        int factCount = count.getColumn(0).getInt();
+        if (factCount == 0) {
+            // No facts remain, delete the activity
+            SQLite::Statement del(db_.getHandle(),
+                "DELETE FROM activities WHERE id = ?");
+            del.bind(1, activityId);
+            del.exec();
+        }
+    }
 }
 
 std::vector<models::Activity> ActivityRepository::search(const std::string& query, int limit) {
@@ -123,8 +116,8 @@ std::vector<models::Activity> ActivityRepository::search(const std::string& quer
     std::string searchQuery = toLower(query) + "%";
 
     SQLite::Statement stmt(db_.getHandle(),
-        "SELECT id, name, search_name, deleted FROM activities "
-        "WHERE search_name LIKE ? AND deleted = 0 "
+        "SELECT id, name, search_name FROM activities "
+        "WHERE search_name LIKE ? "
         "ORDER BY name LIMIT ?");
     stmt.bind(1, searchQuery);
     stmt.bind(2, limit);

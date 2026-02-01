@@ -96,7 +96,20 @@ void TimeTrackingService::updateEntry(const models::Fact& fact, const std::strin
 }
 
 void TimeTrackingService::deleteEntry(int64_t factId) {
+    // Get the fact to know which activity it belongs to
+    auto fact = factRepo_->findById(factId);
+    if (!fact.has_value()) {
+        return;  // Fact doesn't exist
+    }
+
+    int64_t activityId = fact->activityId;
+
+    // Delete the fact
     factRepo_->remove(factId);
+
+    // Clean up orphaned activity
+    activityRepo_->deleteIfOrphaned(activityId);
+
     invalidateCache();
 }
 

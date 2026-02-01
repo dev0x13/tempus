@@ -22,7 +22,7 @@ void SettingsWindow::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.Settings.Title(), &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse)) {
         renderLanguageSettings();
 
         ImGui::Separator();
@@ -57,7 +57,7 @@ void SettingsWindow::render() {
             ImGui::BeginDisabled();
         }
 
-        if (ImGui::Button(L.Common.Save(), ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Save"), ImVec2(100, 0))) {
             saveSettings();
             hide();
         }
@@ -67,7 +67,7 @@ void SettingsWindow::render() {
         }
 
         ImGui::SameLine();
-        if (ImGui::Button(L.Common.Cancel(), ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(100, 0))) {
             hide();
         }
     }
@@ -154,7 +154,7 @@ bool SettingsWindow::validateInputs() {
     std::string url(youtrackUrl_);
     if (!url.empty() && url.find("http://") != 0 && url.find("https://") != 0) {
         hasValidationError_ = true;
-        validationMessage_ = L.Settings.URLValidationError();
+        validationMessage_ = L.get("URL must start with http:// or https://");
         return false;
     }
 
@@ -167,7 +167,7 @@ bool SettingsWindow::validateInputs() {
 
         if (hasActivityName != hasIssueId) {
             hasValidationError_ = true;
-            validationMessage_ = L.Settings.AliasValidationError();
+            validationMessage_ = L.get("All alias entries must have both activity name and issue ID");
             return false;
         }
     }
@@ -177,10 +177,10 @@ bool SettingsWindow::validateInputs() {
 
 void SettingsWindow::renderLanguageSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.Language());
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Language:"));
     ImGui::Spacing();
 
-    const char* languages[] = { L.Settings.LanguageEnglish(), L.Settings.LanguageRussian() };
+    const char* languages[] = { L.get("English"), L.get("Russian") };
     ImGui::SetNextItemWidth(200);
     if (ImGui::Combo("##language", &selectedLanguage_, languages, 2)) {
         // Language will be saved when user clicks Save
@@ -189,31 +189,31 @@ void SettingsWindow::renderLanguageSettings() {
 
 void SettingsWindow::renderYouTrackSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.YouTrackSettings());
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("YouTrack Settings"));
     ImGui::Spacing();
 
     // URL input
-    ImGui::Text("%s", L.Settings.URL());
+    ImGui::Text("%s", L.get("URL:"));
     ImGui::SetNextItemWidth(-1);
     ImGui::InputText("##youtrack_url", youtrackUrl_, sizeof(youtrackUrl_));
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.Settings.URLTooltip());
+        ImGui::SetTooltip("%s", L.get("YouTrack server URL (e.g., https://youtrack.company.com)"));
     }
 
     ImGui::Spacing();
 
     // Token input
-    ImGui::Text("%s", L.Settings.Token());
+    ImGui::Text("%s", L.get("Token:"));
     ImGui::SetNextItemWidth(-1);
     ImGui::InputText("##youtrack_token", youtrackToken_, sizeof(youtrackToken_), ImGuiInputTextFlags_Password);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.Settings.TokenTooltip());
+        ImGui::SetTooltip("%s", L.get("YouTrack permanent token for authentication"));
     }
 
     ImGui::Spacing();
 
     // Export Log button
-    if (ImGui::Button(L.Settings.ExportLog(), ImVec2(120, 0))) {
+    if (ImGui::Button(L.get("Export Log"), ImVec2(120, 0))) {
         if (exportLogCallback_) {
             exportLogCallback_();
         }
@@ -222,16 +222,16 @@ void SettingsWindow::renderYouTrackSettings() {
 
 void SettingsWindow::renderActivityAliases() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.ActivityAliases());
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Activity Aliases"));
     ImGui::Spacing();
 
-    ImGui::Text("%s", L.Settings.MapActivityNames());
+    ImGui::Text("%s", L.get("Map activity names to YouTrack issue IDs:"));
     ImGui::Spacing();
 
     // Table for aliases
     if (ImGui::BeginTable("AliasesTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-        ImGui::TableSetupColumn(L.Settings.ActivityName(), ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn(L.Settings.IssueID(), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(L.get("Activity Name"), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(L.get("Issue ID"), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 40.0f);
         ImGui::TableHeadersRow();
 
@@ -270,7 +270,7 @@ void SettingsWindow::renderActivityAliases() {
     ImGui::Spacing();
 
     // Add new alias button
-    if (ImGui::Button(L.Settings.AddAlias(), ImVec2(180, 0))) {
+    if (ImGui::Button(L.get("+ Add Alias"), ImVec2(180, 0))) {
         ActivityAlias newAlias{};
         aliases_.push_back(newAlias);
     }
@@ -285,13 +285,13 @@ void SettingsWindow::renderActivityAliases() {
 
 void SettingsWindow::renderKTalkSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.KTalkImportSettings());
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("KTalk Import"));
     ImGui::Spacing();
 
     // Include unplanned meetings checkbox
-    ImGui::Checkbox(L.Settings.IncludeUnplannedMeetings(), &ktalkIncludeUnplanned_);
+    ImGui::Checkbox(L.get("Include unplanned meetings"), &ktalkIncludeUnplanned_);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.Settings.IncludeUnplannedTooltip());
+        ImGui::SetTooltip("%s", L.get("When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title."));
     }
 }
 

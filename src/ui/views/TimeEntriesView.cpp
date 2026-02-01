@@ -7,8 +7,30 @@
 #include <cstring>
 #include <thread>
 #include <algorithm>
+#include <vector>
+#include <string>
 
 namespace timetracker::ui {
+
+namespace {
+    // Helper function to split comma-separated strings
+    std::vector<std::string> splitByComma(const char* str) {
+        std::vector<std::string> result;
+        std::string current;
+        for (const char* p = str; *p != '\0'; ++p) {
+            if (*p == ',') {
+                result.push_back(current);
+                current.clear();
+            } else {
+                current += *p;
+            }
+        }
+        if (!current.empty()) {
+            result.push_back(current);
+        }
+        return result;
+    }
+}
 
 TimeEntriesView::TimeEntriesView(
     std::shared_ptr<services::TimeTrackingService> timeService,
@@ -96,7 +118,7 @@ void TimeEntriesView::renderTopButtons() {
     auto& L = localization::L10n();
 
     // Start button
-    if (ImGui::Button(L.MainWindow.Start(), ImVec2(80, 0))) {
+    if (ImGui::Button(L.get("Start"), ImVec2(80, 0))) {
         startAdd();
     }
 
@@ -107,7 +129,7 @@ void TimeEntriesView::renderTopButtons() {
     if (!isTracking) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button(L.MainWindow.Stop(), ImVec2(80, 0))) {
+    if (ImGui::Button(L.get("Stop"), ImVec2(80, 0))) {
         timeService_->stopTracking();
         refreshEntries();
     }
@@ -117,7 +139,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // Export CSV button
     ImGui::SameLine();
-    if (ImGui::Button(L.MainWindow.ExportCSV(), ImVec2(140, 0))) {
+    if (ImGui::Button(L.get("Export CSV"), ImVec2(140, 0))) {
         performCsvExport();
     }
 
@@ -127,7 +149,7 @@ void TimeEntriesView::renderTopButtons() {
     if (!isYouTrackConfigured) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button(L.MainWindow.ExportToYouTrack(), ImVec2(180, 0))) {
+    if (ImGui::Button(L.get("Export to YouTrack"), ImVec2(180, 0))) {
         performYouTrackExport();
     }
     if (!isYouTrackConfigured) {
@@ -139,7 +161,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // KTalk Import button
     ImGui::SameLine();
-    if (ImGui::Button(L.MainWindow.KTalkImport(), ImVec2(130, 0))) {
+    if (ImGui::Button(L.get("KTalk Import"), ImVec2(130, 0))) {
         if (kTalkImportCallback_) {
             kTalkImportCallback_();
         }
@@ -147,7 +169,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // Settings button
     ImGui::SameLine();
-    if (ImGui::Button(L.MainWindow.Settings(), ImVec2(110, 0))) {
+    if (ImGui::Button(L.get("Settings"), ImVec2(110, 0))) {
         if (settingsCallback_) {
             settingsCallback_();
         }
@@ -157,7 +179,7 @@ void TimeEntriesView::renderTopButtons() {
 void TimeEntriesView::renderDateSelector() {
     auto& L = localization::L10n();
 
-    ImGui::Text(L.DateSelector.From());
+    ImGui::Text("%s", L.get("From"));
     ImGui::SameLine();
 
     if (widgets::DatePicker::renderWithCalendar("##displayStartDate", displayStartDate_)) {
@@ -166,7 +188,7 @@ void TimeEntriesView::renderDateSelector() {
     }
 
     ImGui::SameLine();
-    ImGui::Text(L.DateSelector.To());
+    ImGui::Text("%s", L.get("to"));
     ImGui::SameLine();
 
     if (widgets::DatePicker::renderWithCalendar("##displayEndDate", displayEndDate_)) {
@@ -176,7 +198,7 @@ void TimeEntriesView::renderDateSelector() {
 
     // Quick date buttons
     ImGui::SameLine();
-    if (ImGui::Button(L.DateSelector.Today())) {
+    if (ImGui::Button(L.get("Today"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -185,7 +207,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button(L.DateSelector.ThisWeek())) {
+    if (ImGui::Button(L.get("This Week"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -194,7 +216,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button(L.DateSelector.ThisMonth())) {
+    if (ImGui::Button(L.get("This Month"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfMonth(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -208,7 +230,7 @@ void TimeEntriesView::renderDateGroupedEntries() {
     auto& L = localization::L10n();
 
     if (entries_.empty()) {
-        ImGui::TextDisabled(L.TimeEntries.NoEntries());
+        ImGui::TextDisabled("%s", L.get("No entries for selected date range"));
         return;
     }
 
@@ -238,7 +260,7 @@ void TimeEntriesView::renderDateGroupedEntries() {
                 if (fact.endTime.has_value()) {
                     endTime = utils::TimeUtils::formatTime(*fact.endTime);
                 } else {
-                    endTime = "(ongoing)";
+                    endTime = L.get("(ongoing)");
                 }
 
                 std::string duration = utils::TimeUtils::formatDuration(fact.getDuration(now));
@@ -306,7 +328,7 @@ void TimeEntriesView::renderFixedFooter() {
     }
 
     // Grand total row (always visible, clickable)
-    std::string totalStr = std::string(L.TimeEntries.Total()) + ": " + utils::TimeUtils::formatDuration(totalSeconds);
+    std::string totalStr = std::string(L.get("Total")) + ": " + utils::TimeUtils::formatDuration(totalSeconds);
     const char* arrow = showActivityBreakdown_ ? " ^" : " v";  // Simple ASCII arrows
 
     if (ImGui::Selectable((totalStr + arrow).c_str(), false, 0, ImVec2(0, 30))) {
@@ -341,23 +363,25 @@ void TimeEntriesView::renderFixedFooter() {
 }
 
 void TimeEntriesView::renderEditForm() {
-    ImGui::OpenPopup("Edit Entry");
+    auto& L = localization::L10n();
+
+    ImGui::OpenPopup(L.get("Edit Entry"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal("Edit Entry", &showEditForm_, ImGuiWindowFlags_NoResize)) {
-        ImGui::Text("Activity:");
+    if (ImGui::BeginPopupModal(L.get("Edit Entry"), &showEditForm_, ImGuiWindowFlags_NoResize)) {
+        ImGui::Text("%s", L.get("Activity:"));
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
 
-        ImGui::Text("Description:");
+        ImGui::Text("%s", L.get("Description:"));
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editDescription", editActivityDescription_, sizeof(editActivityDescription_));
 
         ImGui::Spacing();
-        ImGui::Text("Start:");
+        ImGui::Text("%s", L.get("Start:"));
         widgets::DatePicker::renderWithCalendar("##editStartDate", editStartDate_);
         ImGui::SameLine();
 
@@ -381,10 +405,10 @@ void TimeEntriesView::renderEditForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Checkbox("Ongoing", &editIsOngoing_);
+        ImGui::Checkbox(L.get("Ongoing"), &editIsOngoing_);
 
         if (!editIsOngoing_) {
-            ImGui::Text("End:");
+            ImGui::Text("%s", L.get("End:"));
             widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
             ImGui::SameLine();
 
@@ -412,17 +436,17 @@ void TimeEntriesView::renderEditForm() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        if (ImGui::Button("Save", ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Save"), ImVec2(100, 0))) {
             saveEdit();
             showEditForm_ = false;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Delete", ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Delete"), ImVec2(100, 0))) {
             deleteEntry();
             showEditForm_ = false;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(100, 0))) {
             showEditForm_ = false;
         }
 
@@ -431,23 +455,25 @@ void TimeEntriesView::renderEditForm() {
 }
 
 void TimeEntriesView::renderAddForm() {
-    ImGui::OpenPopup("Add Entry");
+    auto& L = localization::L10n();
+
+    ImGui::OpenPopup(L.get("Add Entry"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal("Add Entry", &showAddForm_, ImGuiWindowFlags_NoResize)) {
-        ImGui::Text("Activity:");
+    if (ImGui::BeginPopupModal(L.get("Add Entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
+        ImGui::Text("%s", L.get("Activity:"));
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##addActivity", addActivityName_, sizeof(addActivityName_));
 
-        ImGui::Text("Description:");
+        ImGui::Text("%s", L.get("Description:"));
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##addDescription", addActivityDescription_, sizeof(addActivityDescription_));
 
         ImGui::Spacing();
-        ImGui::Text("Start:");
+        ImGui::Text("%s", L.get("Start:"));
         widgets::DatePicker::renderWithCalendar("##addStartDate", addStartDate_);
         ImGui::SameLine();
 
@@ -471,10 +497,10 @@ void TimeEntriesView::renderAddForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Checkbox("Ongoing", &addIsOngoing_);
+        ImGui::Checkbox(L.get("Ongoing"), &addIsOngoing_);
 
         if (!addIsOngoing_) {
-            ImGui::Text("End:");
+            ImGui::Text("%s", L.get("End:"));
             widgets::DatePicker::renderWithCalendar("##addEndDate", addEndDate_);
             ImGui::SameLine();
 
@@ -502,12 +528,12 @@ void TimeEntriesView::renderAddForm() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        if (ImGui::Button("Add", ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Add"), ImVec2(100, 0))) {
             saveAdd();
             showAddForm_ = false;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(100, 0))) {
             showAddForm_ = false;
         }
 
@@ -859,13 +885,25 @@ int64_t TimeEntriesView::getTimestampFromDate(const int* date, const int* time) 
 }
 
 std::map<std::string, std::vector<models::Fact>> TimeEntriesView::groupEntriesByDate() {
+    auto& L = localization::L10n();
     std::map<std::string, std::vector<models::Fact>> grouped;
 
+    // Parse localized weekday and month names
+    auto weekdayNames = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
+    auto monthNamesShort = splitByComma(L.get("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"));
+
     for (const auto& fact : entries_) {
-        // Format date as "Monday Jan.27"
+        // Format date as "Monday Jan.27" using localized names
         auto tm = utils::TimeUtils::toLocalTime(fact.startTime);
-        char dateStr[64];
-        strftime(dateStr, sizeof(dateStr), "%A %b.%d", &tm);
+
+        std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
+            ? weekdayNames[tm.tm_wday] : "";
+        std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
+            ? monthNamesShort[tm.tm_mon] : "";
+
+        char dateStr[128];
+        snprintf(dateStr, sizeof(dateStr), "%s %s.%d",
+                weekday.c_str(), month.c_str(), tm.tm_mday);
 
         grouped[dateStr].push_back(fact);
     }

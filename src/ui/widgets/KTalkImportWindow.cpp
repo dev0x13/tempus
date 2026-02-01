@@ -81,9 +81,9 @@ void KTalkImportWindow::handleImport() {
     isImporting_ = false;
 
     if (result.success) {
-        std::ostringstream oss;
-        oss << L.KTalkImport.ImportSuccessMessage() << result.conferencesImported << " meeting(s)";
-        statusMessage_ = oss.str();
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), L.get("Successfully imported %d conferences."), result.conferencesImported);
+        statusMessage_ = buffer;
         showSuccess_ = true;
 
         // Clear form and close on success (after showing message)
@@ -106,30 +106,34 @@ void KTalkImportWindow::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.KTalkImport.Title(), &visible_, ImGuiWindowFlags_NoCollapse)) {
-        ImGui::TextWrapped("Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab.");
+    if (ImGui::Begin(L.get("Import from KTalk"), &visible_, ImGuiWindowFlags_NoCollapse)) {
+        ImGui::TextWrapped("%s", L.get("Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab."));
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
         // Date range selectors
-        ImGui::Text("%s", L.KTalkImport.SelectDate());
+        ImGui::Text("%s", L.get("Select date to import:"));
         ImGui::Spacing();
 
-        DatePicker::renderWithCalendar("From Date", fromDate_);
+        ImGui::Text("%s", L.get("From"));
         ImGui::SameLine();
-        ImGui::Text("  ");
+
+        DatePicker::renderWithCalendar(L.get("##displayFromDate"), fromDate_);
+
         ImGui::SameLine();
-        DatePicker::renderWithCalendar("To Date", toDate_);
+        ImGui::Text("%s", L.get("to"));
+        ImGui::SameLine();
+
+        DatePicker::renderWithCalendar(L.get("##displayToDate"), toDate_);
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
         // Fetch payload text area
-        ImGui::Text("Fetch Payload:");
-        ImGui::TextWrapped("Paste the JavaScript fetch() call copied from browser DevTools:");
+        ImGui::Text("%s", L.get("Fetch Payload:"));
         ImGui::Spacing();
 
         ImGui::InputTextMultiline(
@@ -152,20 +156,20 @@ void KTalkImportWindow::render() {
             ImGui::Spacing();
         } else if (showError_) {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-            ImGui::TextWrapped("Error: %s", statusMessage_.c_str());
+            ImGui::TextWrapped("%s: %s", L.get("Import failed"), statusMessage_.c_str());
             ImGui::PopStyleColor();
             ImGui::Spacing();
         }
 
         // Buttons
         if (isImporting_) {
-            ImGui::Text("Importing...");
+            ImGui::Text("%s", L.get("Importing..."));
         } else {
-            if (ImGui::Button("Import", ImVec2(120, 0))) {
+            if (ImGui::Button(L.get("Import"), ImVec2(120, 0))) {
                 handleImport();
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            if (ImGui::Button(L.get("Cancel"), ImVec2(120, 0))) {
                 hide();
             }
 

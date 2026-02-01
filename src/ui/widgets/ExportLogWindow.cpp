@@ -1,9 +1,11 @@
 #include "ExportLogWindow.hpp"
+#include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <ctime>
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <cstdio>
 
 namespace timetracker::ui::widgets {
 
@@ -13,6 +15,8 @@ ExportLogWindow::ExportLogWindow(std::shared_ptr<repositories::IYouTrackExportLo
 void ExportLogWindow::render() {
     if (!visible_) return;
 
+    auto& L = localization::L10n();
+
     // Update pagination metadata on each render
     updatePaginationMetadata();
 
@@ -21,10 +25,10 @@ void ExportLogWindow::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_Appearing);
 
-    if (ImGui::Begin("YouTrack Export Log", &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("YouTrack Export Log"), &visible_, ImGuiWindowFlags_NoCollapse)) {
         if (totalEntries_ == 0) {
             // Empty state
-            ImGui::TextWrapped("No export log entries found. Export some activities to YouTrack to see them logged here.");
+            ImGui::TextWrapped("%s", L.get("No export log entries found. Export some activities to YouTrack to see them logged here."));
         } else {
             renderLogTable();
             ImGui::Spacing();
@@ -66,6 +70,8 @@ void ExportLogWindow::updatePaginationMetadata() {
 }
 
 void ExportLogWindow::renderLogTable() {
+    auto& L = localization::L10n();
+
     // Fetch current page entries
     int offset = currentPage_ * pageSize_;
     auto entries = repository_->getLogEntries(offset, pageSize_);
@@ -73,11 +79,11 @@ void ExportLogWindow::renderLogTable() {
     // Table header
     if (ImGui::BeginTable("ExportLogTable", 5,
                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-        ImGui::TableSetupColumn("Export Time", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-        ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthFixed, 200.0f);
-        ImGui::TableSetupColumn("Issue ID", ImGuiTableColumnFlags_WidthFixed, 120.0f);
-        ImGui::TableSetupColumn("Tracked Date", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-        ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn(L.get("Export Time"), ImGuiTableColumnFlags_WidthFixed, 150.0f);
+        ImGui::TableSetupColumn(L.get("Activity"), ImGuiTableColumnFlags_WidthFixed, 200.0f);
+        ImGui::TableSetupColumn(L.get("Issue ID"), ImGuiTableColumnFlags_WidthFixed, 120.0f);
+        ImGui::TableSetupColumn(L.get("Tracked Date"), ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn(L.get("Duration"), ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableHeadersRow();
 
         // Table rows
@@ -99,11 +105,15 @@ void ExportLogWindow::renderLogTable() {
             ImGui::TableSetColumnIndex(4);
             int hours = entry.durationMinutes / 60;
             int minutes = entry.durationMinutes % 60;
+            char durationStr[64];
             if (hours > 0) {
-                ImGui::Text("%dh %dm", hours, minutes);
+                snprintf(durationStr, sizeof(durationStr), "%d%s %d%s",
+                    hours, L.get("h"), minutes, L.get("min"));
             } else {
-                ImGui::Text("%dm", minutes);
+                snprintf(durationStr, sizeof(durationStr), "%d%s",
+                    minutes, L.get("min"));
             }
+            ImGui::Text("%s", durationStr);
         }
 
         ImGui::EndTable();
@@ -111,11 +121,13 @@ void ExportLogWindow::renderLogTable() {
 }
 
 void ExportLogWindow::renderPaginationControls() {
+    auto& L = localization::L10n();
+
     // Previous button
     if (currentPage_ == 0) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button("< Previous")) {
+    if (ImGui::Button(L.get("< Previous"))) {
         if (currentPage_ > 0) {
             currentPage_--;
         }
@@ -127,7 +139,9 @@ void ExportLogWindow::renderPaginationControls() {
     ImGui::SameLine();
 
     // Page indicator
-    ImGui::Text("Page %d of %d", currentPage_ + 1, totalPages_);
+    char pageText[64];
+    snprintf(pageText, sizeof(pageText), L.get("Page %d of %d"), currentPage_ + 1, totalPages_);
+    ImGui::Text("%s", pageText);
 
     ImGui::SameLine();
 
@@ -135,7 +149,7 @@ void ExportLogWindow::renderPaginationControls() {
     if (currentPage_ >= totalPages_ - 1) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Next >")) {
+    if (ImGui::Button(L.get("Next >"))) {
         if (currentPage_ < totalPages_ - 1) {
             currentPage_++;
         }
@@ -146,24 +160,26 @@ void ExportLogWindow::renderPaginationControls() {
 }
 
 void ExportLogWindow::renderClearLogControls() {
-    if (ImGui::Button("Clear Log")) {
+    auto& L = localization::L10n();
+
+    if (ImGui::Button(L.get("Clear Log"))) {
         showClearConfirmation_ = true;
     }
 
     // Confirmation dialog
     if (showClearConfirmation_) {
-        ImGui::OpenPopup("Clear Log Confirmation");
+        ImGui::OpenPopup(L.get("Clear Log Confirmation"));
     }
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("Clear Log Confirmation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Are you sure you want to clear all export log entries?");
-        ImGui::Text("This action cannot be undone.");
+    if (ImGui::BeginPopupModal(L.get("Clear Log Confirmation"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s", L.get("Are you sure you want to clear all export log entries?"));
+        ImGui::Text("%s", L.get("This action cannot be undone."));
         ImGui::Spacing();
 
-        if (ImGui::Button("Yes, Clear Log", ImVec2(150, 0))) {
+        if (ImGui::Button(L.get("Yes, Clear Log"), ImVec2(150, 0))) {
             repository_->clearLog();
             showClearConfirmation_ = false;
             currentPage_ = 0;
@@ -172,7 +188,7 @@ void ExportLogWindow::renderClearLogControls() {
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Cancel", ImVec2(150, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(150, 0))) {
             showClearConfirmation_ = false;
             ImGui::CloseCurrentPopup();
         }

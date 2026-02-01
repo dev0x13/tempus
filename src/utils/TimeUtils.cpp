@@ -1,4 +1,5 @@
 #include "TimeUtils.hpp"
+#include "localization/LocalizationManager.hpp"
 #include <stdexcept>
 
 namespace timetracker::utils {
@@ -77,6 +78,8 @@ int64_t TimeUtils::fromLocalTime(int year, int month, int day, int hour, int min
 }
 
 std::string TimeUtils::formatDuration(int64_t seconds) {
+    auto& L = localization::L10n();
+
     if (seconds < 0) seconds = 0;
 
     int64_t hours = seconds / 3600;
@@ -84,9 +87,9 @@ std::string TimeUtils::formatDuration(int64_t seconds) {
 
     std::ostringstream oss;
     if (hours > 0) {
-        oss << hours << "h " << minutes << "min";
+        oss << hours << L.get("h") << " " << minutes << L.get("min");
     } else {
-        oss << minutes << "min";
+        oss << minutes << L.get("min");
     }
     return oss.str();
 }

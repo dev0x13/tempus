@@ -1,165 +1,178 @@
 #pragma once
 
+#include <unordered_map>
+#include <string>
+
 namespace timetracker::localization::ru {
 
-// Common strings
-struct CommonStrings {
-    static constexpr const char* Save() { return "Сохранить"; }
-    static constexpr const char* Cancel() { return "Отмена"; }
-    static constexpr const char* OK() { return "ОК"; }
-    static constexpr const char* Error() { return "Ошибка"; }
-    static constexpr const char* Success() { return "Успешно"; }
-    static constexpr const char* Warning() { return "Предупреждение"; }
-    static constexpr const char* Delete() { return "Удалить"; }
-    static constexpr const char* Add() { return "Добавить"; }
-    static constexpr const char* Edit() { return "Изменить"; }
-    static constexpr const char* Close() { return "Закрыть"; }
-    static constexpr const char* Yes() { return "Да"; }
-    static constexpr const char* No() { return "Нет"; }
-};
+// Russian translations map: English key -> Russian translation
+inline std::unordered_map<std::string, std::string> getTranslations() {
+    return {
+        // Common
+        {"Save", "Сохранить"},
+        {"Cancel", "Отмена"},
+        {"OK", "ОК"},
+        {"Error", "Ошибка"},
+        {"Success", "Успех"},
+        {"Warning", "Предупреждение"},
+        {"Delete", "Удалить"},
+        {"Add", "Добавить"},
+        {"Edit", "Изменить"},
+        {"Close", "Закрыть"},
+        {"Yes", "Да"},
+        {"No", "Нет"},
 
-// Main window / Top buttons
-struct MainWindowStrings {
-    static constexpr const char* Title() { return "Трекер Времени"; }
-    static constexpr const char* Start() { return "Старт"; }
-    static constexpr const char* Stop() { return "Стоп"; }
-    static constexpr const char* ExportCSV() { return "Экспорт CSV"; }
-    static constexpr const char* ExportToYouTrack() { return "Экспорт в YouTrack"; }
-    static constexpr const char* KTalkImport() { return "Импорт KTalk"; }
-    static constexpr const char* Settings() { return "Настройки"; }
-};
+        // Main Window
+        {"Time Tracker", "Трекер времени"},
+        {"Start", "Старт"},
+        {"Stop", "Стоп"},
+        {"Export CSV", "Экспорт CSV"},
+        {"Export to YouTrack", "Экспорт в YouTrack"},
+        {"KTalk Import", "Импорт KTalk"},
+        {"Settings", "Настройки"},
 
-// Date selector
-struct DateSelectorStrings {
-    static constexpr const char* From() { return "С"; }
-    static constexpr const char* To() { return "по"; }
-    static constexpr const char* Today() { return "Сегодня"; }
-    static constexpr const char* ThisWeek() { return "Эта неделя"; }
-    static constexpr const char* ThisMonth() { return "Этот месяц"; }
-};
+        // Date Selector
+        {"From", "С"},
+        {"to", "по"},
+        {"Today", "Сегодня"},
+        {"This Week", "Эта неделя"},
+        {"This Month", "Этот месяц"},
 
-// Time entries view
-struct TimeEntriesStrings {
-    static constexpr const char* Activity() { return "Активность"; }
-    static constexpr const char* Description() { return "Описание"; }
-    static constexpr const char* StartTime() { return "Начало"; }
-    static constexpr const char* EndTime() { return "Конец"; }
-    static constexpr const char* Duration() { return "Длительность"; }
-    static constexpr const char* Actions() { return "Действия"; }
-    static constexpr const char* EditActivity() { return "Изменить активность"; }
-    static constexpr const char* AddActivity() { return "Добавить активность"; }
-    static constexpr const char* DeleteActivity() { return "Удалить активность"; }
-    static constexpr const char* NoEntries() { return "Нет записей за выбранный период"; }
-    static constexpr const char* CurrentlyTracking() { return "Отслеживается сейчас"; }
-    static constexpr const char* Total() { return "Всего"; }
-    static constexpr const char* ShowBreakdown() { return "Показать разбивку по активностям"; }
-    static constexpr const char* HideBreakdown() { return "Скрыть разбивку по активностям"; }
-    static constexpr const char* ActivityNamePlaceholder() { return "Название активности"; }
-    static constexpr const char* DescriptionPlaceholder() { return "Описание (необязательно)"; }
-};
+        // Time Entries
+        {"Activity", "Активность"},
+        {"Description", "Описание"},
+        {"Start", "Начало"},
+        {"End", "Конец"},
+        {"Duration", "Длительность"},
+        {"Actions", "Действия"},
+        {"Edit Activity", "Изменить активность"},
+        {"Add Activity", "Добавить активность"},
+        {"Delete Activity", "Удалить активность"},
+        {"No entries for selected date range", "Нет записей за выбранный период"},
+        {"Currently tracking", "Отслеживается сейчас"},
+        {"Total", "Всего"},
+        {"Show activity breakdown", "Показать разбивку по активностям"},
+        {"Hide activity breakdown", "Скрыть разбивку по активностям"},
+        {"Activity name", "Название активности"},
+        {"Optional description", "Описание (необязательно)"},
+        {"(ongoing)", "(в процессе)"},
+        {"Edit Entry", "Редактировать запись"},
+        {"Add Entry", "Добавить запись"},
+        {"Activity:", "Активность:"},
+        {"Description:", "Описание:"},
+        {"Start:", "Начало:"},
+        {"End:", "Конец:"},
+        {"Ongoing", "В процессе"},
 
-// Settings dialog
-struct SettingsStrings {
-    static constexpr const char* Title() { return "Настройки"; }
-    static constexpr const char* YouTrackSettings() { return "Настройки YouTrack"; }
-    static constexpr const char* URL() { return "URL:"; }
-    static constexpr const char* Token() { return "Токен:"; }
-    static constexpr const char* URLTooltip() { return "URL сервера YouTrack (например, https://youtrack.company.com)"; }
-    static constexpr const char* TokenTooltip() { return "Постоянный токен YouTrack для аутентификации"; }
-    static constexpr const char* ExportLog() { return "Журнал экспорта"; }
-    static constexpr const char* ActivityAliases() { return "Псевдонимы активностей"; }
-    static constexpr const char* MapActivityNames() { return "Сопоставление названий активностей с ID задач YouTrack:"; }
-    static constexpr const char* ActivityName() { return "Название активности"; }
-    static constexpr const char* IssueID() { return "ID задачи"; }
-    static constexpr const char* AddAlias() { return "+ Добавить псевдоним"; }
-    static constexpr const char* KTalkImportSettings() { return "Импорт KTalk"; }
-    static constexpr const char* IncludeUnplannedMeetings() { return "Включать незапланированные встречи"; }
-    static constexpr const char* IncludeUnplannedTooltip() { return "Если включено, импортируются все конференции, включая те, у которых нет названия.\nЕсли выключено, импортируются только конференции с названием."; }
-    static constexpr const char* URLValidationError() { return "URL должен начинаться с http:// или https://"; }
-    static constexpr const char* AliasValidationError() { return "Все записи псевдонимов должны содержать и название активности, и ID задачи"; }
-    static constexpr const char* Language() { return "Язык:"; }
-    static constexpr const char* LanguageEnglish() { return "Английский"; }
-    static constexpr const char* LanguageRussian() { return "Русский"; }
-};
+        // Settings
+        {"YouTrack Settings", "Настройки YouTrack"},
+        {"URL:", "URL:"},
+        {"Token:", "Токен:"},
+        {"YouTrack server URL (e.g., https://youtrack.company.com)", "URL сервера YouTrack (например, https://youtrack.company.com)"},
+        {"YouTrack permanent token for authentication", "Постоянный токен YouTrack для аутентификации"},
+        {"Export Log", "Журнал экспорта"},
+        {"Activity Aliases", "Псевдонимы активностей"},
+        {"Map activity names to YouTrack issue IDs:", "Сопоставьте названия активностей с ID задач YouTrack:"},
+        {"Activity Name", "Название активности"},
+        {"Issue ID", "ID задачи"},
+        {"+ Add Alias", "+ Добавить псевдоним"},
+        {"KTalk Import", "Импорт KTalk"},
+        {"Include unplanned meetings", "Включить незапланированные встречи"},
+        {"When enabled, imports all conferences including those without a title.\\nWhen disabled, only imports conferences that have a title.", "Если включено, импортирует все конференции, включая те, у которых нет названия.\\nЕсли выключено, импортирует только конференции с названием."},
+        {"URL must start with http:// or https://", "URL должен начинаться с http:// или https://"},
+        {"All alias entries must have both activity name and issue ID", "Все записи псевдонимов должны иметь как название активности, так и ID задачи"},
+        {"Language:", "Язык:"},
+        {"English", "English"},
+        {"Russian", "Русский"},
 
-// System tray
-struct SystemTrayStrings {
-    static constexpr const char* Idle() { return "Трекер Времени - Простой"; }
-    static constexpr const char* TrackingPrefix() { return "Трекер Времени - Отслеживание: "; }
-    static constexpr const char* QuickAddActivity() { return "Быстрое добавление"; }
-    static constexpr const char* ShowWindow() { return "Показать окно"; }
-    static constexpr const char* StopTracking() { return "Остановить"; }
-    static constexpr const char* StopTrackingPrefix() { return "Остановить: "; }
-    static constexpr const char* RecentActivities() { return "Недавние активности"; }
-    static constexpr const char* Exit() { return "Выход"; }
-    static constexpr const char* Tracking() { return "Отслеживание: "; }
-};
+        // System Tray
+        {"Time Tracker - Idle", "Трекер времени - Простой"},
+        {"Time Tracker - Tracking: ", "Трекер времени - Отслеживание: "},
+        {"Quick Add Activity", "Быстрое добавление активности"},
+        {"Show Window", "Показать окно"},
+        {"Stop Tracking", "Остановить отслеживание"},
+        {"Stop Tracking: ", "Остановить отслеживание: "},
+        {"Recent Activities", "Недавние активности"},
+        {"Exit", "Выход"},
+        {"Tracking: ", "Отслеживание: "},
 
-// Export dialogs
-struct ExportStrings {
-    static constexpr const char* ExportConfirmationTitle() { return "Экспорт в YouTrack"; }
-    static constexpr const char* ExportConfirmationMessage() { return "Экспортировать %d записей в YouTrack?"; }
-    static constexpr const char* Confirm() { return "Подтвердить"; }
-    static constexpr const char* ExportProgress() { return "Экспорт..."; }
-    static constexpr const char* ExportProgressMessage() { return "Экспорт %d из %d записей..."; }
-    static constexpr const char* ExportSuccess() { return "Экспорт завершен"; }
-    static constexpr const char* ExportSuccessMessage() { return "Успешно экспортировано %d записей в YouTrack."; }
-    static constexpr const char* ExportError() { return "Ошибка экспорта"; }
-    static constexpr const char* ExportErrorMessage() { return "Не удалось экспортировать записи:\n%s"; }
-    static constexpr const char* CSVExportSuccess() { return "CSV успешно экспортирован"; }
-    static constexpr const char* CSVExportError() { return "Не удалось экспортировать CSV"; }
-};
+        // Export
+        {"Export to YouTrack", "Экспорт в YouTrack"},
+        {"Export %d time entries to YouTrack?", "Экспортировать %d записей времени в YouTrack?"},
+        {"Confirm", "Подтвердить"},
+        {"Exporting...", "Экспорт..."},
+        {"Exporting %d of %d entries...", "Экспорт %d из %d записей..."},
+        {"Export Complete", "Экспорт завершен"},
+        {"Successfully exported %d entries to YouTrack.", "Успешно экспортировано %d записей в YouTrack."},
+        {"Export Error", "Ошибка экспорта"},
+        {"Failed to export entries:\\n%s", "Не удалось экспортировать записи:\\n%s"},
+        {"CSV exported successfully", "CSV успешно экспортирован"},
+        {"Failed to export CSV", "Не удалось экспортировать CSV"},
 
-// Error messages
-struct ErrorStrings {
-    static constexpr const char* OverlapTitle() { return "Обнаружено наложение времени"; }
-    static constexpr const char* OverlapMessage() { return "Эта запись накладывается на существующую:\n\nСуществующая: %s (%s - %s)\n\nПожалуйста, измените время, чтобы избежать наложения."; }
-    static constexpr const char* InvalidTimeRange() { return "Время окончания должно быть позже времени начала"; }
-    static constexpr const char* ActivityNameRequired() { return "Название активности обязательно"; }
-    static constexpr const char* YouTrackNotConfigured() { return "YouTrack не настроен. Пожалуйста, укажите URL и токен в настройках."; }
-    static constexpr const char* NoActivityAlias() { return "Не настроен ID задачи YouTrack для активности: %s"; }
-};
+        // Errors
+        {"Time Overlap Detected", "Обнаружено пересечение времени"},
+        {"This entry overlaps with an existing entry:\\n\\nExisting: %s (%s - %s)\\n\\nPlease adjust the times to avoid overlap.", "Эта запись пересекается с существующей записью:\\n\\nСуществующая: %s (%s - %s)\\n\\nПожалуйста, измените время, чтобы избежать пересечения."},
+        {"End time must be after start time", "Время окончания должно быть после времени начала"},
+        {"Activity name is required", "Требуется название активности"},
+        {"YouTrack is not configured. Please set URL and token in Settings.", "YouTrack не настроен. Пожалуйста, установите URL и токен в настройках."},
+        {"No YouTrack issue ID configured for activity: %s", "Не настроен ID задачи YouTrack для активности: %s"},
 
-// Date and time formats
-struct DateTimeFormats {
-    static constexpr const char* DateFormat() { return "%d.%m.%Y"; }
-    static constexpr const char* TimeFormat() { return "%H:%M"; }
-    static constexpr const char* DateTimeFormat() { return "%d.%m.%Y %H:%M"; }
-    static constexpr const char* DurationFormat() { return "%dч %02dм"; }
-    static constexpr const char* MonthNames() { return "Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь"; }
-    static constexpr const char* WeekdayNames() { return "Вс,Пн,Вт,Ср,Чт,Пт,Сб"; }
-    static constexpr int FirstDayOfWeek() { return 1; } // Monday
-};
+        // Date/Time Formats
+        {"%m/%d/%Y", "%d.%m.%Y"},
+        {"%I:%M %p", "%H:%M"},
+        {"%m/%d/%Y %I:%M %p", "%d.%m.%Y %H:%M"},
+        {"%dh %02dm", "%dч %02dм"},
+        {"h", "ч"},
+        {"min", "мин"},
+        {"January,February,March,April,May,June,July,August,September,October,November,December", "Январь,Февраль,Март,Апрель,Май,Июнь,Июль,Август,Сентябрь,Октябрь,Ноябрь,Декабрь"},
+        {"Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec", "Янв,Фев,Мар,Апр,Май,Июн,Июл,Авг,Сен,Окт,Ноя,Дек"},
+        {"Sun,Mon,Tue,Wed,Thu,Fri,Sat", "Вс,Пн,Вт,Ср,Чт,Пт,Сб"},
+        {"Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday", "Воскресенье,Понедельник,Вторник,Среда,Четверг,Пятница,Суббота"},
 
-// Quick Add Dialog
-struct QuickAddStrings {
-    static constexpr const char* Title() { return "Быстрое добавление активности"; }
-    static constexpr const char* ActivityName() { return "Активность:"; }
-    static constexpr const char* Description() { return "Описание:"; }
-    static constexpr const char* StartTracking() { return "Начать отслеживание"; }
-};
+        // Quick Add
+        {"Quick Add Activity", "Быстрое добавление активности"},
+        {"Start Tracking", "Начать отслеживание"},
 
-// Export Log Window
-struct ExportLogStrings {
-    static constexpr const char* Title() { return "Журнал экспорта YouTrack"; }
-    static constexpr const char* Date() { return "Дата"; }
-    static constexpr const char* Status() { return "Статус"; }
-    static constexpr const char* Message() { return "Сообщение"; }
-    static constexpr const char* NoEntries() { return "Нет записей в журнале экспорта"; }
-    static constexpr const char* StatusSuccess() { return "Успех"; }
-    static constexpr const char* StatusError() { return "Ошибка"; }
-};
+        // Export Log
+        {"YouTrack Export Log", "Журнал экспорта YouTrack"},
+        {"Export Time", "Время экспорта"},
+        {"Issue ID", "ID задачи"},
+        {"Tracked Date", "Дата отслеживания"},
+        {"No export log entries found. Export some activities to YouTrack to see them logged here.", "Записи журнала экспорта не найдены. Экспортируйте некоторые активности в YouTrack, чтобы увидеть их здесь."},
+        {"< Previous", "< Предыдущая"},
+        {"Next >", "Следующая >"},
+        {"Page %d of %d", "Страница %d из %d"},
+        {"Clear Log", "Очистить журнал"},
+        {"Clear Log Confirmation", "Подтверждение очистки журнала"},
+        {"Are you sure you want to clear all export log entries?", "Вы уверены, что хотите очистить все записи журнала экспорта?"},
+        {"This action cannot be undone.", "Это действие нельзя отменить."},
+        {"Yes, Clear Log", "Да, очистить журнал"},
+        {"Date", "Дата"},
+        {"Status", "Статус"},
+        {"Message", "Сообщение"},
+        {"No export log entries", "Нет записей в журнале экспорта"},
 
-// KTalk Import Window
-struct KTalkImportStrings {
-    static constexpr const char* Title() { return "Импорт из KTalk"; }
-    static constexpr const char* SelectDate() { return "Выберите дату для импорта:"; }
-    static constexpr const char* Import() { return "Импорт"; }
-    static constexpr const char* Importing() { return "Импортирование..."; }
-    static constexpr const char* ImportSuccess() { return "Импорт успешен"; }
-    static constexpr const char* ImportSuccessMessage() { return "Успешно импортировано конференций: %d."; }
-    static constexpr const char* ImportError() { return "Импорт не удался"; }
-    static constexpr const char* NoConferences() { return "Не найдено конференций для выбранной даты."; }
-};
+        // KTalk Import
+        {"Import from KTalk", "Импорт из KTalk"},
+        {"Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab.", "Импорт истории конференций из KTalk. Скопируйте запрос fetch() из вкладки Network в DevTools вашего браузера."},
+        {"From Date", "Дата начала"},
+        {"To Date", "Дата окончания"},
+        {"Fetch Payload:", "Данные запроса:"},
+        {"Select date to import:", "Выберите дату для импорта:"},
+        {"Import", "Импорт"},
+        {"Importing...", "Импортирование..."},
+        {"Import successful", "Импорт успешен"},
+        {"Successfully imported %d conferences.", "Успешно импортировано конференций: %d."},
+        {"Import failed", "Импорт не удался"},
+        {"No conferences found for the selected date.", "Не найдено конференций для выбранной даты."},
+    };
+}
+
+// Integer values (e.g., FirstDayOfWeek)
+inline std::unordered_map<std::string, int> getIntValues() {
+    return {
+        {"FirstDayOfWeek", 1}, // Monday
+    };
+}
 
 } // namespace timetracker::localization::ru

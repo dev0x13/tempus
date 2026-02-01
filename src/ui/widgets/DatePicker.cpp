@@ -1,8 +1,32 @@
 #include "DatePicker.hpp"
+#include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <cstdio>
+#include <cstring>
+#include <vector>
+#include <string>
 
 namespace timetracker::ui::widgets {
+
+namespace {
+    // Helper function to split comma-separated strings
+    std::vector<std::string> splitByComma(const char* str) {
+        std::vector<std::string> result;
+        std::string current;
+        for (const char* p = str; *p != '\0'; ++p) {
+            if (*p == ',') {
+                result.push_back(current);
+                current.clear();
+            } else {
+                current += *p;
+            }
+        }
+        if (!current.empty()) {
+            result.push_back(current);
+        }
+        return result;
+    }
+}
 
 bool DatePicker::render(const char* label, int* date) {
     bool changed = false;
@@ -75,6 +99,13 @@ bool DatePicker::renderWithCalendar(const char* label, int* date) {
 
 void DatePicker::renderCalendarPopup(const char* popupId, int* date, bool& changed) {
     if (ImGui::BeginPopup(popupId)) {
+        auto& L = localization::L10n();
+
+        // Get localized month and weekday names
+        auto months = splitByComma(L.get("January,February,March,April,May,June,July,August,September,October,November,December"));
+        auto weekdays = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
+        int firstDayOfWeek = L.getInt("FirstDayOfWeek", 0);
+
         // Month/Year navigation
         if (ImGui::ArrowButton("##prev_month", ImGuiDir_Left)) {
             date[1]--;
@@ -86,12 +117,12 @@ void DatePicker::renderCalendarPopup(const char* popupId, int* date, bool& chang
         }
         ImGui::SameLine();
 
-        char monthYear[32];
-        static const char* months[] = {
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        };
-        snprintf(monthYear, sizeof(monthYear), "%s %d", months[date[1] - 1], date[0]);
+        char monthYear[128];
+        if (date[1] >= 1 && date[1] <= 12 && months.size() >= 12) {
+            snprintf(monthYear, sizeof(monthYear), "%s %d", months[date[1] - 1].c_str(), date[0]);
+        } else {
+            snprintf(monthYear, sizeof(monthYear), "%d", date[0]);
+        }
         ImGui::Text("%s", monthYear);
 
         ImGui::SameLine();
@@ -106,12 +137,16 @@ void DatePicker::renderCalendarPopup(const char* popupId, int* date, bool& chang
 
         ImGui::Separator();
 
-        // Day headers
-        static const char* days[] = {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"};
-        for (int i = 0; i < 7; i++) {
-            if (i > 0) ImGui::SameLine();
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
-            ImGui::Text("%s", days[i]);
+        // Day headers - reorder based on first day of week
+        // weekdays is in order: Sun, Mon, Tue, Wed, Thu, Fri, Sat
+        // firstDayOfWeek: 0=Sunday, 1=Monday
+        if (weekdays.size() >= 7) {
+            for (int i = 0; i < 7; i++) {
+                if (i > 0) ImGui::SameLine();
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
+                int dayIndex = (firstDayOfWeek + i) % 7;
+                ImGui::Text("%s", weekdays[dayIndex].c_str());
+            }
         }
 
         // Calendar grid
@@ -169,10 +204,14 @@ int DatePicker::getDaysInMonth(int year, int month) {
 }
 
 int DatePicker::getFirstDayOfMonth(int year, int month) {
+    auto& L = localization::L10n();
     int64_t timestamp = utils::TimeUtils::fromLocalTime(year, month, 1, 12, 0, 0);
     auto tm = utils::TimeUtils::toLocalTime(timestamp);
-    // Convert Sunday = 0 to Monday = 0
-    return (tm.tm_wday + 6) % 7;
+
+    // tm.tm_wday is 0=Sunday, 1=Monday, ..., 6=Saturday
+    // Convert to calendar grid position based on locale's first day of week
+    int firstDayOfWeek = L.getInt("FirstDayOfWeek", 0);
+    return (tm.tm_wday - firstDayOfWeek + 7) % 7;
 }
 
 } // namespace timetracker::ui::widgets

@@ -173,7 +173,7 @@ void SystemTray::updateWindows() {
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string prefix = L.SystemTray.TrackingPrefix();
+      std::string prefix = L.get("Time Tracker - Tracking: ");
       std::wstring tip = std::wstring(prefix.begin(), prefix.end());
       // Convert activity name to wide string
       std::string activityName = current->activityName;
@@ -181,7 +181,7 @@ void SystemTray::updateWindows() {
       wcscpy_s(nid_.szTip, tip.c_str());
     }
   } else {
-    std::string idleStr = L.SystemTray.Idle();
+    std::string idleStr = L.get("Time Tracker - Idle");
     std::wstring idleTip = std::wstring(idleStr.begin(), idleStr.end());
     wcscpy_s(nid_.szTip, idleTip.c_str());
   }
@@ -197,7 +197,7 @@ void SystemTray::showContextMenuWindows() {
   HMENU menu = CreatePopupMenu();
 
   // Show/Hide Window
-  std::string showWindowStr = L.SystemTray.ShowWindow();
+  std::string showWindowStr = L.get("Show Window");
   std::wstring showWindowW(showWindowStr.begin(), showWindowStr.end());
   AppendMenuW(menu, MF_STRING, 1, showWindowW.c_str());
 
@@ -205,7 +205,7 @@ void SystemTray::showContextMenuWindows() {
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string stopPrefix = L.SystemTray.StopTrackingPrefix();
+      std::string stopPrefix = L.get("Stop Tracking: ");
       std::wstring stopText(stopPrefix.begin(), stopPrefix.end());
       std::string activityName = current->activityName;
       stopText += std::wstring(activityName.begin(), activityName.end());
@@ -225,7 +225,7 @@ void SystemTray::showContextMenuWindows() {
       AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i),
                   activityW.c_str());
     }
-    std::string recentStr = L.SystemTray.RecentActivities();
+    std::string recentStr = L.get("Recent Activities");
     std::wstring recentW(recentStr.begin(), recentStr.end());
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
                 recentW.c_str());
@@ -233,7 +233,7 @@ void SystemTray::showContextMenuWindows() {
   }
 
   // Exit
-  std::string exitStr = L.SystemTray.Exit();
+  std::string exitStr = L.get("Exit");
   std::wstring exitW(exitStr.begin(), exitStr.end());
   AppendMenuW(menu, MF_STRING, 3, exitW.c_str());
 
@@ -371,13 +371,13 @@ void SystemTray::createMenuLinux() {
   menu_ = gtk_menu_new();
 
   // "Quick Add Activity" menu item
-  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.SystemTray.QuickAddActivity());
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick Add Activity"));
   g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
 
   // "Show Window" menu item
-  menuItemShow_ = gtk_menu_item_new_with_label(L.SystemTray.ShowWindow());
+  menuItemShow_ = gtk_menu_item_new_with_label(L.get("Show Window"));
   g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemShow_);
@@ -387,7 +387,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
 
   // "Stop Tracking" menu item (initially hidden)
-  menuItemStop_ = gtk_menu_item_new_with_label(L.SystemTray.StopTracking());
+  menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop Tracking"));
   g_signal_connect(menuItemStop_, "activate", G_CALLBACK(onMenuStopActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);
@@ -398,7 +398,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator2);
 
   // "Exit" menu item
-  menuItemExit_ = gtk_menu_item_new_with_label(L.SystemTray.Exit());
+  menuItemExit_ = gtk_menu_item_new_with_label(L.get("Exit"));
   g_signal_connect(menuItemExit_, "activate", G_CALLBACK(onMenuExitActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemExit_);

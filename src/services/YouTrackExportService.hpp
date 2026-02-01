@@ -24,6 +24,7 @@ struct ExportResult {
     std::string errorMessage;
     int totalMinutes{0};
     int itemsExported{0};
+    std::vector<models::Fact> overlappingFacts;  // Populated when overlap detected
 };
 
 class YouTrackExportService {
@@ -51,6 +52,14 @@ public:
      * @return error message or empty string if configured
      */
     std::string getConfigurationError() const;
+
+    /**
+     * Check for overlapping facts in the date range.
+     * @param startTime Start of date range (Unix timestamp)
+     * @param endTime End of date range (Unix timestamp)
+     * @return Vector of overlapping facts (empty if no overlaps)
+     */
+    std::vector<models::Fact> checkForOverlaps(int64_t startTime, int64_t endTime);
 
     /**
      * Prepare export data for preview (aggregated work items).

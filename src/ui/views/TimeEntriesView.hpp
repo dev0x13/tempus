@@ -77,8 +77,10 @@ private:
     bool showExportProgress_{false};
     bool showExportSuccess_{false};
     bool showExportError_{false};
+    bool showOverlapError_{false};
     std::string exportErrorMessage_;
     std::vector<services::AggregatedWorkItem> pendingWorkItems_;
+    std::vector<models::Fact> overlappingFacts_;
     int exportedMinutes_{0};
     int exportedItems_{0};
 
@@ -98,6 +100,7 @@ private:
     void renderExportProgressDialog();
     void renderExportSuccessDialog();
     void renderExportErrorDialog();
+    void renderOverlapErrorDialog();
 
     void refreshEntries();
     void startEdit(const models::Fact& fact);
@@ -113,6 +116,9 @@ private:
 
     // Helper to group entries by date
     std::map<std::string, std::vector<models::Fact>> groupEntriesByDate();
+
+    // Helper to check if a fact is overlapping with any other facts
+    bool isFactOverlapping(const models::Fact& fact) const;
 };
 
 } // namespace timetracker::ui

@@ -206,4 +206,39 @@ void FactRepository::markFactsAsExported(const std::vector<int64_t>& factIds) {
     update.exec();
 }
 
+std::vector<models::Fact> FactRepository::findOverlappingFacts(int64_t startTime, int64_t endTime) {
+    // Get all completed facts in the date range (exclude ongoing facts)
+    auto facts = findByDateRange(startTime, endTime);
+
+    std::vector<models::Fact> overlappingFacts;
+
+    // Check each pair of facts for overlaps
+    for (size_t i = 0; i < facts.size(); ++i) {
+        // Skip ongoing facts
+        if (!facts[i].endTime.has_value()) {
+            continue;
+        }
+
+        for (size_t j = i + 1; j < facts.size(); ++j) {
+            // Skip ongoing facts
+            if (!facts[j].endTime.has_value()) {
+                continue;
+            }
+
+            // Check if they overlap
+            if (facts[i].overlapsWith(facts[j])) {
+                // Add both facts if not already in the result
+                if (std::find(overlappingFacts.begin(), overlappingFacts.end(), facts[i]) == overlappingFacts.end()) {
+                    overlappingFacts.push_back(facts[i]);
+                }
+                if (std::find(overlappingFacts.begin(), overlappingFacts.end(), facts[j]) == overlappingFacts.end()) {
+                    overlappingFacts.push_back(facts[j]);
+                }
+            }
+        }
+    }
+
+    return overlappingFacts;
+}
+
 } // namespace timetracker::repositories

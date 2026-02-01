@@ -39,6 +39,10 @@ std::string YouTrackExportService::getConfigurationError() const {
     return "";
 }
 
+std::vector<models::Fact> YouTrackExportService::checkForOverlaps(int64_t startTime, int64_t endTime) {
+    return factRepository_.findOverlappingFacts(startTime, endTime);
+}
+
 std::vector<AggregatedWorkItem> YouTrackExportService::prepareExport(int64_t startTime, int64_t endTime) {
     // Get all facts in date range (not just unexported ones - allow re-export)
     auto facts = factRepository_.findByDateRange(startTime, endTime);

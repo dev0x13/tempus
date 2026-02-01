@@ -86,6 +86,9 @@ void TimeEntriesView::render() {
     if (showExportError_) {
         renderExportErrorDialog();
     }
+    if (showOverlapError_) {
+        renderOverlapErrorDialog();
+    }
 }
 
 void TimeEntriesView::renderTopButtons() {
@@ -244,10 +247,20 @@ void TimeEntriesView::renderDateGroupedEntries() {
             snprintf(entryLine, sizeof(entryLine), "%s - %-10s  %-40s  %s",
                      startTime.c_str(), endTime.c_str(), activityDisplay.c_str(), duration.c_str());
 
-            // Make entry clickable
+            // Check if this fact overlaps with any other fact
+            bool isOverlapping = isFactOverlapping(fact);
+
+            // Make entry clickable with red color if overlapping
             ImGui::PushID(fact.id);
+            if (isOverlapping) {
+                // Use red color for overlapping facts
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+            }
             if (ImGui::Selectable(entryLine, false)) {
                 startEdit(fact);
+            }
+            if (isOverlapping) {
+                ImGui::PopStyleColor();
             }
             ImGui::PopID();
 
@@ -642,6 +655,55 @@ void TimeEntriesView::renderExportErrorDialog() {
     }
 }
 
+void TimeEntriesView::renderOverlapErrorDialog() {
+    ImGui::OpenPopup("Cannot Export: Overlapping Facts");
+
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Appearing);
+
+    if (ImGui::BeginPopupModal("Cannot Export: Overlapping Facts", &showOverlapError_)) {
+        ImGui::TextWrapped("Cannot export to YouTrack: overlapping facts detected.");
+        ImGui::TextWrapped("Please fix these entries manually before exporting:");
+        ImGui::Separator();
+
+        // Scrollable list of overlapping facts
+        ImGui::BeginChild("OverlappingFactsList", ImVec2(0, 250), true);
+
+        for (const auto& fact : overlappingFacts_) {
+            // Format: Activity Name: YYYY-MM-DD HH:MM - HH:MM
+            std::string startTime = utils::TimeUtils::formatDateTime(fact.startTime);
+            std::string endTime;
+            if (fact.endTime.has_value()) {
+                endTime = utils::TimeUtils::formatDateTime(*fact.endTime);
+            } else {
+                endTime = "(ongoing)";
+            }
+
+            // Build activity display name with description
+            std::string activityDisplay = fact.activityName;
+            if (!fact.description.empty()) {
+                activityDisplay += " (" + fact.description + ")";
+            }
+
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", activityDisplay.c_str());
+            ImGui::Text("  %s - %s", startTime.c_str(), endTime.c_str());
+            ImGui::Spacing();
+        }
+
+        ImGui::EndChild();
+
+        ImGui::Separator();
+        ImGui::TextWrapped("Fix these entries by editing their start/end times so they no longer overlap.");
+
+        if (ImGui::Button("OK", ImVec2(120, 0))) {
+            showOverlapError_ = false;
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
 void TimeEntriesView::refreshEntries() {
     entries_ = timeService_->getEntriesForRange(displayStartTime_, displayEndTime_);
 }
@@ -739,6 +801,13 @@ void TimeEntriesView::performCsvExport() {
 }
 
 void TimeEntriesView::performYouTrackExport() {
+    // Check for overlapping facts first
+    overlappingFacts_ = youTrackExportService_->checkForOverlaps(displayStartTime_, displayEndTime_);
+    if (!overlappingFacts_.empty()) {
+        showOverlapError_ = true;
+        return;
+    }
+
     // Prepare export data
     pendingWorkItems_ = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
 
@@ -778,6 +847,28 @@ std::map<std::string, std::vector<models::Fact>> TimeEntriesView::groupEntriesBy
     }
 
     return grouped;
+}
+
+bool TimeEntriesView::isFactOverlapping(const models::Fact& fact) const {
+    // Skip ongoing facts
+    if (!fact.endTime.has_value()) {
+        return false;
+    }
+
+    // Check if this fact overlaps with any other fact in the entries list
+    for (const auto& other : entries_) {
+        // Skip comparing with itself
+        if (fact.id == other.id) {
+            continue;
+        }
+
+        // Check for overlap
+        if (fact.overlapsWith(other)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 } // namespace timetracker::ui

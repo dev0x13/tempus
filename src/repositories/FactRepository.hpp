@@ -25,6 +25,9 @@ public:
     // YouTrack export status management
     void markFactsAsExported(const std::vector<int64_t>& factIds);
 
+    // Overlap detection
+    std::vector<models::Fact> findOverlappingFacts(int64_t startTime, int64_t endTime);
+
 private:
     database::Database& db_;
 

@@ -40,6 +40,26 @@ struct Fact {
         return currentTime - startTime;
     }
 
+    // Check if this fact overlaps with another fact (minute precision)
+    // Two facts overlap if: (A.start < B.end AND B.start < A.end)
+    // Ongoing facts (no end_time) are excluded from overlap detection
+    // Timestamps are converted to minutes (truncated) before comparison
+    [[nodiscard]] bool overlapsWith(const Fact& other) const {
+        // Skip ongoing facts
+        if (!endTime.has_value() || !other.endTime.has_value()) {
+            return false;
+        }
+
+        // Convert timestamps to minutes (truncate seconds)
+        int64_t thisStartMin = startTime / 60;
+        int64_t thisEndMin = *endTime / 60;
+        int64_t otherStartMin = other.startTime / 60;
+        int64_t otherEndMin = *other.endTime / 60;
+
+        // Check for overlap at minute precision: A.start < B.end AND B.start < A.end
+        return thisStartMin < otherEndMin && otherStartMin < thisEndMin;
+    }
+
     bool operator==(const Fact& other) const {
         return id == other.id;
     }

@@ -60,7 +60,10 @@ public:
     }
 
     static void ensureDataDirectoryExists() {
-        // Database is now in executable folder, no separate data directory needed
+        const auto dataDirectory = getDataDirectory();
+        if (!fs::exists(dataDirectory)) {
+            fs::create_directories(dataDirectory);
+        }
     }
 
     static fs::path getAssetsDirectory() {

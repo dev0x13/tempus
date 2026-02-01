@@ -1,4 +1,5 @@
 #include "KTalkImportService.hpp"
+#include "localization/LocalizationManager.hpp"
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <regex>
@@ -224,6 +225,8 @@ ImportResult KTalkImportService::importConferences(
     const std::string& fromDate,
     const std::string& toDate) {
 
+    auto& L = localization::L10n();
+
     ImportResult result;
 
     // Validate date range
@@ -295,15 +298,13 @@ ImportResult KTalkImportService::importConferences(
 
         // Create description: "{title} (KTalk)" or "Unplanned meeting (KTalk)" if no title
         std::string description;
-        if (conf.title.empty()) {
-            description = "Unplanned meeting (KTalk)";
-        } else {
-            description = conf.title + " (KTalk)";
+        if (!conf.title.empty()) {
+            description = conf.title;
         }
 
         try {
-            // Create time entry with activity name "Meeting" and conference title in description
-            timeTrackingService_.addManualEntry("Meeting", startTime, endTime, description);
+            // Create time entry with activity name "KTalk Meeting" and conference title in description
+            timeTrackingService_.addManualEntry(L.get("KTalk Meeting"), startTime, endTime, description);
             imported++;
         } catch (const std::exception& e) {
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;

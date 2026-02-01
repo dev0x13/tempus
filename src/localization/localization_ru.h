@@ -165,6 +165,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Successfully imported %d conferences.", "Успешно импортировано конференций: %d."},
         {"Import failed", "Импорт не удался"},
         {"No conferences found for the selected date.", "Не найдено конференций для выбранной даты."},
+        {"KTalk meeting", "Встреча в KTalk"}
     };
 }
 

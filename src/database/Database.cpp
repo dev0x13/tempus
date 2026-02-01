@@ -39,6 +39,7 @@ void Database::createTables() {
             start_time INTEGER NOT NULL,
             end_time INTEGER,
             exported_to_youtrack INTEGER NOT NULL DEFAULT 0,
+            description TEXT NOT NULL DEFAULT '',
             FOREIGN KEY (activity_id) REFERENCES activities(id)
         )
     )");

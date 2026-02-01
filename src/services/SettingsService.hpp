@@ -93,6 +93,18 @@ public:
     void setActivityAliases(const std::map<std::string, std::string>& aliases);
 
     /**
+     * Get whether to include unplanned meetings in KTalk imports.
+     * @return true if unplanned meetings should be included (default), false otherwise
+     */
+    bool getKTalkIncludeUnplanned() const;
+
+    /**
+     * Set whether to include unplanned meetings in KTalk imports.
+     * @param include true to include unplanned meetings, false to exclude them
+     */
+    void setKTalkIncludeUnplanned(bool include);
+
+    /**
      * Migrate settings from settings.json file to database.
      * Called automatically on first load if settings table is empty.
      *

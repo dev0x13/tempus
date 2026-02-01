@@ -114,6 +114,15 @@ void SettingsService::setActivityAliases(const std::map<std::string, std::string
     setSetting("activity_aliases", j.dump());
 }
 
+bool SettingsService::getKTalkIncludeUnplanned() const {
+    std::string value = getSetting("ktalk_include_unplanned", "true");
+    return value == "true";
+}
+
+void SettingsService::setKTalkIncludeUnplanned(bool include) {
+    setSetting("ktalk_include_unplanned", include ? "true" : "false");
+}
+
 bool SettingsService::migrateFromJsonFile() {
     std::filesystem::path settingsPath = std::filesystem::current_path() / "settings.json";
 

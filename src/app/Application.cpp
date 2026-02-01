@@ -69,7 +69,7 @@ void Application::initServices() {
     statsService_ = std::make_shared<services::StatisticsService>(factRepo_);
     exportService_ = std::make_shared<services::ExportService>(factRepo_);
     youTrackExportService_ = std::make_shared<services::YouTrackExportService>(*settingsService_, *factRepo_, *exportLogRepo_);
-    kTalkImportService_ = std::make_shared<services::KTalkImportService>(*timeService_);
+    kTalkImportService_ = std::make_shared<services::KTalkImportService>(*timeService_, *settingsService_);
 }
 
 void Application::initUI() {

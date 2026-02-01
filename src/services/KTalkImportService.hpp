@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TimeTrackingService.hpp"
+#include "SettingsService.hpp"
 #include "models/KTalkConference.hpp"
 #include <string>
 #include <vector>
@@ -23,7 +24,7 @@ struct ImportResult {
 
 class KTalkImportService {
 public:
-    explicit KTalkImportService(TimeTrackingService& timeTrackingService);
+    explicit KTalkImportService(TimeTrackingService& timeTrackingService, SettingsService& settingsService);
     ~KTalkImportService() = default;
 
     // Non-copyable, non-movable
@@ -69,6 +70,7 @@ public:
 
 private:
     TimeTrackingService& timeTrackingService_;
+    SettingsService& settingsService_;
 
     /**
      * Parse ISO 8601 timestamp to Unix timestamp.
@@ -83,6 +85,13 @@ private:
      * @return Base URL without query parameters
      */
     std::string extractBaseUrl(const std::string& url);
+
+    /**
+     * Convert local datetime to UTC ISO 8601 format.
+     * @param localDateTime Local datetime string in "YYYY-MM-DD HH:MM:SS" format
+     * @return UTC ISO 8601 string in "YYYY-MM-DDTHH:mm:ss.sssZ" format, or empty string on error
+     */
+    std::string convertToUtcIso8601(const std::string& localDateTime);
 };
 
 }  // namespace services

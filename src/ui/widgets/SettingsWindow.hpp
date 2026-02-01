@@ -34,6 +34,7 @@ private:
     char youtrackUrl_[256]{};
     char youtrackToken_[256]{};
     std::vector<ActivityAlias> aliases_;
+    bool ktalkIncludeUnplanned_{true};
 
     // Validation state
     bool hasValidationError_{false};
@@ -51,6 +52,7 @@ private:
     // Render sections
     void renderYouTrackSettings();
     void renderActivityAliases();
+    void renderKTalkSettings();
 };
 
 } // namespace timetracker::ui::widgets

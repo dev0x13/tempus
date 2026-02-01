@@ -31,11 +31,19 @@ void KTalkImportWindow::initializeDefaultDates() {
     fromDate_[2] = tm->tm_mday;
 }
 
-std::string KTalkImportWindow::dateToString(const int* date) {
+std::string KTalkImportWindow::dateToString(const int* date, bool isEndDate) {
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(4) << date[0] << "-"
         << std::setw(2) << date[1] << "-"
         << std::setw(2) << date[2];
+
+    // Add time component: 00:00:00 for start date, 23:59:59 for end date
+    if (isEndDate) {
+        oss << " 23:59:59";
+    } else {
+        oss << " 00:00:00";
+    }
+
     return oss.str();
 }
 
@@ -56,9 +64,9 @@ void KTalkImportWindow::handleImport() {
     showError_ = false;
     isImporting_ = true;
 
-    // Convert dates to strings
-    std::string fromDateStr = dateToString(fromDate_);
-    std::string toDateStr = dateToString(toDate_);
+    // Convert dates to strings with time components
+    std::string fromDateStr = dateToString(fromDate_, false);  // 00:00:00
+    std::string toDateStr = dateToString(toDate_, true);       // 23:59:59
 
     // Perform import
     services::ImportResult result = importService_->importConferences(

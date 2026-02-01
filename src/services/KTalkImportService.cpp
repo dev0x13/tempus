@@ -10,8 +10,8 @@
 namespace timetracker {
 namespace services {
 
-KTalkImportService::KTalkImportService(TimeTrackingService& timeTrackingService)
-    : timeTrackingService_(timeTrackingService) {}
+KTalkImportService::KTalkImportService(TimeTrackingService& timeTrackingService, SettingsService& settingsService)
+    : timeTrackingService_(timeTrackingService), settingsService_(settingsService) {}
 
 std::optional<FetchPayload> KTalkImportService::parseFetchPayload(const std::string& payload) {
     FetchPayload result;
@@ -83,8 +83,48 @@ std::string KTalkImportService::extractBaseUrl(const std::string& url) {
     return url;
 }
 
+std::string KTalkImportService::convertToUtcIso8601(const std::string& localDateTime) {
+    // Parse local datetime format: "YYYY-MM-DD HH:MM:SS"
+    std::tm tm = {};
+    std::istringstream ss(localDateTime);
+    ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+
+    if (ss.fail()) {
+        std::cerr << "Failed to parse local datetime: " << localDateTime << std::endl;
+        return "";
+    }
+
+    // Convert local time to UTC timestamp
+    std::time_t localTime = std::mktime(&tm);
+    if (localTime == -1) {
+        std::cerr << "Failed to convert local datetime to timestamp: " << localDateTime << std::endl;
+        return "";
+    }
+
+    // Convert to UTC
+    std::tm* utcTm = std::gmtime(&localTime);
+    if (!utcTm) {
+        std::cerr << "Failed to convert timestamp to UTC: " << localDateTime << std::endl;
+        return "";
+    }
+
+    // Format as ISO 8601 with milliseconds: "YYYY-MM-DDTHH:mm:ss.000Z"
+    std::ostringstream oss;
+    oss << std::put_time(utcTm, "%Y-%m-%dT%H:%M:%S") << ".000Z";
+    return oss.str();
+}
+
 std::string KTalkImportService::buildApiUrl(const std::string& baseUrl, const std::string& fromDate, const std::string& toDate) {
-    return baseUrl + "?fromDate=" + fromDate + "&toDate=" + toDate;
+    // Convert local datetime strings to UTC ISO 8601 format
+    std::string fromDateUtc = convertToUtcIso8601(fromDate);
+    std::string toDateUtc = convertToUtcIso8601(toDate);
+
+    if (fromDateUtc.empty() || toDateUtc.empty()) {
+        std::cerr << "Failed to convert dates to UTC" << std::endl;
+        return baseUrl;  // Return base URL without parameters on error
+    }
+
+    return baseUrl + "?fromDate=" + fromDateUtc + "&toDate=" + toDateUtc;
 }
 
 std::pair<std::vector<models::KTalkConference>, std::string> KTalkImportService::fetchConferences(
@@ -222,9 +262,27 @@ ImportResult KTalkImportService::importConferences(
         return result;
     }
 
+    // Get the "Include unplanned meetings" setting
+    bool includeUnplanned = settingsService_.getKTalkIncludeUnplanned();
+
+    // Filter conferences based on setting
+    std::vector<models::KTalkConference> filteredConferences;
+    for (const auto& conf : conferences) {
+        // If includeUnplanned is false, skip conferences without a title
+        if (!includeUnplanned && conf.title.empty()) {
+            continue;
+        }
+        filteredConferences.push_back(conf);
+    }
+
+    if (filteredConferences.empty()) {
+        result.errorMessage = "No conferences found matching filter criteria";
+        return result;
+    }
+
     // Import each conference
     int imported = 0;
-    for (const auto& conf : conferences) {
+    for (const auto& conf : filteredConferences) {
         // Parse timestamps
         int64_t startTime = parseIso8601(conf.startTime);
         int64_t endTime = parseIso8601(conf.endTime);
@@ -235,10 +293,10 @@ ImportResult KTalkImportService::importConferences(
             continue;
         }
 
-        // Create description: "{title} (KTalk)" or "Meeting (KTalk)" if no title
+        // Create description: "{title} (KTalk)" or "Unplanned meeting (KTalk)" if no title
         std::string description;
         if (conf.title.empty()) {
-            description = "Meeting (KTalk)";
+            description = "Unplanned meeting (KTalk)";
         } else {
             description = conf.title + " (KTalk)";
         }

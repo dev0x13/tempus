@@ -30,6 +30,11 @@ void SettingsWindow::render() {
         ImGui::Separator();
         ImGui::Spacing();
 
+        renderKTalkSettings();
+
+        ImGui::Separator();
+        ImGui::Spacing();
+
         // Validation error message
         if (hasValidationError_) {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
@@ -99,6 +104,9 @@ void SettingsWindow::loadSettings() {
         alias.issueId[sizeof(alias.issueId) - 1] = '\0';
         aliases_.push_back(alias);
     }
+
+    // Load KTalk settings
+    ktalkIncludeUnplanned_ = settingsService_->getKTalkIncludeUnplanned();
 }
 
 void SettingsWindow::saveSettings() {
@@ -114,6 +122,9 @@ void SettingsWindow::saveSettings() {
         }
     }
     settingsService_->setActivityAliases(aliasMap);
+
+    // Save KTalk settings
+    settingsService_->setKTalkIncludeUnplanned(ktalkIncludeUnplanned_);
 }
 
 bool SettingsWindow::validateInputs() {
@@ -228,6 +239,17 @@ void SettingsWindow::renderActivityAliases() {
                       [](const ActivityAlias& a) { return a.markedForDeletion; }),
         aliases_.end()
     );
+}
+
+void SettingsWindow::renderKTalkSettings() {
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "KTalk Import");
+    ImGui::Spacing();
+
+    // Include unplanned meetings checkbox
+    ImGui::Checkbox("Include unplanned meetings", &ktalkIncludeUnplanned_);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title.");
+    }
 }
 
 } // namespace timetracker::ui::widgets

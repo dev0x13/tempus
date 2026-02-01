@@ -41,8 +41,9 @@ private:
     // Initialize default date range (last 30 days)
     void initializeDefaultDates();
 
-    // Convert date array to YYYY-MM-DD string
-    std::string dateToString(const int* date);
+    // Convert date array to YYYY-MM-DD HH:MM:SS string
+    // isEndDate: false for 00:00:00 (start of day), true for 23:59:59 (end of day)
+    std::string dateToString(const int* date, bool isEndDate);
 
     // Handle import button click
     void handleImport();

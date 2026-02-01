@@ -235,8 +235,8 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
             // Build activity display name with description
             std::string activityDisplay = fact.activityName;
-            if (!fact.activityDescription.empty()) {
-                activityDisplay += " (" + fact.activityDescription + ")";
+            if (!fact.description.empty()) {
+                activityDisplay += " (" + fact.description + ")";
             }
 
             // Build the display string with spacing
@@ -650,14 +650,8 @@ void TimeEntriesView::startEdit(const models::Fact& fact) {
     editingFact_ = fact;
     strncpy(editActivityName_, fact.activityName.c_str(), sizeof(editActivityName_) - 1);
 
-    // Load activity description
-    auto activities = timeService_->getAllActivities();
-    for (const auto& activity : activities) {
-        if (activity.id == fact.activityId) {
-            strncpy(editActivityDescription_, activity.description.c_str(), sizeof(editActivityDescription_) - 1);
-            break;
-        }
-    }
+    // Load fact description
+    strncpy(editActivityDescription_, fact.description.c_str(), sizeof(editActivityDescription_) - 1);
 
     setDateFromTimestamp(fact.startTime, editStartDate_, editStartTime_);
 

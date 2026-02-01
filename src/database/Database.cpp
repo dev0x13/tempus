@@ -29,8 +29,7 @@ void Database::createTables() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             search_name TEXT NOT NULL,
-            deleted INTEGER NOT NULL DEFAULT 0,
-            description TEXT NOT NULL DEFAULT ''
+            deleted INTEGER NOT NULL DEFAULT 0
         )
     )");
 
@@ -85,21 +84,45 @@ void Database::migrateSchema() {
         db_->exec("ALTER TABLE facts ADD COLUMN exported_to_youtrack INTEGER NOT NULL DEFAULT 0");
     }
 
-    // Check if description column exists in activities table
+    // Check if description column exists in activities table (legacy)
+    // If it exists, we need to drop it (moving to per-fact descriptions)
     SQLite::Statement activitiesQuery(*db_, "PRAGMA table_info(activities)");
-    bool hasDescriptionColumn = false;
+    bool hasActivityDescriptionColumn = false;
 
     while (activitiesQuery.executeStep()) {
         std::string columnName = activitiesQuery.getColumn(1).getString();
         if (columnName == "description") {
-            hasDescriptionColumn = true;
+            hasActivityDescriptionColumn = true;
             break;
         }
     }
 
-    // Add description column if it doesn't exist
-    if (!hasDescriptionColumn) {
-        db_->exec("ALTER TABLE activities ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+    // Drop description column from activities if it exists
+    // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
+    if (hasActivityDescriptionColumn) {
+        db_->exec(R"(
+            BEGIN TRANSACTION;
+
+            -- Create new activities table without description
+            CREATE TABLE activities_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                search_name TEXT NOT NULL,
+                deleted INTEGER NOT NULL DEFAULT 0
+            );
+
+            -- Copy data from old table (excluding description)
+            INSERT INTO activities_new (id, name, search_name, deleted)
+            SELECT id, name, search_name, deleted FROM activities;
+
+            -- Drop old table
+            DROP TABLE activities;
+
+            -- Rename new table
+            ALTER TABLE activities_new RENAME TO activities;
+
+            COMMIT;
+        )");
     }
 
     // Check if description column exists in facts table

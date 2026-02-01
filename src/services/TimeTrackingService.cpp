@@ -86,14 +86,10 @@ models::Fact TimeTrackingService::addManualEntry(const std::string& activityName
 void TimeTrackingService::updateEntry(const models::Fact& fact, const std::string& activityName, const std::string& description) {
     auto activity = activityRepo_->getOrCreate(activityName);
 
-    // Update description if different
-    if (activity.description != description) {
-        activity.description = description;
-        activityRepo_->update(activity);
-    }
-
+    // Update fact with new activity and description
     models::Fact updatedFact = fact;
     updatedFact.activityId = activity.id;
+    updatedFact.description = description;
 
     factRepo_->update(updatedFact);
     invalidateCache();

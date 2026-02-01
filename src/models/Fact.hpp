@@ -16,7 +16,6 @@ struct Fact {
 
     // Cached activity name (not stored in DB, populated by joins)
     std::string activityName;
-    std::string activityDescription;     // Cached from activity (for backward compatibility)
 
     Fact() = default;
 

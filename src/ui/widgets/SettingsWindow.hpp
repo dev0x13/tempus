@@ -39,6 +39,7 @@ private:
     char youtrackToken_[256]{};
     std::vector<ActivityAlias> aliases_;
     bool ktalkIncludeUnplanned_{true};
+    int selectedLanguage_{1};  // 0 = English, 1 = Russian
 
     // Validation state
     bool hasValidationError_{false};
@@ -57,6 +58,7 @@ private:
     bool validateInputs();
 
     // Render sections
+    void renderLanguageSettings();
     void renderYouTrackSettings();
     void renderActivityAliases();
     void renderKTalkSettings();

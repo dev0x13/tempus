@@ -1,4 +1,5 @@
 #include "QuickAddDialog.hpp"
+#include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <cstring>
 
@@ -12,13 +13,15 @@ QuickAddDialog::QuickAddDialog(std::shared_ptr<services::TimeTrackingService> ti
 void QuickAddDialog::render() {
     if (!visible_) return;
 
+    auto& L = localization::L10n();
+
     // Position dialog near cursor (or center of screen)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(350, 120), ImGuiCond_Appearing);
 
-    if (ImGui::Begin("Quick Add Activity", &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
-        ImGui::Text("Activity Name:");
+    if (ImGui::Begin(L.QuickAdd.Title(), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
+        ImGui::Text("%s", L.QuickAdd.ActivityName());
         ImGui::SetNextItemWidth(-1);
 
         // Auto-focus input when dialog appears
@@ -33,12 +36,12 @@ void QuickAddDialog::render() {
 
         // Start button
         bool shouldStart = false;
-        if (ImGui::Button("Start Tracking", ImVec2(120, 0)) || enterPressed) {
+        if (ImGui::Button(L.QuickAdd.StartTracking(), ImVec2(120, 0)) || enterPressed) {
             shouldStart = true;
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(80, 0))) {
+        if (ImGui::Button(L.Common.Cancel(), ImVec2(80, 0))) {
             hide();
         }
 

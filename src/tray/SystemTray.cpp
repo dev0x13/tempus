@@ -1,4 +1,5 @@
 #include "SystemTray.hpp"
+#include "localization/LocalizationManager.hpp"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -166,38 +167,46 @@ void SystemTray::updateWindows() {
   if (!running_)
     return;
 
+  auto& L = localization::L10n();
   nid_.hIcon = isTracking_ ? activeIcon_ : idleIcon_;
 
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::wstring tip = L"Time Tracker - Tracking: ";
+      std::string prefix = L.SystemTray.TrackingPrefix();
+      std::wstring tip = std::wstring(prefix.begin(), prefix.end());
       // Convert activity name to wide string
       std::string activityName = current->activityName;
       tip += std::wstring(activityName.begin(), activityName.end());
       wcscpy_s(nid_.szTip, tip.c_str());
     }
   } else {
-    wcscpy_s(nid_.szTip, L"Time Tracker - Idle");
+    std::string idleStr = L.SystemTray.Idle();
+    std::wstring idleTip = std::wstring(idleStr.begin(), idleStr.end());
+    wcscpy_s(nid_.szTip, idleTip.c_str());
   }
 
   Shell_NotifyIconW(NIM_MODIFY, &nid_);
 }
 
 void SystemTray::showContextMenuWindows() {
+  auto& L = localization::L10n();
   POINT pt;
   GetCursorPos(&pt);
 
   HMENU menu = CreatePopupMenu();
 
   // Show/Hide Window
-  AppendMenuW(menu, MF_STRING, 1, L"Show Window");
+  std::string showWindowStr = L.SystemTray.ShowWindow();
+  std::wstring showWindowW(showWindowStr.begin(), showWindowStr.end());
+  AppendMenuW(menu, MF_STRING, 1, showWindowW.c_str());
 
   // Stop Tracking (if tracking)
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::wstring stopText = L"Stop Tracking: ";
+      std::string stopPrefix = L.SystemTray.StopTrackingPrefix();
+      std::wstring stopText(stopPrefix.begin(), stopPrefix.end());
       std::string activityName = current->activityName;
       stopText += std::wstring(activityName.begin(), activityName.end());
       AppendMenuW(menu, MF_STRING, 2, stopText.c_str());
@@ -216,13 +225,17 @@ void SystemTray::showContextMenuWindows() {
       AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i),
                   activityW.c_str());
     }
+    std::string recentStr = L.SystemTray.RecentActivities();
+    std::wstring recentW(recentStr.begin(), recentStr.end());
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
-                L"Recent Activities");
+                recentW.c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
   }
 
   // Exit
-  AppendMenuW(menu, MF_STRING, 3, L"Exit");
+  std::string exitStr = L.SystemTray.Exit();
+  std::wstring exitW(exitStr.begin(), exitStr.end());
+  AppendMenuW(menu, MF_STRING, 3, exitW.c_str());
 
   // Required for popup menus to work correctly
   SetForegroundWindow(messageWindow_);
@@ -352,17 +365,19 @@ bool SystemTray::initLinux() {
 }
 
 void SystemTray::createMenuLinux() {
+  auto& L = localization::L10n();
+
   // Create menu
   menu_ = gtk_menu_new();
 
   // "Quick Add Activity" menu item
-  menuItemQuickAdd_ = gtk_menu_item_new_with_label("Quick Add Activity");
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.SystemTray.QuickAddActivity());
   g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
 
   // "Show Window" menu item
-  menuItemShow_ = gtk_menu_item_new_with_label("Show Window");
+  menuItemShow_ = gtk_menu_item_new_with_label(L.SystemTray.ShowWindow());
   g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemShow_);
@@ -372,7 +387,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
 
   // "Stop Tracking" menu item (initially hidden)
-  menuItemStop_ = gtk_menu_item_new_with_label("Stop Tracking");
+  menuItemStop_ = gtk_menu_item_new_with_label(L.SystemTray.StopTracking());
   g_signal_connect(menuItemStop_, "activate", G_CALLBACK(onMenuStopActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);
@@ -383,7 +398,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator2);
 
   // "Exit" menu item
-  menuItemExit_ = gtk_menu_item_new_with_label("Exit");
+  menuItemExit_ = gtk_menu_item_new_with_label(L.SystemTray.Exit());
   g_signal_connect(menuItemExit_, "activate", G_CALLBACK(onMenuExitActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemExit_);

@@ -1,5 +1,6 @@
 #include "KTalkImportWindow.hpp"
 #include "DatePicker.hpp"
+#include "localization/LocalizationManager.hpp"
 #include <imgui.h>
 #include <ctime>
 #include <sstream>
@@ -59,6 +60,8 @@ void KTalkImportWindow::hide() {
 }
 
 void KTalkImportWindow::handleImport() {
+    auto& L = localization::L10n();
+
     statusMessage_.clear();
     showSuccess_ = false;
     showError_ = false;
@@ -79,7 +82,7 @@ void KTalkImportWindow::handleImport() {
 
     if (result.success) {
         std::ostringstream oss;
-        oss << "Successfully imported " << result.conferencesImported << " meeting(s)";
+        oss << L.KTalkImport.ImportSuccessMessage() << result.conferencesImported << " meeting(s)";
         statusMessage_ = oss.str();
         showSuccess_ = true;
 
@@ -96,12 +99,14 @@ void KTalkImportWindow::render() {
         return;
     }
 
+    auto& L = localization::L10n();
+
     // Center the window on first appearance
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_Appearing);
 
-    if (ImGui::Begin("KTalk Import", &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.KTalkImport.Title(), &visible_, ImGuiWindowFlags_NoCollapse)) {
         ImGui::TextWrapped("Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab.");
 
         ImGui::Spacing();
@@ -109,7 +114,7 @@ void KTalkImportWindow::render() {
         ImGui::Spacing();
 
         // Date range selectors
-        ImGui::Text("Date Range:");
+        ImGui::Text("%s", L.KTalkImport.SelectDate());
         ImGui::Spacing();
 
         DatePicker::renderWithCalendar("From Date", fromDate_);

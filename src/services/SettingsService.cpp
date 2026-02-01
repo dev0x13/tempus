@@ -123,6 +123,14 @@ void SettingsService::setKTalkIncludeUnplanned(bool include) {
     setSetting("ktalk_include_unplanned", include ? "true" : "false");
 }
 
+std::string SettingsService::getLanguage() const {
+    return getSetting("language", "ru");
+}
+
+void SettingsService::setLanguage(const std::string& language) {
+    setSetting("language", language);
+}
+
 bool SettingsService::migrateFromJsonFile() {
     std::filesystem::path settingsPath = std::filesystem::current_path() / "settings.json";
 

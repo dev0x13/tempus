@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include "utils/Platform.hpp"
+#include "localization/LocalizationManager.hpp"
 #include <iostream>
 
 namespace timetracker::app {
@@ -75,7 +76,8 @@ void Application::initServices() {
 void Application::initUI() {
     uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, kTalkImportService_, settingsService_, exportLogRepo_);
 
-    if (!uiApp_->init(900, 600, "Time Tracker")) {
+    auto& L = localization::L10n();
+    if (!uiApp_->init(900, 600, L.MainWindow.Title())) {
         throw std::runtime_error("Failed to initialize UI");
     }
 
@@ -116,6 +118,11 @@ void Application::initSettings() {
     if (!settingsService_->loadSettings()) {
         std::cerr << "Warning: Failed to load settings, using defaults" << std::endl;
     }
+
+    // Initialize localization with language from settings
+    std::string languageCode = settingsService_->getLanguage();
+    localization::Language lang = localization::stringToLanguage(languageCode);
+    localization::LocalizationManager::instance().setLanguage(lang);
 }
 
 } // namespace timetracker::app

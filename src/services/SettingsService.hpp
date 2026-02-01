@@ -105,6 +105,18 @@ public:
     void setKTalkIncludeUnplanned(bool include);
 
     /**
+     * Get the UI language preference.
+     * @return Language code ("en" or "ru"), defaults to "ru"
+     */
+    std::string getLanguage() const;
+
+    /**
+     * Set the UI language preference.
+     * @param language Language code ("en" or "ru")
+     */
+    void setLanguage(const std::string& language);
+
+    /**
      * Migrate settings from settings.json file to database.
      * Called automatically on first load if settings table is empty.
      *

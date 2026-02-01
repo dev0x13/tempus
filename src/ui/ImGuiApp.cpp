@@ -8,6 +8,7 @@
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "PTSansFont.hpp"
+#include "localization/LocalizationManager.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"

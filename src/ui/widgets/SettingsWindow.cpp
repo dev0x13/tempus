@@ -1,4 +1,5 @@
 #include "SettingsWindow.hpp"
+#include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <cstring>
 #include <algorithm>
@@ -14,12 +15,19 @@ SettingsWindow::SettingsWindow(std::shared_ptr<services::SettingsService> settin
 void SettingsWindow::render() {
     if (!visible_) return;
 
+    auto& L = localization::L10n();
+
     // Center the window
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 500), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_Appearing);
 
-    if (ImGui::Begin("Settings", &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.Settings.Title(), &visible_, ImGuiWindowFlags_NoCollapse)) {
+        renderLanguageSettings();
+
+        ImGui::Separator();
+        ImGui::Spacing();
+
         renderYouTrackSettings();
 
         ImGui::Separator();
@@ -49,7 +57,7 @@ void SettingsWindow::render() {
             ImGui::BeginDisabled();
         }
 
-        if (ImGui::Button("Save", ImVec2(100, 0))) {
+        if (ImGui::Button(L.Common.Save(), ImVec2(100, 0))) {
             saveSettings();
             hide();
         }
@@ -59,7 +67,7 @@ void SettingsWindow::render() {
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+        if (ImGui::Button(L.Common.Cancel(), ImVec2(100, 0))) {
             hide();
         }
     }
@@ -107,6 +115,10 @@ void SettingsWindow::loadSettings() {
 
     // Load KTalk settings
     ktalkIncludeUnplanned_ = settingsService_->getKTalkIncludeUnplanned();
+
+    // Load language
+    std::string lang = settingsService_->getLanguage();
+    selectedLanguage_ = (lang == "en") ? 0 : 1;
 }
 
 void SettingsWindow::saveSettings() {
@@ -125,9 +137,16 @@ void SettingsWindow::saveSettings() {
 
     // Save KTalk settings
     settingsService_->setKTalkIncludeUnplanned(ktalkIncludeUnplanned_);
+
+    // Save and apply language
+    std::string lang = (selectedLanguage_ == 0) ? "en" : "ru";
+    settingsService_->setLanguage(lang);
+    localization::Language language = localization::stringToLanguage(lang);
+    localization::LocalizationManager::instance().setLanguage(language);
 }
 
 bool SettingsWindow::validateInputs() {
+    auto& L = localization::L10n();
     hasValidationError_ = false;
     validationMessage_.clear();
 
@@ -135,7 +154,7 @@ bool SettingsWindow::validateInputs() {
     std::string url(youtrackUrl_);
     if (!url.empty() && url.find("http://") != 0 && url.find("https://") != 0) {
         hasValidationError_ = true;
-        validationMessage_ = "URL must start with http:// or https://";
+        validationMessage_ = L.Settings.URLValidationError();
         return false;
     }
 
@@ -148,7 +167,7 @@ bool SettingsWindow::validateInputs() {
 
         if (hasActivityName != hasIssueId) {
             hasValidationError_ = true;
-            validationMessage_ = "All alias entries must have both activity name and issue ID";
+            validationMessage_ = L.Settings.AliasValidationError();
             return false;
         }
     }
@@ -156,32 +175,45 @@ bool SettingsWindow::validateInputs() {
     return true;
 }
 
+void SettingsWindow::renderLanguageSettings() {
+    auto& L = localization::L10n();
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.Language());
+    ImGui::Spacing();
+
+    const char* languages[] = { L.Settings.LanguageEnglish(), L.Settings.LanguageRussian() };
+    ImGui::SetNextItemWidth(200);
+    if (ImGui::Combo("##language", &selectedLanguage_, languages, 2)) {
+        // Language will be saved when user clicks Save
+    }
+}
+
 void SettingsWindow::renderYouTrackSettings() {
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "YouTrack Settings");
+    auto& L = localization::L10n();
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.YouTrackSettings());
     ImGui::Spacing();
 
     // URL input
-    ImGui::Text("URL:");
+    ImGui::Text("%s", L.Settings.URL());
     ImGui::SetNextItemWidth(-1);
     ImGui::InputText("##youtrack_url", youtrackUrl_, sizeof(youtrackUrl_));
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("YouTrack server URL (e.g., https://youtrack.company.com)");
+        ImGui::SetTooltip("%s", L.Settings.URLTooltip());
     }
 
     ImGui::Spacing();
 
     // Token input
-    ImGui::Text("Token:");
+    ImGui::Text("%s", L.Settings.Token());
     ImGui::SetNextItemWidth(-1);
     ImGui::InputText("##youtrack_token", youtrackToken_, sizeof(youtrackToken_), ImGuiInputTextFlags_Password);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("YouTrack permanent token for authentication");
+        ImGui::SetTooltip("%s", L.Settings.TokenTooltip());
     }
 
     ImGui::Spacing();
 
     // Export Log button
-    if (ImGui::Button("Export Log", ImVec2(100, 0))) {
+    if (ImGui::Button(L.Settings.ExportLog(), ImVec2(120, 0))) {
         if (exportLogCallback_) {
             exportLogCallback_();
         }
@@ -189,16 +221,17 @@ void SettingsWindow::renderYouTrackSettings() {
 }
 
 void SettingsWindow::renderActivityAliases() {
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "Activity Aliases");
+    auto& L = localization::L10n();
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.ActivityAliases());
     ImGui::Spacing();
 
-    ImGui::Text("Map activity names to YouTrack issue IDs:");
+    ImGui::Text("%s", L.Settings.MapActivityNames());
     ImGui::Spacing();
 
     // Table for aliases
     if (ImGui::BeginTable("AliasesTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-        ImGui::TableSetupColumn("Activity Name", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Issue ID", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(L.Settings.ActivityName(), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(L.Settings.IssueID(), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 40.0f);
         ImGui::TableHeadersRow();
 
@@ -237,7 +270,7 @@ void SettingsWindow::renderActivityAliases() {
     ImGui::Spacing();
 
     // Add new alias button
-    if (ImGui::Button("+ Add Alias", ImVec2(120, 0))) {
+    if (ImGui::Button(L.Settings.AddAlias(), ImVec2(180, 0))) {
         ActivityAlias newAlias{};
         aliases_.push_back(newAlias);
     }
@@ -251,13 +284,14 @@ void SettingsWindow::renderActivityAliases() {
 }
 
 void SettingsWindow::renderKTalkSettings() {
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "KTalk Import");
+    auto& L = localization::L10n();
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.Settings.KTalkImportSettings());
     ImGui::Spacing();
 
     // Include unplanned meetings checkbox
-    ImGui::Checkbox("Include unplanned meetings", &ktalkIncludeUnplanned_);
+    ImGui::Checkbox(L.Settings.IncludeUnplannedMeetings(), &ktalkIncludeUnplanned_);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title.");
+        ImGui::SetTooltip("%s", L.Settings.IncludeUnplannedTooltip());
     }
 }
 

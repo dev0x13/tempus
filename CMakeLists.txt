@@ -36,6 +36,7 @@ set(SOURCES
     src/services/SettingsService.cpp
     src/services/YouTrackExportService.cpp
     src/services/KTalkImportService.cpp
+    src/localization/LocalizationManager.cpp
     src/ui/ImGuiApp.cpp
     src/ui/views/TimeEntriesView.cpp
     src/ui/widgets/DatePicker.cpp

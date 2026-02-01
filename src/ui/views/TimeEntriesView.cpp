@@ -2,6 +2,7 @@
 #include "utils/TimeUtils.hpp"
 #include "utils/Platform.hpp"
 #include "ui/widgets/DatePicker.hpp"
+#include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <cstring>
 #include <thread>
@@ -92,8 +93,10 @@ void TimeEntriesView::render() {
 }
 
 void TimeEntriesView::renderTopButtons() {
+    auto& L = localization::L10n();
+
     // Start button
-    if (ImGui::Button("Start", ImVec2(80, 0))) {
+    if (ImGui::Button(L.MainWindow.Start(), ImVec2(80, 0))) {
         startAdd();
     }
 
@@ -104,7 +107,7 @@ void TimeEntriesView::renderTopButtons() {
     if (!isTracking) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Stop", ImVec2(80, 0))) {
+    if (ImGui::Button(L.MainWindow.Stop(), ImVec2(80, 0))) {
         timeService_->stopTracking();
         refreshEntries();
     }
@@ -114,7 +117,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // Export CSV button
     ImGui::SameLine();
-    if (ImGui::Button("Export CSV", ImVec2(120, 0))) {
+    if (ImGui::Button(L.MainWindow.ExportCSV(), ImVec2(140, 0))) {
         performCsvExport();
     }
 
@@ -124,7 +127,7 @@ void TimeEntriesView::renderTopButtons() {
     if (!isYouTrackConfigured) {
         ImGui::BeginDisabled();
     }
-    if (ImGui::Button("Export to YouTrack", ImVec2(150, 0))) {
+    if (ImGui::Button(L.MainWindow.ExportToYouTrack(), ImVec2(180, 0))) {
         performYouTrackExport();
     }
     if (!isYouTrackConfigured) {
@@ -136,7 +139,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // KTalk Import button
     ImGui::SameLine();
-    if (ImGui::Button("KTalk Import", ImVec2(110, 0))) {
+    if (ImGui::Button(L.MainWindow.KTalkImport(), ImVec2(130, 0))) {
         if (kTalkImportCallback_) {
             kTalkImportCallback_();
         }
@@ -144,7 +147,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // Settings button
     ImGui::SameLine();
-    if (ImGui::Button("Settings", ImVec2(90, 0))) {
+    if (ImGui::Button(L.MainWindow.Settings(), ImVec2(110, 0))) {
         if (settingsCallback_) {
             settingsCallback_();
         }
@@ -152,7 +155,9 @@ void TimeEntriesView::renderTopButtons() {
 }
 
 void TimeEntriesView::renderDateSelector() {
-    ImGui::Text("From");
+    auto& L = localization::L10n();
+
+    ImGui::Text(L.DateSelector.From());
     ImGui::SameLine();
 
     if (widgets::DatePicker::renderWithCalendar("##displayStartDate", displayStartDate_)) {
@@ -161,7 +166,7 @@ void TimeEntriesView::renderDateSelector() {
     }
 
     ImGui::SameLine();
-    ImGui::Text("to");
+    ImGui::Text(L.DateSelector.To());
     ImGui::SameLine();
 
     if (widgets::DatePicker::renderWithCalendar("##displayEndDate", displayEndDate_)) {
@@ -171,7 +176,7 @@ void TimeEntriesView::renderDateSelector() {
 
     // Quick date buttons
     ImGui::SameLine();
-    if (ImGui::Button("Today")) {
+    if (ImGui::Button(L.DateSelector.Today())) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -180,7 +185,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button("This Week")) {
+    if (ImGui::Button(L.DateSelector.ThisWeek())) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -189,7 +194,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button("This Month")) {
+    if (ImGui::Button(L.DateSelector.ThisMonth())) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfMonth(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -200,8 +205,10 @@ void TimeEntriesView::renderDateSelector() {
 }
 
 void TimeEntriesView::renderDateGroupedEntries() {
+    auto& L = localization::L10n();
+
     if (entries_.empty()) {
-        ImGui::TextDisabled("No entries for this date range");
+        ImGui::TextDisabled(L.TimeEntries.NoEntries());
         return;
     }
 
@@ -288,6 +295,7 @@ void TimeEntriesView::renderDateGroupedEntries() {
 }
 
 void TimeEntriesView::renderFixedFooter() {
+    auto& L = localization::L10n();
     ImGui::Separator();
 
     // Calculate totals
@@ -298,7 +306,7 @@ void TimeEntriesView::renderFixedFooter() {
     }
 
     // Grand total row (always visible, clickable)
-    std::string totalStr = "Total: " + utils::TimeUtils::formatDuration(totalSeconds);
+    std::string totalStr = std::string(L.TimeEntries.Total()) + ": " + utils::TimeUtils::formatDuration(totalSeconds);
     const char* arrow = showActivityBreakdown_ ? " ^" : " v";  // Simple ASCII arrows
 
     if (ImGui::Selectable((totalStr + arrow).c_str(), false, 0, ImVec2(0, 30))) {

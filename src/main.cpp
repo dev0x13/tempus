@@ -1,10 +1,7 @@
 #include "app/Application.hpp"
 #include <iostream>
 
-int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
-
+int main() {
     try {
         timetracker::app::Application app;
 
@@ -21,3 +18,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 }
+
+#ifdef _WIN32
+int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+{
+    return main();
+}
+#endif

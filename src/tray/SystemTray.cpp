@@ -336,16 +336,6 @@ bool SystemTray::initLinux() {
   currentIconPath_ = iconName;
 
   running_ = true;
-  std::cout << "System tray initialized successfully" << std::endl;
-  if (iconExists) {
-    std::cout << "Using icon: " << iconPath << std::endl;
-    std::cout << "Icon directory: " << iconDir << std::endl;
-  } else {
-    std::cout << "Using fallback icon: " << iconName << std::endl;
-  }
-  std::cout
-      << "Note: On GNOME, you may need the 'AppIndicator Support' extension"
-      << std::endl;
 
   return true;
 }

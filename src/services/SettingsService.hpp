@@ -116,14 +116,6 @@ public:
      */
     void setLanguage(const std::string& language);
 
-    /**
-     * Migrate settings from settings.json file to database.
-     * Called automatically on first load if settings table is empty.
-     *
-     * @return true if migration succeeded or was not needed
-     */
-    bool migrateFromJsonFile();
-
 private:
     std::shared_ptr<timetracker::database::Database> database_;
     std::map<std::string, std::string> settingsCache_;

@@ -14,7 +14,6 @@ SQLite::Database& Database::getHandle() {
 
 void Database::initSchema() {
     createTables();
-    migrateSchema();
     createIndexes();
 }
 
@@ -63,90 +62,6 @@ void Database::createTables() {
             exported_at INTEGER NOT NULL
         )
     )");
-}
-
-void Database::migrateSchema() {
-    // Check if exported_to_youtrack column exists in facts table
-    SQLite::Statement factsQuery(*db_, "PRAGMA table_info(facts)");
-    bool hasExportedColumn = false;
-
-    while (factsQuery.executeStep()) {
-        std::string columnName = factsQuery.getColumn(1).getString();
-        if (columnName == "exported_to_youtrack") {
-            hasExportedColumn = true;
-            break;
-        }
-    }
-
-    // Add exported_to_youtrack column if it doesn't exist
-    if (!hasExportedColumn) {
-        db_->exec("ALTER TABLE facts ADD COLUMN exported_to_youtrack INTEGER NOT NULL DEFAULT 0");
-    }
-
-    // Check if description or deleted columns exist in activities table (legacy)
-    // If either exists, we need to drop them
-    SQLite::Statement activitiesQuery(*db_, "PRAGMA table_info(activities)");
-    bool hasActivityDescriptionColumn = false;
-    bool hasActivityDeletedColumn = false;
-
-    while (activitiesQuery.executeStep()) {
-        std::string columnName = activitiesQuery.getColumn(1).getString();
-        if (columnName == "description") {
-            hasActivityDescriptionColumn = true;
-        } else if (columnName == "deleted") {
-            hasActivityDeletedColumn = true;
-        }
-    }
-
-    // Drop description and deleted columns from activities if they exist
-    // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
-    if (hasActivityDescriptionColumn || hasActivityDeletedColumn) {
-        db_->exec(R"(
-            BEGIN TRANSACTION;
-
-            -- Create new activities table without description or deleted
-            CREATE TABLE activities_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                search_name TEXT NOT NULL
-            );
-
-            -- Copy data from old table (excluding description and deleted)
-            INSERT INTO activities_new (id, name, search_name)
-            SELECT id, name, search_name FROM activities;
-
-            -- Drop old table
-            DROP TABLE activities;
-
-            -- Rename new table
-            ALTER TABLE activities_new RENAME TO activities;
-
-            COMMIT;
-        )");
-    }
-
-    // Clean up orphaned activities (activities with no facts)
-    db_->exec(R"(
-        DELETE FROM activities
-        WHERE id NOT IN (SELECT DISTINCT activity_id FROM facts)
-    )");
-
-    // Check if description column exists in facts table
-    SQLite::Statement factsDescQuery(*db_, "PRAGMA table_info(facts)");
-    bool factsHasDescriptionColumn = false;
-
-    while (factsDescQuery.executeStep()) {
-        std::string columnName = factsDescQuery.getColumn(1).getString();
-        if (columnName == "description") {
-            factsHasDescriptionColumn = true;
-            break;
-        }
-    }
-
-    // Add description column to facts if it doesn't exist
-    if (!factsHasDescriptionColumn) {
-        db_->exec("ALTER TABLE facts ADD COLUMN description TEXT NOT NULL DEFAULT ''");
-    }
 }
 
 void Database::createIndexes() {

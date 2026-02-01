@@ -1,9 +1,6 @@
 #include "SettingsService.hpp"
 #include "../database/Database.hpp"
-#include <fstream>
 #include <iostream>
-#include <ghc/filesystem.hpp>
-namespace fs = ghc::filesystem;
 #include <SQLiteCpp/SQLiteCpp.h>
 
 namespace timetracker::services {
@@ -14,18 +11,6 @@ SettingsService::SettingsService(std::shared_ptr<timetracker::database::Database
 bool SettingsService::loadSettings() {
     try {
         loadFromDatabase();
-
-        // Check if settings are empty (first run after migration to database)
-        if (settingsCache_.empty()) {
-            // Attempt to migrate from settings.json if it exists
-            if (!migrateFromJsonFile()) {
-                // Migration failed or not needed, ensure defaults exist
-                std::cout << "Using default empty settings" << std::endl;
-            }
-            // Reload after migration
-            loadFromDatabase();
-        }
-
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error loading settings: " << e.what() << std::endl;
@@ -130,62 +115,6 @@ std::string SettingsService::getLanguage() const {
 
 void SettingsService::setLanguage(const std::string& language) {
     setSetting("language", language);
-}
-
-bool SettingsService::migrateFromJsonFile() {
-    fs::path settingsPath = fs::current_path() / "settings.json";
-
-    // If file doesn't exist, nothing to migrate
-    if (!fs::exists(settingsPath)) {
-        std::cout << "No settings.json file found, skipping migration" << std::endl;
-        return false;
-    }
-
-    try {
-        std::cout << "Migrating settings from settings.json to database..." << std::endl;
-
-        std::ifstream file(settingsPath);
-        if (!file.is_open()) {
-            std::cerr << "Warning: Failed to open settings.json for migration" << std::endl;
-            return false;
-        }
-
-        nlohmann::json settings;
-        file >> settings;
-
-        // Extract YouTrack settings
-        if (settings.contains("youtrack") && settings["youtrack"].is_object()) {
-            const auto& yt = settings["youtrack"];
-
-            if (yt.contains("url") && yt["url"].is_string()) {
-                setYouTrackUrl(yt["url"].get<std::string>());
-            }
-
-            if (yt.contains("token") && yt["token"].is_string()) {
-                setYouTrackToken(yt["token"].get<std::string>());
-            }
-
-            if (yt.contains("activityAliases") && yt["activityAliases"].is_object()) {
-                std::map<std::string, std::string> aliases;
-                for (auto it = yt["activityAliases"].begin(); it != yt["activityAliases"].end(); ++it) {
-                    if (it.value().is_string()) {
-                        aliases[it.key()] = it.value().get<std::string>();
-                    }
-                }
-                setActivityAliases(aliases);
-            }
-        }
-
-        std::cout << "Settings migration completed successfully" << std::endl;
-        return true;
-
-    } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Warning: Failed to parse settings.json during migration (JSON error: " << e.what() << ")" << std::endl;
-        return false;
-    } catch (const std::exception& e) {
-        std::cerr << "Warning: Error during settings migration (" << e.what() << ")" << std::endl;
-        return false;
-    }
 }
 
 } // namespace timetracker::services

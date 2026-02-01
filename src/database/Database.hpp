@@ -32,7 +32,6 @@ private:
     std::unique_ptr<SQLite::Database> db_;
 
     void createTables();
-    void migrateSchema();
     void createIndexes();
 };
 

@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-#include <filesystem>
+#include <ghc/filesystem.hpp>
 #include <optional>
 #include <portable-file-dialogs.h>
 
@@ -15,21 +15,23 @@
 #include <unistd.h>
 #endif
 
+namespace fs = ghc::filesystem;
+
 namespace timetracker::utils {
 
 class Platform {
 public:
-    static std::filesystem::path getDataDirectory() {
+    static fs::path getDataDirectory() {
 #ifdef _WIN32
         char path[MAX_PATH];
         if (SUCCEEDED(SHGetFolderPathA(nullptr, CSIDL_APPDATA, nullptr, 0, path))) {
-            return std::filesystem::path(path) / "tempus";
+            return fs::path(path) / "tempus";
         }
-        return std::filesystem::path(".");
+        return fs::path(".");
 #else
         const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
         if (xdgDataHome && xdgDataHome[0] != '\0') {
-            return std::filesystem::path(xdgDataHome) / "tempus";
+            return fs::path(xdgDataHome) / "tempus";
         }
 
         const char* home = std::getenv("HOME");
@@ -37,11 +39,11 @@ public:
             struct passwd* pw = getpwuid(getuid());
             home = pw ? pw->pw_dir : ".";
         }
-        return std::filesystem::path(home) / ".local" / "share" / "tempus";
+        return fs::path(home) / ".local" / "share" / "tempus";
 #endif
     }
 
-    static std::filesystem::path getDatabasePath() {
+    static fs::path getDatabasePath() {
         return getDataDirectory() / "data.db";
     }
 
@@ -49,24 +51,24 @@ public:
         // Database is now in executable folder, no separate data directory needed
     }
 
-    static std::filesystem::path getAssetsDirectory() {
+    static fs::path getAssetsDirectory() {
         // Try relative to executable first
-        std::filesystem::path execPath = std::filesystem::current_path();
+        fs::path execPath = fs::current_path();
         auto assetsPath = execPath / "assets";
-        if (std::filesystem::exists(assetsPath)) {
+        if (fs::exists(assetsPath)) {
             return assetsPath;
         }
 
         // Try build directory structure
         assetsPath = execPath / ".." / "assets";
-        if (std::filesystem::exists(assetsPath)) {
-            return std::filesystem::canonical(assetsPath);
+        if (fs::exists(assetsPath)) {
+            return fs::canonical(assetsPath);
         }
 
         return assetsPath;
     }
 
-    static std::optional<std::filesystem::path> showSaveFileDialog(
+    static std::optional<fs::path> showSaveFileDialog(
             const std::string& title,
             const std::string& defaultFilename,
             const std::vector<std::string>& filters = {"CSV Files", "*.csv"}) {
@@ -81,14 +83,14 @@ public:
             return std::nullopt;
         }
 
-        std::filesystem::path path(result);
+        fs::path filePath(result);
 
         // Ensure .csv extension if not present
-        if (path.extension() != ".csv") {
-            path += ".csv";
+        if (filePath.extension() != ".csv") {
+            filePath += ".csv";
         }
 
-        return path;
+        return filePath;
     }
 };
 

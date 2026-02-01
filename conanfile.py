@@ -15,6 +15,7 @@ class TempusRecipe(ConanFile):
         self.requires("nlohmann_json/3.11.3")
         self.requires("cpr/1.10.5")
         self.requires("icu/74.2")
+        self.requires("ghc-filesystem/1.5.14")
 
     def layout(self):
         cmake_layout(self)

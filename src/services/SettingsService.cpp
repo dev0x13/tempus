@@ -2,7 +2,8 @@
 #include "../database/Database.hpp"
 #include <fstream>
 #include <iostream>
-#include <filesystem>
+#include <ghc/filesystem.hpp>
+namespace fs = ghc::filesystem;
 #include <SQLiteCpp/SQLiteCpp.h>
 
 namespace timetracker::services {
@@ -132,10 +133,10 @@ void SettingsService::setLanguage(const std::string& language) {
 }
 
 bool SettingsService::migrateFromJsonFile() {
-    std::filesystem::path settingsPath = std::filesystem::current_path() / "settings.json";
+    fs::path settingsPath = fs::current_path() / "settings.json";
 
     // If file doesn't exist, nothing to migrate
-    if (!std::filesystem::exists(settingsPath)) {
+    if (!fs::exists(settingsPath)) {
         std::cout << "No settings.json file found, skipping migration" << std::endl;
         return false;
     }

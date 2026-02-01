@@ -161,23 +161,22 @@ int64_t KTalkImportService::parseIso8601(const std::string& iso8601) {
         return 0;
     }
 
-    // Convert to time_t treating as UTC
-    // timegm is not standard, so we use mktime and adjust for timezone
-    std::time_t time = std::mktime(&tm);
+    // Convert UTC time to Unix timestamp
+    // ISO 8601 with 'Z' suffix indicates UTC
+#ifdef _WIN32
+    // Windows: use _mkgmtime which interprets tm as UTC
+    std::time_t time = _mkgmtime(&tm);
+#else
+    // POSIX: use timegm which interprets tm as UTC
+    std::time_t time = timegm(&tm);
+#endif
 
-    // mktime assumes local time, but the input is UTC (has 'Z' suffix)
-    // We need to adjust by subtracting the local timezone offset
-    std::time_t now = std::time(nullptr);
-    std::tm* utc_tm = std::gmtime(&now);
-    std::tm* local_tm = std::localtime(&now);
+    if (time == -1) {
+        std::cerr << "Failed to convert ISO 8601 timestamp to Unix time: " << iso8601 << std::endl;
+        return 0;
+    }
 
-    // Calculate timezone offset in seconds
-    time_t utc_time = std::mktime(utc_tm);
-    time_t local_time = std::mktime(local_tm);
-    long timezone_offset = local_time - utc_time;
-
-    // Adjust the parsed time by subtracting the offset to convert UTC to local
-    return static_cast<int64_t>(time - timezone_offset);
+    return static_cast<int64_t>(time);
 }
 
 ImportResult KTalkImportService::importConferences(

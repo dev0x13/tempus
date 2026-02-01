@@ -57,13 +57,14 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         return false;
     }
 
-    // GL 3.3 + GLSL 130
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
+    // macOS requires 3.2+ core profile for OpenGL
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+    // On Windows/Linux, request no specific version - let driver provide whatever it supports
 
     window_ = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!window_) {
@@ -111,7 +112,12 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
+#ifdef __APPLE__
+    ImGui_ImplOpenGL3_Init("#version 150");
+#else
+    // Let ImGui auto-detect GLSL version based on available OpenGL
+    ImGui_ImplOpenGL3_Init(nullptr);
+#endif
 
     // Create views
     timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_);

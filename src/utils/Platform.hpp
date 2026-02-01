@@ -21,6 +21,18 @@ namespace timetracker::utils {
 
 class Platform {
 public:
+#ifdef _WIN32
+    // Convert UTF-8 string to UTF-16 wide string for Windows APIs
+    static std::wstring utf8ToWide(const std::string& utf8) {
+        if (utf8.empty()) return std::wstring();
+        int size = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
+        if (size <= 0) return std::wstring();
+        std::wstring wide(size - 1, 0);
+        MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &wide[0], size);
+        return wide;
+    }
+#endif
+
     static fs::path getDataDirectory() {
 #ifdef _WIN32
         char path[MAX_PATH];

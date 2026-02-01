@@ -1,5 +1,6 @@
 #include "SystemTray.hpp"
 #include "localization/LocalizationManager.hpp"
+#include "utils/Platform.hpp"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -173,16 +174,12 @@ void SystemTray::updateWindows() {
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string prefix = L.get("Tempus - Tracking: ");
-      std::wstring tip = std::wstring(prefix.begin(), prefix.end());
-      // Convert activity name to wide string
-      std::string activityName = current->activityName;
-      tip += std::wstring(activityName.begin(), activityName.end());
+      std::string tipStr = L.get("Tempus - Tracking: ") + current->activityName;
+      std::wstring tip = utils::Platform::utf8ToWide(tipStr);
       wcscpy_s(nid_.szTip, tip.c_str());
     }
   } else {
-    std::string idleStr = L.get("Tempus - Idle");
-    std::wstring idleTip = std::wstring(idleStr.begin(), idleStr.end());
+    std::wstring idleTip = utils::Platform::utf8ToWide(L.get("Tempus - Idle"));
     wcscpy_s(nid_.szTip, idleTip.c_str());
   }
 
@@ -197,19 +194,14 @@ void SystemTray::showContextMenuWindows() {
   HMENU menu = CreatePopupMenu();
 
   // Show/Hide Window
-  std::string showWindowStr = L.get("Show Window");
-  std::wstring showWindowW(showWindowStr.begin(), showWindowStr.end());
-  AppendMenuW(menu, MF_STRING, 1, showWindowW.c_str());
+  AppendMenuW(menu, MF_STRING, 1, utils::Platform::utf8ToWide(L.get("Show Window")).c_str());
 
   // Stop Tracking (if tracking)
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string stopPrefix = L.get("Stop Tracking: ");
-      std::wstring stopText(stopPrefix.begin(), stopPrefix.end());
-      std::string activityName = current->activityName;
-      stopText += std::wstring(activityName.begin(), activityName.end());
-      AppendMenuW(menu, MF_STRING, 2, stopText.c_str());
+      std::string stopStr = L.get("Stop Tracking: ") + current->activityName;
+      AppendMenuW(menu, MF_STRING, 2, utils::Platform::utf8ToWide(stopStr).c_str());
     }
   }
 
@@ -220,22 +212,16 @@ void SystemTray::showContextMenuWindows() {
   if (!recentActivities.empty()) {
     HMENU recentMenu = CreatePopupMenu();
     for (size_t i = 0; i < recentActivities.size() && i < 5; i++) {
-      std::wstring activityW(recentActivities[i].begin(),
-                             recentActivities[i].end());
       AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i),
-                  activityW.c_str());
+                  utils::Platform::utf8ToWide(recentActivities[i]).c_str());
     }
-    std::string recentStr = L.get("Recent Activities");
-    std::wstring recentW(recentStr.begin(), recentStr.end());
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
-                recentW.c_str());
+                utils::Platform::utf8ToWide(L.get("Recent Activities")).c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
   }
 
   // Exit
-  std::string exitStr = L.get("Exit");
-  std::wstring exitW(exitStr.begin(), exitStr.end());
-  AppendMenuW(menu, MF_STRING, 3, exitW.c_str());
+  AppendMenuW(menu, MF_STRING, 3, utils::Platform::utf8ToWide(L.get("Exit")).c_str());
 
   // Required for popup menus to work correctly
   SetForegroundWindow(messageWindow_);

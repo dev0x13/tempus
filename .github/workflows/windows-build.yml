@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        conan install . --output-folder=build/Release --build=missing -s build_type=Release -s compiler.cppstd=17
+        conan install . --build=missing -s build_type=Release -s compiler.cppstd=17
 
     - name: Configure CMake
       run: |
@@ -36,12 +36,12 @@ jobs:
 
     - name: Build
       run: |
-        cmake --build --preset conan-default --config Release
+        cmake --build --preset conan-release --config Release
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: tempus-windows
         path: |
-          build/Release/Release/tempus.exe
-          build/Release/Release/assets/
+          build/Release/tempus.exe
+          build/Release/assets/

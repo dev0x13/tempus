@@ -60,7 +60,7 @@ sudo apt install build-essential cmake libgtk-3-dev libayatana-appindicator3-dev
 ### 1. Install Conan dependencies
 
 ```bash
-conan install . --output-folder=build --build=missing -s build_type=Release
+conan install . --build=missing -s build_type=Release
 ```
 
 ### 2. Configure with CMake

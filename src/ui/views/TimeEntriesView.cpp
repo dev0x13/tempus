@@ -884,31 +884,44 @@ int64_t TimeEntriesView::getTimestampFromDate(const int* date, const int* time) 
     return utils::TimeUtils::fromLocalTime(date[0], date[1], date[2], time[0], time[1], 0);
 }
 
-std::map<std::string, std::vector<models::Fact>> TimeEntriesView::groupEntriesByDate() {
+std::vector<std::pair<std::string, std::vector<models::Fact>>> TimeEntriesView::groupEntriesByDate() {
     auto& L = localization::L10n();
-    std::map<std::string, std::vector<models::Fact>> grouped;
 
     // Parse localized weekday and month names
     auto weekdayNames = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
     auto monthNamesShort = splitByComma(L.get("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"));
 
+    // Group by ISO date key (YYYY-MM-DD) so the map sorts chronologically
+    std::map<std::string, std::pair<std::string, std::vector<models::Fact>>> sortMap;
+
     for (const auto& fact : entries_) {
-        // Format date as "Monday Jan.27" using localized names
         auto tm = utils::TimeUtils::toLocalTime(fact.startTime);
 
-        std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
-            ? weekdayNames[tm.tm_wday] : "";
-        std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
-            ? monthNamesShort[tm.tm_mon] : "";
+        char isoKey[16];
+        snprintf(isoKey, sizeof(isoKey), "%04d-%02d-%02d",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
-        char dateStr[128];
-        snprintf(dateStr, sizeof(dateStr), "%s %s.%d",
-                weekday.c_str(), month.c_str(), tm.tm_mday);
-
-        grouped[dateStr].push_back(fact);
+        auto& entry = sortMap[isoKey];
+        if (entry.first.empty()) {
+            std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
+                ? weekdayNames[tm.tm_wday] : "";
+            std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
+                ? monthNamesShort[tm.tm_mon] : "";
+            char dateStr[128];
+            snprintf(dateStr, sizeof(dateStr), "%s %s.%d",
+                    weekday.c_str(), month.c_str(), tm.tm_mday);
+            entry.first = dateStr;
+        }
+        entry.second.push_back(fact);
     }
 
-    return grouped;
+    // Produce result in descending order (most recent first)
+    std::vector<std::pair<std::string, std::vector<models::Fact>>> result;
+    result.reserve(sortMap.size());
+    for (auto it = sortMap.rbegin(); it != sortMap.rend(); ++it) {
+        result.emplace_back(std::move(it->second.first), std::move(it->second.second));
+    }
+    return result;
 }
 
 bool TimeEntriesView::isFactOverlapping(const models::Fact& fact) const {

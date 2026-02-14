@@ -112,8 +112,8 @@ private:
     void setDateFromTimestamp(int64_t timestamp, int* date, int* time);
     int64_t getTimestampFromDate(const int* date, const int* time);
 
-    // Helper to group entries by date
-    std::map<std::string, std::vector<models::Fact>> groupEntriesByDate();
+    // Helper to group entries by date, ordered most recent first
+    std::vector<std::pair<std::string, std::vector<models::Fact>>> groupEntriesByDate();
 
     // Helper to check if a fact is overlapping with any other facts
     bool isFactOverlapping(const models::Fact& fact) const;

@@ -28,7 +28,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Stop", "Стоп"},
         {"Export CSV", "Экспорт CSV"},
         {"Export to YouTrack", "Экспорт в YouTrack"},
-        {"KTalk Import", "Импорт KTalk"},
+        {"KTalk Import", "Импорт из KTalk"},
         {"Settings", "Настройки"},
 
         // Date Selector
@@ -76,7 +76,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Activity Name", "Название активности"},
         {"Issue ID", "ID задачи"},
         {"+ Add Alias", "+ Добавить псевдоним"},
-        {"KTalk Import", "Импорт KTalk"},
+        {"KTalk Import", "Импорт из KTalk"},
         {"Include unplanned meetings", "Включить незапланированные встречи"},
         {"When enabled, imports all conferences including those without a title.\\nWhen disabled, only imports conferences that have a title.", "Если включено, импортирует все конференции, включая те, у которых нет названия.\\nЕсли выключено, импортирует только конференции с названием."},
         {"URL must start with http:// or https://", "URL должен начинаться с http:// или https://"},
@@ -116,6 +116,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Activity name is required", "Требуется название активности"},
         {"YouTrack is not configured. Please set URL and token in Settings.", "YouTrack не настроен. Пожалуйста, установите URL и токен в настройках."},
         {"No YouTrack issue ID configured for activity: %s", "Не настроен ID задачи YouTrack для активности: %s"},
+        {"Cannot export: the following activities have no YouTrack issue ID mapping:", "Невозможно экспортировать: следующие активности не имеют сопоставления с ID задачи YouTrack:"},
+        {"Add aliases for these activities in Settings.", "Добавьте псевдонимы для этих активностей в настройках."},
 
         // Date/Time Formats
         {"%m/%d/%Y", "%d.%m.%Y"},

@@ -27,6 +27,11 @@ struct ExportResult {
     std::vector<models::Fact> overlappingFacts;  // Populated when overlap detected
 };
 
+struct PrepareExportResult {
+    std::vector<AggregatedWorkItem> workItems;
+    std::vector<std::string> unresolvedActivities;  // Activities that couldn't be mapped to valid issue IDs
+};
+
 class YouTrackExportService {
 public:
     YouTrackExportService(
@@ -65,9 +70,9 @@ public:
      * Prepare export data for preview (aggregated work items).
      * @param startTime Start of date range (Unix timestamp)
      * @param endTime End of date range (Unix timestamp)
-     * @return Vector of aggregated work items ready for export
+     * @return Result containing work items and any unresolved activity names
      */
-    std::vector<AggregatedWorkItem> prepareExport(int64_t startTime, int64_t endTime);
+    PrepareExportResult prepareExport(int64_t startTime, int64_t endTime);
 
     /**
      * Export aggregated work items to YouTrack.

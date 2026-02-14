@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <ctime>
 #include <map>
+#include <set>
 #include <iostream>
 
 namespace timetracker::services {
@@ -43,16 +44,14 @@ std::vector<models::Fact> YouTrackExportService::checkForOverlaps(int64_t startT
     return factRepository_.findOverlappingFacts(startTime, endTime);
 }
 
-std::vector<AggregatedWorkItem> YouTrackExportService::prepareExport(int64_t startTime, int64_t endTime) {
+PrepareExportResult YouTrackExportService::prepareExport(int64_t startTime, int64_t endTime) {
     // Get all facts in date range (not just unexported ones - allow re-export)
     auto facts = factRepository_.findByDateRange(startTime, endTime);
-
-    // Get activity aliases
-    auto aliases = settingsService_.getActivityAliases();
 
     // Aggregate by (date, issue_id)
     // Key: "YYYY-MM-DD|ISSUE-ID"
     std::map<std::string, AggregatedWorkItem> aggregated;
+    std::set<std::string> unresolvedActivities;
 
     for (const auto& fact : facts) {
         // Skip ongoing facts (no end time)
@@ -63,10 +62,9 @@ std::vector<AggregatedWorkItem> YouTrackExportService::prepareExport(int64_t sta
         // Resolve issue ID
         std::string issueId = resolveIssueId(fact.activityName);
 
-        // Validate issue ID format
+        // Collect unresolved activities instead of silently skipping
         if (!validateIssueId(issueId)) {
-            std::cerr << "Warning: Skipping fact with invalid issue ID: " << issueId
-                      << " (activity: " << fact.activityName << ")" << std::endl;
+            unresolvedActivities.insert(fact.activityName);
             continue;
         }
 
@@ -97,12 +95,14 @@ std::vector<AggregatedWorkItem> YouTrackExportService::prepareExport(int64_t sta
         aggregated[key].factIds.push_back(fact.id);
     }
 
+    PrepareExportResult result;
+    result.unresolvedActivities = std::vector<std::string>(unresolvedActivities.begin(), unresolvedActivities.end());
+
     // Round up durations and convert to vector
-    std::vector<AggregatedWorkItem> result;
     for (auto& pair : aggregated) {
         pair.second.minutes = roundUpToNearest10(pair.second.minutes);
         if (pair.second.minutes > 0) {
-            result.push_back(pair.second);
+            result.workItems.push_back(pair.second);
         }
     }
 

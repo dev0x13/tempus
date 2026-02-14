@@ -861,7 +861,20 @@ void TimeEntriesView::performYouTrackExport() {
     }
 
     // Prepare export data
-    pendingWorkItems_ = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
+    auto prepareResult = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
+
+    if (!prepareResult.unresolvedActivities.empty()) {
+        auto& L = localization::L10n();
+        exportErrorMessage_ = std::string(L.get("Cannot export: the following activities have no YouTrack issue ID mapping:")) + "\n";
+        for (const auto& name : prepareResult.unresolvedActivities) {
+            exportErrorMessage_ += "  - " + name + "\n";
+        }
+        exportErrorMessage_ += L.get("Add aliases for these activities in Settings.");
+        showExportError_ = true;
+        return;
+    }
+
+    pendingWorkItems_ = std::move(prepareResult.workItems);
 
     if (pendingWorkItems_.empty()) {
         exportErrorMessage_ = "No completed time entries found in selected date range.";

@@ -245,11 +245,12 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
         // Render entries for this date using a table for proper alignment
         ImGui::Indent(20.0f);
-        if (ImGui::BeginTable("EntriesTable", 4, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("EntriesTable", 5, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
             // Set up columns
             ImGui::TableSetupColumn("Start", ImGuiTableColumnFlags_WidthFixed, 50.0f);
             ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 80.0f);
-            ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
+            ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 120.0f);
             ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
 
             for (const auto& fact : dateEntries) {
@@ -265,12 +266,6 @@ void TimeEntriesView::renderDateGroupedEntries() {
                 }
 
                 std::string duration = utils::TimeUtils::formatDuration(fact.getDuration(now));
-
-                // Build activity display name with description
-                std::string activityDisplay = fact.activityName;
-                if (!fact.description.empty()) {
-                    activityDisplay += " (" + fact.description + ")";
-                }
 
                 // Check if this fact overlaps with any other fact
                 bool isOverlapping = isFactOverlapping(fact);
@@ -293,7 +288,11 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
                 // Activity column
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", activityDisplay.c_str());
+                ImGui::Text("%s", fact.activityName.c_str());
+
+                // Description column
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", fact.description.c_str());
 
                 // Duration column (right-aligned)
                 ImGui::TableNextColumn();

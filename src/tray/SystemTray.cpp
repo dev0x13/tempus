@@ -127,9 +127,17 @@ bool SystemTray::initWindows() {
   SetWindowLongPtr(messageWindow_, GWLP_USERDATA,
                    reinterpret_cast<LONG_PTR>(this));
 
-  // Create simple icons (will use default icon for now)
-  idleIcon_ = LoadIcon(nullptr, IDI_APPLICATION);
-  activeIcon_ = LoadIcon(nullptr, IDI_INFORMATION);
+  // Load tray icon from file; fall back to system defaults if unavailable
+  HICON customIcon = reinterpret_cast<HICON>(LoadImageW(
+      nullptr, L"assets/icons/tray_icon.ico",
+      IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
+  if (customIcon) {
+    idleIcon_ = customIcon;
+    activeIcon_ = customIcon;
+  } else {
+    idleIcon_ = LoadIcon(nullptr, IDI_APPLICATION);
+    activeIcon_ = LoadIcon(nullptr, IDI_INFORMATION);
+  }
 
   // Initialize NOTIFYICONDATA
   ZeroMemory(&nid_, sizeof(nid_));

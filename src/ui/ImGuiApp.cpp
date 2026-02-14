@@ -22,6 +22,7 @@
 
 #ifndef _WIN32
 #include <gtk/gtk.h>
+#include "AppIcon.hpp"
 #endif
 
 namespace timetracker::ui {
@@ -71,6 +72,16 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         glfwTerminate();
         return false;
     }
+
+#ifndef _WIN32
+    {
+        GLFWimage image;
+        image.width = icon::kAppIconWidth;
+        image.height = icon::kAppIconHeight;
+        image.pixels = const_cast<unsigned char*>(icon::kAppIconPixels);
+        glfwSetWindowIcon(window_, 1, &image);
+    }
+#endif
 
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1);  // Enable vsync

@@ -52,6 +52,10 @@ set(SOURCES
     ${IMGUI_BACKENDS}
 )
 
+if(WIN32)
+    list(APPEND SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/tempus.rc)
+endif()
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE

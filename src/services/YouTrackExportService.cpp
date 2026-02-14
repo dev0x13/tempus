@@ -217,7 +217,10 @@ std::string YouTrackExportService::postWorkItem(const std::string& issueId, int 
     std::string url = settingsService_.getYouTrackUrl();
     std::string token = settingsService_.getYouTrackToken();
 
-    // Build API endpoint URL
+    // Strip trailing slash before building API endpoint URL
+    while (!url.empty() && url.back() == '/') {
+        url.pop_back();
+    }
     std::string apiUrl = url + "/api/issues/" + issueId + "/timeTracking/workItems";
 
     // Build JSON payload

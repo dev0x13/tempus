@@ -1,6 +1,7 @@
 #pragma once
 
 #include "services/TimeTrackingService.hpp"
+#include "ActivityAutocomplete.hpp"
 #include <memory>
 #include <functional>
 
@@ -32,7 +33,7 @@ private:
     std::function<void()> onTrackingStarted_;
     std::function<void()> onDialogClosed_;
 
-    void renderAutocomplete();
+    ActivityAutocomplete autocomplete_;
 };
 
 } // namespace timetracker::ui::widgets

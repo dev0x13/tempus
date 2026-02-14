@@ -40,7 +40,8 @@ TimeEntriesView::TimeEntriesView(
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
     , exportService_(std::move(exportService))
-    , youTrackExportService_(std::move(youTrackExportService)) {
+    , youTrackExportService_(std::move(youTrackExportService))
+    , addAutocomplete_(timeService_) {
 
     memset(editActivityName_, 0, sizeof(editActivityName_));
     memset(editActivityDescription_, 0, sizeof(editActivityDescription_));
@@ -466,7 +467,7 @@ void TimeEntriesView::renderAddForm() {
     if (ImGui::BeginPopupModal(L.get("Add Entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
         ImGui::Text("%s", L.get("Activity:"));
         ImGui::SetNextItemWidth(-1);
-        ImGui::InputText("##addActivity", addActivityName_, sizeof(addActivityName_));
+        addAutocomplete_.render("##addActivity", addActivityName_, sizeof(addActivityName_));
 
         ImGui::Text("%s", L.get("Description:"));
         ImGui::SetNextItemWidth(-1);
@@ -803,6 +804,7 @@ void TimeEntriesView::deleteEntry() {
 void TimeEntriesView::startAdd() {
     memset(addActivityName_, 0, sizeof(addActivityName_));
     memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
+    addAutocomplete_.clear();
     int64_t now = utils::TimeUtils::now();
     setDateFromTimestamp(now, addStartDate_, addStartTime_);  // Default to current time
     setDateFromTimestamp(now, addEndDate_, addEndTime_);  // Initialize end time (but ongoing by default)

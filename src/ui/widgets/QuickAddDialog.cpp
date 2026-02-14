@@ -6,7 +6,7 @@
 namespace timetracker::ui::widgets {
 
 QuickAddDialog::QuickAddDialog(std::shared_ptr<services::TimeTrackingService> timeService)
-    : timeService_(std::move(timeService)) {
+    : timeService_(std::move(timeService)), autocomplete_(timeService_) {
     memset(activityInput_, 0, sizeof(activityInput_));
 }
 
@@ -18,7 +18,7 @@ void QuickAddDialog::render() {
     // Position dialog near cursor (or center of screen)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(350, 150), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(350, 200), ImGuiCond_Appearing);
 
     if (ImGui::Begin(L.get("Quick Add Activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
         ImGui::Text("%s", L.get("Activity:"));
@@ -29,8 +29,7 @@ void QuickAddDialog::render() {
             ImGui::SetKeyboardFocusHere();
         }
 
-        bool enterPressed = ImGui::InputText("##activityInput", activityInput_, sizeof(activityInput_),
-                                               ImGuiInputTextFlags_EnterReturnsTrue);
+        bool enterPressed = autocomplete_.render("##activityInput", activityInput_, sizeof(activityInput_));
 
         ImGui::Spacing();
 
@@ -45,18 +44,21 @@ void QuickAddDialog::render() {
             hide();
         }
 
-        if (shouldStart && strlen(activityInput_) > 0) {
-            // Start tracking
-            timeService_->startTracking(activityInput_);
+        if (shouldStart) {
+            const std::string& activity = autocomplete_.getSelectedActivity();
+            if (!activity.empty()) {
+                // Start tracking
+                timeService_->startTracking(activity);
 
-            // Notify callback
-            if (onTrackingStarted_) {
-                onTrackingStarted_();
+                // Notify callback
+                if (onTrackingStarted_) {
+                    onTrackingStarted_();
+                }
+
+                // Clear and hide
+                memset(activityInput_, 0, sizeof(activityInput_));
+                hide();
             }
-
-            // Clear and hide
-            memset(activityInput_, 0, sizeof(activityInput_));
-            hide();
         }
     }
     ImGui::End();
@@ -70,6 +72,7 @@ void QuickAddDialog::render() {
 void QuickAddDialog::show() {
     visible_ = true;
     memset(activityInput_, 0, sizeof(activityInput_));
+    autocomplete_.clear();
 }
 
 void QuickAddDialog::hide() {
@@ -86,10 +89,6 @@ void QuickAddDialog::setOnTrackingStarted(std::function<void()> callback) {
 
 void QuickAddDialog::setOnDialogClosed(std::function<void()> callback) {
     onDialogClosed_ = std::move(callback);
-}
-
-void QuickAddDialog::renderAutocomplete() {
-    // TODO: Implement autocomplete based on recent activities
 }
 
 } // namespace timetracker::ui::widgets

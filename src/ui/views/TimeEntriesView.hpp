@@ -4,6 +4,7 @@
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
 #include "services/YouTrackExportService.hpp"
+#include "ui/widgets/ActivityAutocomplete.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,6 +57,7 @@ private:
     // Add form state
     bool showAddForm_{false};
     char addActivityName_[256]{};
+    widgets::ActivityAutocomplete addAutocomplete_;
     char addActivityDescription_[512]{};
     int addStartDate_[3]{};
     int addStartTime_[2]{};

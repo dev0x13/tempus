@@ -17,7 +17,7 @@ Tempus is a desktop application for tracking time spent on various activities. I
 
 - **Language**: C++20
 - **UI Framework**: Dear ImGui
-- **Graphics**: OpenGL 3.3+, GLFW, GLEW
+- **Graphics**: OpenGL, GLFW, GLEW
 - **Database**: SQLite (via SQLiteCpp)
 - **HTTP Client**: cpr
 - **Build System**: CMake
@@ -66,13 +66,13 @@ conan install . --output-folder=build --build=missing -s build_type=Release
 ### 2. Configure with CMake
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+cmake --preset conan-release
 ```
 
 ### 3. Build
 
 ```bash
-cmake --build build --config Release
+cmake --build --preset conan-release
 ```
 
 ### 4. Run

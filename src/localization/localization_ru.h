@@ -154,6 +154,19 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Message", "Сообщение"},
         {"No export log entries", "Нет записей в журнале экспорта"},
 
+        // Block Schedule
+        {"Block Schedule", "Блочное расписание"},
+        {"Enable block schedule view", "Включить блочное расписание"},
+        {"Display your workday as a grid of time blocks that you can click to fill in", "Отображать рабочий день в виде сетки временных блоков, которые можно заполнять нажатием"},
+        {"Period length:", "Длина периода:"},
+        {"15 minutes", "15 минут"},
+        {"30 minutes", "30 минут"},
+        {"1 hour", "1 час"},
+        {"2 hours", "2 часа"},
+        {"Workday start:", "Начало рабочего дня:"},
+        {"Workday end:", "Конец рабочего дня:"},
+        {"Outside workday", "Вне рабочего дня"},
+
         // KTalk Import
         {"Import from KTalk", "Импорт из KTalk"},
         {"Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab.", "Импорт истории конференций из KTalk. Скопируйте запрос fetch() из вкладки Network в DevTools вашего браузера."},

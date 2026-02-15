@@ -20,10 +20,15 @@ void SettingsWindow::render() {
     // Center the window
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(600, 850), ImGuiCond_Appearing);
 
     if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse)) {
         renderLanguageSettings();
+
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        renderBlockScheduleSettings();
 
         ImGui::Separator();
         ImGui::Spacing();
@@ -119,6 +124,26 @@ void SettingsWindow::loadSettings() {
     // Load language
     std::string lang = settingsService_->getLanguage();
     selectedLanguage_ = (lang == "en") ? 0 : 1;
+
+    // Load block schedule settings
+    blockScheduleEnabled_ = settingsService_->getBlockScheduleEnabled();
+    int period = settingsService_->getBlockSchedulePeriod();
+    if (period == 15) blockSchedulePeriodIndex_ = 0;
+    else if (period == 30) blockSchedulePeriodIndex_ = 1;
+    else if (period == 60) blockSchedulePeriodIndex_ = 2;
+    else if (period == 120) blockSchedulePeriodIndex_ = 3;
+    else blockSchedulePeriodIndex_ = 2;
+
+    std::string startTime = settingsService_->getBlockScheduleWorkdayStart();
+    if (sscanf(startTime.c_str(), "%d:%d", &blockScheduleStartHour_, &blockScheduleStartMin_) != 2) {
+        blockScheduleStartHour_ = 9;
+        blockScheduleStartMin_ = 0;
+    }
+    std::string endTime = settingsService_->getBlockScheduleWorkdayEnd();
+    if (sscanf(endTime.c_str(), "%d:%d", &blockScheduleEndHour_, &blockScheduleEndMin_) != 2) {
+        blockScheduleEndHour_ = 18;
+        blockScheduleEndMin_ = 0;
+    }
 }
 
 void SettingsWindow::saveSettings() {
@@ -143,6 +168,16 @@ void SettingsWindow::saveSettings() {
     settingsService_->setLanguage(lang);
     localization::Language language = localization::stringToLanguage(lang);
     localization::LocalizationManager::instance().setLanguage(language);
+
+    // Save block schedule settings
+    settingsService_->setBlockScheduleEnabled(blockScheduleEnabled_);
+    const int periodValues[] = {15, 30, 60, 120};
+    settingsService_->setBlockSchedulePeriod(periodValues[blockSchedulePeriodIndex_]);
+    char timeBuf[8];
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", blockScheduleStartHour_, blockScheduleStartMin_);
+    settingsService_->setBlockScheduleWorkdayStart(timeBuf);
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", blockScheduleEndHour_, blockScheduleEndMin_);
+    settingsService_->setBlockScheduleWorkdayEnd(timeBuf);
 }
 
 bool SettingsWindow::validateInputs() {
@@ -213,7 +248,7 @@ void SettingsWindow::renderYouTrackSettings() {
     ImGui::Spacing();
 
     // Export Log button
-    if (ImGui::Button(L.get("Export Log"), ImVec2(120, 0))) {
+    if (ImGui::Button(L.get("Export Log"), ImVec2(130, 0))) {
         if (exportLogCallback_) {
             exportLogCallback_();
         }
@@ -281,6 +316,75 @@ void SettingsWindow::renderActivityAliases() {
                       [](const ActivityAlias& a) { return a.markedForDeletion; }),
         aliases_.end()
     );
+}
+
+void SettingsWindow::renderBlockScheduleSettings() {
+    auto& L = localization::L10n();
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Block Schedule"));
+    ImGui::Spacing();
+
+    ImGui::Checkbox(L.get("Enable block schedule view"), &blockScheduleEnabled_);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", L.get("Display your workday as a grid of time blocks that you can click to fill in"));
+    }
+
+    if (blockScheduleEnabled_) {
+        ImGui::Spacing();
+        ImGui::Text("%s", L.get("Period length:"));
+        ImGui::SameLine();
+        const char* periodOptions[] = {
+            L.get("15 minutes"),
+            L.get("30 minutes"),
+            L.get("1 hour"),
+            L.get("2 hours")
+        };
+        ImGui::SetNextItemWidth(150);
+        ImGui::Combo("##schedulePeriod", &blockSchedulePeriodIndex_, periodOptions, 4);
+
+        ImGui::Spacing();
+        ImGui::Text("%s", L.get("Workday start:"));
+        ImGui::SameLine();
+
+        char startHourBuf[8], startMinBuf[8];
+        snprintf(startHourBuf, sizeof(startHourBuf), "%02d", blockScheduleStartHour_);
+        snprintf(startMinBuf, sizeof(startMinBuf), "%02d", blockScheduleStartMin_);
+
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##schedStartHour", startHourBuf, sizeof(startHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(startHourBuf);
+            blockScheduleStartHour_ = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
+        ImGui::SameLine();
+        ImGui::Text(":");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##schedStartMin", startMinBuf, sizeof(startMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(startMinBuf);
+            blockScheduleStartMin_ = (val < 0) ? 0 : (val > 59) ? 59 : val;
+        }
+
+        ImGui::Spacing();
+        ImGui::Text("%s", L.get("Workday end:"));
+        ImGui::SameLine();
+
+        char endHourBuf[8], endMinBuf[8];
+        snprintf(endHourBuf, sizeof(endHourBuf), "%02d", blockScheduleEndHour_);
+        snprintf(endMinBuf, sizeof(endMinBuf), "%02d", blockScheduleEndMin_);
+
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##schedEndHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(endHourBuf);
+            blockScheduleEndHour_ = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
+        ImGui::SameLine();
+        ImGui::Text(":");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##schedEndMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(endMinBuf);
+            blockScheduleEndMin_ = (val < 0) ? 0 : (val > 59) ? 59 : val;
+        }
+    }
 }
 
 void SettingsWindow::renderKTalkSettings() {

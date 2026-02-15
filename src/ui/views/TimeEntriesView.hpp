@@ -4,7 +4,9 @@
 #include "services/StatisticsService.hpp"
 #include "services/ExportService.hpp"
 #include "services/YouTrackExportService.hpp"
+#include "services/SettingsService.hpp"
 #include "ui/widgets/ActivityAutocomplete.hpp"
+#include "ui/views/BlockScheduleRenderer.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -21,7 +23,8 @@ public:
         std::shared_ptr<services::TimeTrackingService> timeService,
         std::shared_ptr<services::StatisticsService> statsService,
         std::shared_ptr<services::ExportService> exportService,
-        std::shared_ptr<services::YouTrackExportService> youTrackExportService);
+        std::shared_ptr<services::YouTrackExportService> youTrackExportService,
+        std::shared_ptr<services::SettingsService> settingsService);
     ~TimeEntriesView() = default;
 
     void render();
@@ -35,6 +38,8 @@ private:
     std::shared_ptr<services::StatisticsService> statsService_;
     std::shared_ptr<services::ExportService> exportService_;
     std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
+    std::shared_ptr<services::SettingsService> settingsService_;
+    std::unique_ptr<BlockScheduleRenderer> scheduleRenderer_;
 
     // Entry list
     std::vector<models::Fact> entries_;
@@ -93,6 +98,7 @@ private:
     void renderDateSelector();
     void renderEntriesScrollableArea();
     void renderDateGroupedEntries();
+    void renderBlockSchedule();
     void renderFixedFooter();
     void renderEditForm();
     void renderAddForm();

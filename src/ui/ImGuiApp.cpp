@@ -131,7 +131,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 #endif
 
     // Create views
-    timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_);
+    timeEntriesView_ = std::make_unique<TimeEntriesView>(timeService_, statsService_, exportService_, youTrackExportService_, settingsService_);
 
     // Set up callbacks for KTalk Import and Settings buttons
     timeEntriesView_->setKTalkImportCallback([this]() {

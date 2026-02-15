@@ -1,4 +1,5 @@
 #include "TimeEntriesView.hpp"
+#include "BlockScheduleRenderer.hpp"
 #include "utils/TimeUtils.hpp"
 #include "utils/Platform.hpp"
 #include "ui/widgets/DatePicker.hpp"
@@ -36,12 +37,16 @@ TimeEntriesView::TimeEntriesView(
     std::shared_ptr<services::TimeTrackingService> timeService,
     std::shared_ptr<services::StatisticsService> statsService,
     std::shared_ptr<services::ExportService> exportService,
-    std::shared_ptr<services::YouTrackExportService> youTrackExportService)
+    std::shared_ptr<services::YouTrackExportService> youTrackExportService,
+    std::shared_ptr<services::SettingsService> settingsService)
     : timeService_(std::move(timeService))
     , statsService_(std::move(statsService))
     , exportService_(std::move(exportService))
     , youTrackExportService_(std::move(youTrackExportService))
+    , settingsService_(std::move(settingsService))
     , addAutocomplete_(timeService_) {
+
+    scheduleRenderer_ = std::make_unique<BlockScheduleRenderer>(settingsService_, timeService_);
 
     memset(editActivityName_, 0, sizeof(editActivityName_));
     memset(editActivityDescription_, 0, sizeof(editActivityDescription_));
@@ -82,7 +87,11 @@ void TimeEntriesView::render() {
     // Scrollable area for entries
     float availableHeight = ImGui::GetContentRegionAvail().y - footerHeight;
     ImGui::BeginChild("EntriesScrollArea", ImVec2(0, availableHeight), true);
-    renderDateGroupedEntries();
+    if (settingsService_->getBlockScheduleEnabled()) {
+        renderBlockSchedule();
+    } else {
+        renderDateGroupedEntries();
+    }
     ImGui::EndChild();
 
     // Fixed footer with totals
@@ -313,6 +322,106 @@ void TimeEntriesView::renderDateGroupedEntries() {
         ImGui::Unindent(20.0f);
 
         ImGui::Spacing();
+    }
+}
+
+void TimeEntriesView::renderBlockSchedule() {
+    auto& L = localization::L10n();
+
+    auto groupedEntries = groupEntriesByDate();
+
+    if (groupedEntries.empty()) {
+        // Still show empty schedule for the date range
+        // Generate dates from displayStartTime_ to displayEndTime_
+        int64_t cursor = displayStartTime_;
+        while (cursor <= displayEndTime_) {
+            auto tm = utils::TimeUtils::toLocalTime(cursor);
+
+            // Build date header
+            auto weekdayNames = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
+            auto monthNamesShort = splitByComma(L.get("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"));
+            std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
+                ? weekdayNames[tm.tm_wday] : "";
+            std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
+                ? monthNamesShort[tm.tm_mon] : "";
+            char dateStr[128];
+            snprintf(dateStr, sizeof(dateStr), "%s %s.%d", weekday.c_str(), month.c_str(), tm.tm_mday);
+
+            char isoKey[16];
+            snprintf(isoKey, sizeof(isoKey), "%04d-%02d-%02d",
+                    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+            int64_t dayStart = utils::TimeUtils::startOfDay(cursor);
+            std::vector<models::Fact> emptyFacts;
+            auto action = scheduleRenderer_->renderDay(dateStr, isoKey, emptyFacts, dayStart);
+
+            if (action.type == ScheduleAction::EditFact && action.factToEdit) {
+                startEdit(*action.factToEdit);
+            }
+
+            cursor = dayStart + 24 * 3600;  // Next day
+        }
+        return;
+    }
+
+    // Build a map of ISO date -> (header, facts) for schedule rendering
+    // We also need to generate empty days within the range
+    std::map<std::string, std::pair<std::string, std::vector<models::Fact>>> dateMap;
+
+    // First, populate from actual entries
+    for (const auto& fact : entries_) {
+        auto tm = utils::TimeUtils::toLocalTime(fact.startTime);
+        char isoKey[16];
+        snprintf(isoKey, sizeof(isoKey), "%04d-%02d-%02d",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+        auto& entry = dateMap[isoKey];
+        if (entry.first.empty()) {
+            auto weekdayNames = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
+            auto monthNamesShort = splitByComma(L.get("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"));
+            std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
+                ? weekdayNames[tm.tm_wday] : "";
+            std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
+                ? monthNamesShort[tm.tm_mon] : "";
+            char dateStr[128];
+            snprintf(dateStr, sizeof(dateStr), "%s %s.%d", weekday.c_str(), month.c_str(), tm.tm_mday);
+            entry.first = dateStr;
+        }
+        entry.second.push_back(fact);
+    }
+
+    // Also generate entries for days without facts within the range
+    int64_t cursor = displayStartTime_;
+    while (cursor <= displayEndTime_) {
+        auto tm = utils::TimeUtils::toLocalTime(cursor);
+        char isoKey[16];
+        snprintf(isoKey, sizeof(isoKey), "%04d-%02d-%02d",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+        if (dateMap.find(isoKey) == dateMap.end()) {
+            auto weekdayNames = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
+            auto monthNamesShort = splitByComma(L.get("Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec"));
+            std::string weekday = (weekdayNames.size() > static_cast<size_t>(tm.tm_wday))
+                ? weekdayNames[tm.tm_wday] : "";
+            std::string month = (monthNamesShort.size() > static_cast<size_t>(tm.tm_mon))
+                ? monthNamesShort[tm.tm_mon] : "";
+            char dateStr[128];
+            snprintf(dateStr, sizeof(dateStr), "%s %s.%d", weekday.c_str(), month.c_str(), tm.tm_mday);
+            dateMap[isoKey] = {dateStr, {}};
+        }
+
+        cursor = utils::TimeUtils::startOfDay(cursor) + 24 * 3600;
+    }
+
+    // Render in descending order (most recent first)
+    for (auto it = dateMap.rbegin(); it != dateMap.rend(); ++it) {
+        int64_t dayStart = utils::TimeUtils::parseDate(it->first);
+        auto action = scheduleRenderer_->renderDay(
+            it->second.first, it->first, it->second.second, dayStart);
+
+        if (action.type == ScheduleAction::EditFact && action.factToEdit) {
+            startEdit(*action.factToEdit);
+        }
     }
 }
 

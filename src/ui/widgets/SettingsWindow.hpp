@@ -41,6 +41,14 @@ private:
     bool ktalkIncludeUnplanned_{true};
     int selectedLanguage_{1};  // 0 = English, 1 = Russian
 
+    // Block schedule settings
+    bool blockScheduleEnabled_{false};
+    int blockSchedulePeriodIndex_{2};  // 0=15min, 1=30min, 2=1h, 3=2h
+    int blockScheduleStartHour_{9};
+    int blockScheduleStartMin_{0};
+    int blockScheduleEndHour_{18};
+    int blockScheduleEndMin_{0};
+
     // Validation state
     bool hasValidationError_{false};
     std::string validationMessage_;
@@ -59,6 +67,7 @@ private:
 
     // Render sections
     void renderLanguageSettings();
+    void renderBlockScheduleSettings();
     void renderYouTrackSettings();
     void renderActivityAliases();
     void renderKTalkSettings();

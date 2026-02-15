@@ -116,6 +116,54 @@ public:
      */
     void setLanguage(const std::string& language);
 
+    /**
+     * Get whether block schedule mode is enabled.
+     * @return true if block schedule mode is enabled, false by default
+     */
+    bool getBlockScheduleEnabled() const;
+
+    /**
+     * Set whether block schedule mode is enabled.
+     * @param enabled true to enable block schedule mode
+     */
+    void setBlockScheduleEnabled(bool enabled);
+
+    /**
+     * Get the block schedule period length in minutes.
+     * @return Period length in minutes (15, 30, 60, or 120), defaults to 60
+     */
+    int getBlockSchedulePeriod() const;
+
+    /**
+     * Set the block schedule period length in minutes.
+     * @param minutes Period length (15, 30, 60, or 120)
+     */
+    void setBlockSchedulePeriod(int minutes);
+
+    /**
+     * Get the workday start time for block schedule.
+     * @return Start time as "HH:MM" string, defaults to "09:00"
+     */
+    std::string getBlockScheduleWorkdayStart() const;
+
+    /**
+     * Set the workday start time for block schedule.
+     * @param time Start time as "HH:MM" string
+     */
+    void setBlockScheduleWorkdayStart(const std::string& time);
+
+    /**
+     * Get the workday end time for block schedule.
+     * @return End time as "HH:MM" string, defaults to "18:00"
+     */
+    std::string getBlockScheduleWorkdayEnd() const;
+
+    /**
+     * Set the workday end time for block schedule.
+     * @param time End time as "HH:MM" string
+     */
+    void setBlockScheduleWorkdayEnd(const std::string& time);
+
 private:
     std::shared_ptr<timetracker::database::Database> database_;
     std::map<std::string, std::string> settingsCache_;

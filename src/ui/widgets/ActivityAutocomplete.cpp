@@ -39,7 +39,9 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
             selectedSuggestion_ = -1; // Reset selection when suggestions change
         }
         showSuggestions_ = !suggestions_.empty();
-    } else if (!inputFocused) {
+    } else if (!inputFocused && !ImGui::IsPopupOpen("##autocomplete_popup")) {
+        // Only hide suggestions when popup is also not open, so mouse clicks on
+        // popup items aren't lost when input loses focus mid-click.
         showSuggestions_ = false;
         selectedSuggestion_ = -1;
     }
@@ -62,7 +64,6 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
     }
 
     // Handle keyboard navigation when input is focused and suggestions are showing
-    bool navigationKeyPressed = false;
     if (showSuggestions_ && inputFocused && !suggestions_.empty()) {
         if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
             if (selectedSuggestion_ < 0) {
@@ -70,7 +71,6 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
             } else {
                 selectedSuggestion_ = (selectedSuggestion_ + 1) % static_cast<int>(suggestions_.size());
             }
-            navigationKeyPressed = true;
         }
         else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
             if (selectedSuggestion_ < 0) {
@@ -81,7 +81,6 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
                     selectedSuggestion_ = static_cast<int>(suggestions_.size()) - 1;
                 }
             }
-            navigationKeyPressed = true;
         }
         else if (ImGui::IsKeyPressed(ImGuiKey_Tab) && selectedSuggestion_ >= 0 &&
                  selectedSuggestion_ < static_cast<int>(suggestions_.size())) {
@@ -96,17 +95,11 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
         }
     }
 
-    // Re-focus the input if we handled a navigation key
-    if (navigationKeyPressed) {
-        ImGui::SetKeyboardFocusHere(-1);  // -1 = previous item (the input we just rendered)
-    }
-
     // Render suggestions dropdown
     if (showSuggestions_) {
-        // Open popup on the frame when suggestions become available
-        if (inputActive) {
-            ImGui::OpenPopup("##autocomplete_popup");
-        }
+        // Open popup whenever suggestions should be visible. OpenPopup is safe
+        // to call every frame; ImGui ignores it if the popup is already open.
+        ImGui::OpenPopup("##autocomplete_popup");
 
         ImGui::SetNextWindowPos(
             ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));

@@ -28,7 +28,7 @@
 
 #ifndef _WIN32
 #include <gtk/gtk.h>
-#include "AppIcon.hpp"
+#include "resources/AppIcon.hpp"
 #endif
 
 namespace timetracker::ui {

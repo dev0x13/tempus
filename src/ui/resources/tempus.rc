@@ -1,0 +1,2 @@
+#include "Resources.hpp"
+IDI_APPICON ICON "tray_icon.ico"

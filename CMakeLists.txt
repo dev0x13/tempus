@@ -54,7 +54,7 @@ set(SOURCES
 )
 
 if(WIN32)
-    list(APPEND SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/tempus.rc)
+    list(APPEND SOURCES src/ui/resources/tempus.rc)
 endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -97,6 +97,3 @@ elseif(UNIX AND NOT APPLE)
         ${AYATANA_LIBRARIES}
         ${GTK3_LIBRARIES})
 endif()
-
-# Copy assets to build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

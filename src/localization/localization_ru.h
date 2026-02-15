@@ -133,7 +133,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
 
         // Quick Add
         {"Quick Add Activity", "Быстрое добавление активности"},
-        {"Start Tracking", "Начать отслеживание"},
+        {"Start Tracking", "Начать"},
+        {"Activity name", "Название активности"},
 
         // Export Log
         {"YouTrack Export Log", "Журнал экспорта YouTrack"},

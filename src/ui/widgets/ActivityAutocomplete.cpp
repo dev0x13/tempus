@@ -2,12 +2,16 @@
 #include "imgui.h"
 #include <cstring>
 
+#include "localization/LocalizationManager.hpp"
+
 namespace timetracker::ui::widgets {
 
 ActivityAutocomplete::ActivityAutocomplete(std::shared_ptr<services::TimeTrackingService> timeService)
     : timeService_(std::move(timeService)) {}
 
 bool ActivityAutocomplete::render(const char* label, char* buffer, size_t bufferSize) {
+    auto& L = localization::L10n();
+
     bool selected = false;
 
     ImGui::PushID(label);
@@ -15,7 +19,7 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
     // Text input
     ImGui::SetNextItemWidth(300);
     bool enterPressed = ImGui::InputTextWithHint(
-        "##input", "Enter activity name...",
+        "##input", L.get("Activity name"),
         buffer, bufferSize,
         ImGuiInputTextFlags_EnterReturnsTrue);
 

@@ -44,4 +44,3 @@ jobs:
         name: tempus-windows
         path: |
           build/Release/tempus.exe
-          build/Release/assets/

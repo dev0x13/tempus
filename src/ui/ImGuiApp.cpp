@@ -7,18 +7,24 @@
 #include "widgets/KTalkImportWindow.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
-#include "PTSansFont.hpp"
+#include "resources/PTSansFont.hpp"
 #include "localization/LocalizationManager.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#endif
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 #include <stdexcept>
 #include <iostream>
+
+#include "resources/Resources.hpp"
 
 #ifndef _WIN32
 #include <gtk/gtk.h>
@@ -72,6 +78,14 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         glfwTerminate();
         return false;
     }
+
+    // Set up icon in Windows
+#ifdef _WIN32
+    HWND hwnd = glfwGetWin32Window(window_);
+    HICON icon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APPICON));
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon);
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+#endif
 
 #ifndef _WIN32
     {

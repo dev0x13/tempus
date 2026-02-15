@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <ctime>
 
+#include "ui/resources/Resources.hpp"
+
 #ifdef _WIN32
 #include <shellapi.h>
 #include <windowsx.h>
@@ -127,17 +129,8 @@ bool SystemTray::initWindows() {
   SetWindowLongPtr(messageWindow_, GWLP_USERDATA,
                    reinterpret_cast<LONG_PTR>(this));
 
-  // Load tray icon from file; fall back to system defaults if unavailable
-  HICON customIcon = reinterpret_cast<HICON>(LoadImageW(
-      nullptr, L"assets/icons/tray_icon.ico",
-      IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
-  if (customIcon) {
-    idleIcon_ = customIcon;
-    activeIcon_ = customIcon;
-  } else {
-    idleIcon_ = LoadIcon(nullptr, IDI_APPLICATION);
-    activeIcon_ = LoadIcon(nullptr, IDI_INFORMATION);
-  }
+  idleIcon_ = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APPICON));
+  activeIcon_ = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APPICON));
 
   // Initialize NOTIFYICONDATA
   ZeroMemory(&nid_, sizeof(nid_));

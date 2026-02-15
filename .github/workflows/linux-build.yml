@@ -51,4 +51,3 @@ jobs:
         name: tempus-linux
         path: |
           build/Release/tempus
-          build/Release/assets/

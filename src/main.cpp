@@ -1,6 +1,10 @@
 #include "app/Application.hpp"
 #include <iostream>
 
+#ifdef _WIN32
+#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+#endif
+
 int main() {
     try {
         timetracker::app::Application app;
@@ -18,10 +22,3 @@ int main() {
         return 1;
     }
 }
-
-#ifdef _WIN32
-int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
-{
-    return main();
-}
-#endif

@@ -1,6 +1,7 @@
 #include "Application.hpp"
 #include "utils/Platform.hpp"
 #include "localization/LocalizationManager.hpp"
+#include "version.hpp"
 #include <iostream>
 
 namespace timetracker::app {
@@ -77,7 +78,8 @@ void Application::initUI() {
     uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, kTalkImportService_, settingsService_, exportLogRepo_);
 
     auto& L = localization::L10n();
-    if (!uiApp_->init(900, 900, L.get("Tempus"))) {
+    std::string windowTitle = std::string(L.get("Tempus")) + " " + APP_VERSION_STRING;
+    if (!uiApp_->init(900, 900, windowTitle.c_str())) {
         throw std::runtime_error("Failed to initialize UI");
     }
 

@@ -5,6 +5,34 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# --- App version ---
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" APP_VERSION_MAJOR)
+string(STRIP "${APP_VERSION_MAJOR}" APP_VERSION_MAJOR)
+
+if(DEFINED ENV{GITHUB_ACTIONS})
+    execute_process(
+        COMMAND git rev-list --count HEAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        OUTPUT_VARIABLE APP_VERSION_MINOR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(NOT APP_VERSION_MINOR)
+        set(APP_VERSION_MINOR 0)
+    endif()
+else()
+    set(APP_VERSION_MINOR 0)
+endif()
+
+set(APP_VERSION_STRING "v${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}")
+message(STATUS "App version: ${APP_VERSION_STRING}")
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.hpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/src/version.hpp"
+    @ONLY
+)
+
 # Find packages from Conan
 find_package(imgui REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -62,6 +90,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings
+    ${CMAKE_CURRENT_BINARY_DIR}/src
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

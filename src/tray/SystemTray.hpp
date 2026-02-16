@@ -8,7 +8,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#else
+#elif __linux__
 // Forward declarations for Linux/GTK types
 typedef struct _AppIndicator AppIndicator;
 typedef struct _GtkWidget GtkWidget;
@@ -67,7 +67,7 @@ private:
     void updateWindows();
     void showContextMenuWindows();
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-#else
+#elif __linux__
     // Linux/libayatana-appindicator implementation
     AppIndicator* indicator_{nullptr};
     GtkWidget* menu_{nullptr};

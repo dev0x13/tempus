@@ -54,8 +54,17 @@ sudo apt install build-essential cmake libgtk-3-dev libayatana-appindicator3-dev
 
 - Xcode 14+ or Clang 14+
 - macOS 11 (Big Sur) or higher
+- GTK 3
+- pkg-config
 
 ## Building
+
+### 0. macOS-only: install GTK-3 and pkg-config
+
+```bash
+brew install gtk+3
+brew install pkg-config
+```
 
 ### 1. Install Conan dependencies
 

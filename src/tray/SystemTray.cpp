@@ -11,7 +11,7 @@
 #ifdef _WIN32
 #include <shellapi.h>
 #include <windowsx.h>
-#else
+#elif __linux__
 #include <gtk/gtk.h>
 #include <libayatana-appindicator/app-indicator.h>
 #include <limits.h>
@@ -27,7 +27,7 @@ SystemTray::SystemTray(
 SystemTray::~SystemTray() {
 #ifdef _WIN32
   cleanupWindows();
-#else
+#elif __linux__
   cleanupLinux();
 #endif
 }
@@ -35,7 +35,7 @@ SystemTray::~SystemTray() {
 bool SystemTray::init() {
 #ifdef _WIN32
   return initWindows();
-#else
+#elif __linux__
   return initLinux();
 #endif
 }
@@ -52,7 +52,7 @@ void SystemTray::update() {
   if (statusChanged) {
     updateWindows();
   }
-#else
+#elif __linux__
   // On Linux, always update to refresh the time label
   updateLinux();
 #endif
@@ -256,7 +256,7 @@ void SystemTray::showContextMenuWindows() {
   DestroyMenu(menu);
 }
 
-#else
+#elif __linux__
 
 // Linux/libayatana-appindicator implementation
 //

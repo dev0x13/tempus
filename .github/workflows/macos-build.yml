@@ -1,6 +1,9 @@
 name: macOS Build
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -31,6 +34,8 @@ jobs:
         conan install . --build=missing -s build_type=Release -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
 
     - name: Configure CMake
+      env:
+        RELEASE_VERSION: ${{ github.ref_name }}
       run: |
         cmake --preset conan-release
 
@@ -44,3 +49,9 @@ jobs:
         name: tempus-macos
         path: |
           build/Release/tempus
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      run: gh release upload ${{ github.ref_name }} build/Release/tempus
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

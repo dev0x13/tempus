@@ -1,6 +1,9 @@
 name: Windows Build
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -33,6 +36,8 @@ jobs:
         conan install . --build=missing -s build_type=Release -s compiler.cppstd=17
 
     - name: Configure CMake
+      env:
+        RELEASE_VERSION: ${{ github.ref_name }}
       run: |
         cmake --preset conan-default
 
@@ -46,3 +51,9 @@ jobs:
         name: tempus-windows
         path: |
           build/Release/tempus.exe
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      run: gh release upload ${{ github.ref_name }} build/Release/tempus.exe
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

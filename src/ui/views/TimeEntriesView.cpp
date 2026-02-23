@@ -226,9 +226,9 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button(L.get("This Month"))) {
+    if (ImGui::Button(L.get("Last 10 Days"))) {
         int64_t now = utils::TimeUtils::now();
-        displayStartTime_ = utils::TimeUtils::startOfMonth(now);
+        displayStartTime_ = utils::TimeUtils::startOfDay(now) - 9 * 86400;
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
         widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
         widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);

@@ -36,7 +36,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"to", "по"},
         {"Today", "Сегодня"},
         {"This Week", "Эта неделя"},
-        {"This Month", "Этот месяц"},
+        {"Last 10 Days", "Последние 10 дней"},
 
         // Time Entries
         {"Activity", "Активность"},

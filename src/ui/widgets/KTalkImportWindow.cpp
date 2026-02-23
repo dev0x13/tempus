@@ -17,19 +17,20 @@ KTalkImportWindow::KTalkImportWindow(std::shared_ptr<services::KTalkImportServic
 }
 
 void KTalkImportWindow::initializeDefaultDates() {
-    // Set to date to today
+    // Set both dates to today
     std::time_t now = std::time(nullptr);
     std::tm* tm = std::localtime(&now);
-    toDate_[0] = tm->tm_year + 1900;
-    toDate_[1] = tm->tm_mon + 1;
-    toDate_[2] = tm->tm_mday;
+    int year = tm->tm_year + 1900;
+    int month = tm->tm_mon + 1;
+    int day = tm->tm_mday;
 
-    // Set from date to 30 days ago
-    std::time_t thirtyDaysAgo = now - (30 * 24 * 60 * 60);
-    tm = std::localtime(&thirtyDaysAgo);
-    fromDate_[0] = tm->tm_year + 1900;
-    fromDate_[1] = tm->tm_mon + 1;
-    fromDate_[2] = tm->tm_mday;
+    fromDate_[0] = year;
+    fromDate_[1] = month;
+    fromDate_[2] = day;
+
+    toDate_[0] = year;
+    toDate_[1] = month;
+    toDate_[2] = day;
 }
 
 std::string KTalkImportWindow::dateToString(const int* date, bool isEndDate) {
@@ -120,7 +121,18 @@ void KTalkImportWindow::render() {
         ImGui::Text("%s", L.get("From"));
         ImGui::SameLine();
 
-        DatePicker::renderWithCalendar(L.get("##displayFromDate"), fromDate_);
+        {
+            int prevFrom[3] = {fromDate_[0], fromDate_[1], fromDate_[2]};
+            if (DatePicker::renderWithCalendar(L.get("##displayFromDate"), fromDate_)) {
+                // Shift toDate by the same delta as fromDate moved
+                int64_t prevFromTs = DatePicker::dateToTimestamp(prevFrom);
+                int64_t prevToTs   = DatePicker::dateToTimestamp(toDate_);
+                int64_t delta      = prevToTs - prevFromTs;
+                int64_t newFromTs  = DatePicker::dateToTimestamp(fromDate_);
+                int64_t newToTs    = newFromTs + delta;
+                DatePicker::timestampToDate(newToTs, toDate_);
+            }
+        }
 
         ImGui::SameLine();
         ImGui::Text("%s", L.get("to"));

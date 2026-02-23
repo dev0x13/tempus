@@ -116,27 +116,47 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
         int64_t now = utils::TimeUtils::now();
 
-        // Generate and render each slot
-        int64_t slotStart = workdayStart;
-        int slotIndex = 0;
-        while (slotStart < workdayEnd) {
-            int64_t slotEnd = slotStart + periodMinutes * 60;
-            if (slotEnd > workdayEnd) {
-                slotEnd = workdayEnd;
+        // Collect all segments across all workday slots
+        std::vector<ScheduleSegment> allSegments;
+        {
+            int64_t slotStart = workdayStart;
+            while (slotStart < workdayEnd) {
+                int64_t slotEnd = slotStart + periodMinutes * 60;
+                if (slotEnd > workdayEnd) slotEnd = workdayEnd;
+                auto segs = computeSegments(slotStart, slotEnd, dayFacts);
+                allSegments.insert(allSegments.end(), segs.begin(), segs.end());
+                slotStart = slotEnd;
             }
+        }
 
-            auto segments = computeSegments(slotStart, slotEnd, dayFacts);
+        // Merge consecutive fact segments with the same activity,
+        // except KTalk meetings which are always shown individually.
+        const std::string& ktalkActivity = L.get("KTalk Meeting");
+        std::vector<ScheduleSegment> mergedSegments;
+        for (const auto& seg : allSegments) {
+            if (!mergedSegments.empty() &&
+                    mergedSegments.back().isFact && seg.isFact &&
+                    mergedSegments.back().fact && seg.fact &&
+                    mergedSegments.back().fact->activityId == seg.fact->activityId &&
+                    mergedSegments.back().fact->activityName != ktalkActivity &&
+                    mergedSegments.back().fact->description == seg.fact->description &&
+                    mergedSegments.back().endTime >= seg.startTime) {
+                mergedSegments.back().endTime = std::max(mergedSegments.back().endTime, seg.endTime);
+            } else {
+                mergedSegments.push_back(seg);
+            }
+        }
 
-            for (const auto& seg : segments) {
-                ImGui::TableNextRow();
+        for (const auto& seg : mergedSegments) {
+            ImGui::TableNextRow();
 
-                std::string segStartStr = utils::TimeUtils::formatTime(seg.startTime);
-                std::string segEndStr = utils::TimeUtils::formatTime(seg.endTime);
-                std::string timeRange = segStartStr + " - " + segEndStr;
+            std::string segStartStr = utils::TimeUtils::formatTime(seg.startTime);
+            std::string segEndStr = utils::TimeUtils::formatTime(seg.endTime);
+            std::string timeRange = segStartStr + " - " + segEndStr;
 
-                ImGui::PushID(static_cast<int>(seg.startTime ^ (slotIndex * 1000)));
+            ImGui::PushID(static_cast<int>(seg.startTime));
 
-                if (seg.isFact && seg.fact) {
+            if (seg.isFact && seg.fact) {
                     // Filled segment - show fact info
                     int64_t segDuration = seg.endTime - seg.startTime;
                     std::string durationStr = utils::TimeUtils::formatDuration(
@@ -241,10 +261,6 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                 }
 
                 ImGui::PopID();
-            }
-
-            slotStart = slotEnd;
-            slotIndex++;
         }
 
         ImGui::EndTable();

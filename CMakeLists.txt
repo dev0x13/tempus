@@ -92,7 +92,7 @@ if(APPLE)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GTK3_INCLUDE_DIRS})
     target_link_directories(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARY_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARIES})
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE

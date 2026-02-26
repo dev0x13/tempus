@@ -57,6 +57,9 @@ jobs:
 
     - name: Upload to release
       if: github.event_name == 'release'
-      run: gh release upload ${{ github.ref_name }} build/Release/tempus.exe
+      run: |
+        mv build/Release/tempus.exe build/Release/tempus-windows-x64.exe
+        gh release upload ${{ github.ref_name }} build/Release/tempus-windows-x64.exe
+      shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -137,9 +137,10 @@ ScheduleAction BlockScheduleRenderer::renderDay(
             if (!mergedSegments.empty() &&
                     mergedSegments.back().isFact && seg.isFact &&
                     mergedSegments.back().fact && seg.fact &&
-                    mergedSegments.back().fact->activityId == seg.fact->activityId &&
-                    mergedSegments.back().fact->activityName != ktalkActivity &&
-                    mergedSegments.back().fact->description == seg.fact->description &&
+                    (mergedSegments.back().fact->id == seg.fact->id ||
+                            (mergedSegments.back().fact->activityId == seg.fact->activityId &&
+                             mergedSegments.back().fact->activityName != ktalkActivity &&
+                             mergedSegments.back().fact->description == seg.fact->description)) &&
                     mergedSegments.back().endTime >= seg.startTime) {
                 mergedSegments.back().endTime = std::max(mergedSegments.back().endTime, seg.endTime);
             } else {

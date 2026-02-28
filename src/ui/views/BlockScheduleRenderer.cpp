@@ -3,7 +3,6 @@
 #include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <algorithm>
-#include <cstring>
 
 namespace timetracker::ui {
 
@@ -11,16 +10,14 @@ BlockScheduleRenderer::BlockScheduleRenderer(
     std::shared_ptr<services::SettingsService> settingsService,
     std::shared_ptr<services::TimeTrackingService> timeService)
     : settingsService_(std::move(settingsService))
-    , timeService_(std::move(timeService))
-    , autocomplete_(timeService_) {
-    memset(quickAddName_, 0, sizeof(quickAddName_));
+    , timeService_(std::move(timeService)) {
 }
 
-std::vector<ScheduleSegment> BlockScheduleRenderer::computeSegments(
-    int64_t slotStart, int64_t slotEnd,
+std::vector<ScheduleBlock> BlockScheduleRenderer::computeBlocks(
+    int64_t workdayStart, int64_t workdayEnd,
     const std::vector<models::Fact>& dayFacts) const {
 
-    // Collect facts that overlap this slot
+    // Collect facts that fall (at least partially) within the workday window
     struct FactSlice {
         int64_t start;
         int64_t end;
@@ -32,10 +29,10 @@ std::vector<ScheduleSegment> BlockScheduleRenderer::computeSegments(
         int64_t fStart = f.startTime;
         int64_t fEnd = f.endTime.value_or(utils::TimeUtils::now());
 
-        // Check overlap
-        if (fStart < slotEnd && fEnd > slotStart) {
-            int64_t clampedStart = std::max(fStart, slotStart);
-            int64_t clampedEnd = std::min(fEnd, slotEnd);
+        // Only include facts that overlap the workday window
+        if (fStart < workdayEnd && fEnd > workdayStart) {
+            int64_t clampedStart = std::max(fStart, workdayStart);
+            int64_t clampedEnd = std::min(fEnd, workdayEnd);
             if (clampedEnd - clampedStart >= 60) {  // At least 1 minute
                 slices.push_back({clampedStart, clampedEnd, &f});
             }
@@ -47,31 +44,31 @@ std::vector<ScheduleSegment> BlockScheduleRenderer::computeSegments(
         return a.start < b.start;
     });
 
-    // Build segments: interleave gaps and facts
-    std::vector<ScheduleSegment> segments;
-    int64_t cursor = slotStart;
+    // Build block list: interleave gaps and facts
+    std::vector<ScheduleBlock> blocks;
+    int64_t cursor = workdayStart;
 
     for (const auto& slice : slices) {
         // Gap before this fact
         if (slice.start > cursor && (slice.start - cursor) >= 60) {
-            segments.push_back({cursor, slice.start, false, nullptr});
+            blocks.push_back({cursor, slice.start, false, nullptr});
         }
-        // Fact segment
-        segments.push_back({slice.start, slice.end, true, slice.fact});
+        // Fact block
+        blocks.push_back({slice.start, slice.end, true, slice.fact});
         cursor = std::max(cursor, slice.end);
     }
 
     // Trailing gap
-    if (cursor < slotEnd && (slotEnd - cursor) >= 60) {
-        segments.push_back({cursor, slotEnd, false, nullptr});
+    if (cursor < workdayEnd && (workdayEnd - cursor) >= 60) {
+        blocks.push_back({cursor, workdayEnd, false, nullptr});
     }
 
-    // If no segments at all, the entire slot is empty
-    if (segments.empty()) {
-        segments.push_back({slotStart, slotEnd, false, nullptr});
+    // If no blocks at all, the entire workday is empty
+    if (blocks.empty()) {
+        blocks.push_back({workdayStart, workdayEnd, false, nullptr});
     }
 
-    return segments;
+    return blocks;
 }
 
 ScheduleAction BlockScheduleRenderer::renderDay(
@@ -90,8 +87,6 @@ ScheduleAction BlockScheduleRenderer::renderDay(
     sscanf(startStr.c_str(), "%d:%d", &startHour, &startMin);
     sscanf(endStr.c_str(), "%d:%d", &endHour, &endMin);
 
-    int periodMinutes = settingsService_->getBlockSchedulePeriod();
-
     // Compute workday timestamps for this day
     auto dayTm = utils::TimeUtils::toLocalTime(dayStart);
     int64_t workdayStart = utils::TimeUtils::fromLocalTime(
@@ -105,7 +100,29 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
     ImGui::Indent(20.0f);
 
-    // Generate slots and render the table
+    // Compute activity-driven blocks
+    auto blocks = computeBlocks(workdayStart, workdayEnd, dayFacts);
+
+    // Merge consecutive fact blocks with the same activity,
+    // except KTalk meetings which are always shown individually.
+    const std::string& ktalkActivity = L.get("KTalk Meeting");
+    std::vector<ScheduleBlock> mergedBlocks;
+    for (const auto& blk : blocks) {
+        if (!mergedBlocks.empty() &&
+                mergedBlocks.back().isFact && blk.isFact &&
+                mergedBlocks.back().fact && blk.fact &&
+                (mergedBlocks.back().fact->id == blk.fact->id ||
+                        (mergedBlocks.back().fact->activityId == blk.fact->activityId &&
+                         mergedBlocks.back().fact->activityName != ktalkActivity &&
+                         mergedBlocks.back().fact->description == blk.fact->description)) &&
+                mergedBlocks.back().endTime >= blk.startTime) {
+            mergedBlocks.back().endTime = std::max(mergedBlocks.back().endTime, blk.endTime);
+        } else {
+            mergedBlocks.push_back(blk);
+        }
+    }
+
+    // Render table
     std::string tableId = "ScheduleTable_" + isoDate;
     if (ImGui::BeginTable(tableId.c_str(), 4,
             ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
@@ -116,152 +133,90 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
         int64_t now = utils::TimeUtils::now();
 
-        // Collect all segments across all workday slots
-        std::vector<ScheduleSegment> allSegments;
-        {
-            int64_t slotStart = workdayStart;
-            while (slotStart < workdayEnd) {
-                int64_t slotEnd = slotStart + periodMinutes * 60;
-                if (slotEnd > workdayEnd) slotEnd = workdayEnd;
-                auto segs = computeSegments(slotStart, slotEnd, dayFacts);
-                allSegments.insert(allSegments.end(), segs.begin(), segs.end());
-                slotStart = slotEnd;
-            }
-        }
-
-        // Merge consecutive fact segments with the same activity,
-        // except KTalk meetings which are always shown individually.
-        const std::string& ktalkActivity = L.get("KTalk Meeting");
-        std::vector<ScheduleSegment> mergedSegments;
-        for (const auto& seg : allSegments) {
-            if (!mergedSegments.empty() &&
-                    mergedSegments.back().isFact && seg.isFact &&
-                    mergedSegments.back().fact && seg.fact &&
-                    (mergedSegments.back().fact->id == seg.fact->id ||
-                            (mergedSegments.back().fact->activityId == seg.fact->activityId &&
-                             mergedSegments.back().fact->activityName != ktalkActivity &&
-                             mergedSegments.back().fact->description == seg.fact->description)) &&
-                    mergedSegments.back().endTime >= seg.startTime) {
-                mergedSegments.back().endTime = std::max(mergedSegments.back().endTime, seg.endTime);
-            } else {
-                mergedSegments.push_back(seg);
-            }
-        }
-
-        for (const auto& seg : mergedSegments) {
+        for (const auto& blk : mergedBlocks) {
             ImGui::TableNextRow();
 
-            std::string segStartStr = utils::TimeUtils::formatTime(seg.startTime);
-            std::string segEndStr = utils::TimeUtils::formatTime(seg.endTime);
-            std::string timeRange = segStartStr + " - " + segEndStr;
+            std::string blkStartStr = utils::TimeUtils::formatTime(blk.startTime);
+            std::string blkEndStr = utils::TimeUtils::formatTime(blk.endTime);
+            std::string timeRange = blkStartStr + " - " + blkEndStr;
 
-            ImGui::PushID(static_cast<int>(seg.startTime));
+            ImGui::PushID(static_cast<int>(blk.startTime));
 
-            if (seg.isFact && seg.fact) {
-                    // Filled segment - show fact info
-                    int64_t segDuration = seg.endTime - seg.startTime;
-                    std::string durationStr = utils::TimeUtils::formatDuration(
-                        seg.fact->isOngoing() ? (now - seg.startTime) : segDuration);
+            if (blk.isFact && blk.fact) {
+                // Filled block — show fact info
+                int64_t blkDuration = blk.endTime - blk.startTime;
+                std::string durationStr = utils::TimeUtils::formatDuration(
+                    blk.fact->isOngoing() ? (now - blk.startTime) : blkDuration);
 
-                    // Check overlap
-                    bool isOverlapping = false;
-                    if (seg.fact->endTime.has_value()) {
-                        for (const auto& other : dayFacts) {
-                            if (seg.fact->id != other.id && seg.fact->overlapsWith(other)) {
-                                isOverlapping = true;
-                                break;
-                            }
+                // Check overlap
+                bool isOverlapping = false;
+                if (blk.fact->endTime.has_value()) {
+                    for (const auto& other : dayFacts) {
+                        if (blk.fact->id != other.id && blk.fact->overlapsWith(other)) {
+                            isOverlapping = true;
+                            break;
                         }
-                    }
-
-                    if (isOverlapping) {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
-                    }
-
-                    // Time column (clickable to edit)
-                    ImGui::TableNextColumn();
-                    if (ImGui::Selectable(timeRange.c_str(), false,
-                            ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
-                        action.type = ScheduleAction::EditFact;
-                        action.factToEdit = seg.fact;
-                    }
-
-                    // Activity column
-                    ImGui::TableNextColumn();
-                    ImGui::Text("%s", seg.fact->activityName.c_str());
-
-                    // Description column
-                    ImGui::TableNextColumn();
-                    ImGui::Text("%s", seg.fact->description.c_str());
-
-                    // Duration column
-                    ImGui::TableNextColumn();
-                    float columnWidth = ImGui::GetContentRegionAvail().x;
-                    float textWidth = ImGui::CalcTextSize(durationStr.c_str()).x;
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + columnWidth - textWidth);
-                    ImGui::Text("%s", durationStr.c_str());
-
-                    if (isOverlapping) {
-                        ImGui::PopStyleColor();
-                    }
-                } else {
-                    // Empty segment - clickable to quick-add
-                    bool isActiveQuickAdd = quickAddActive_ &&
-                        quickAddStart_ == seg.startTime && quickAddEnd_ == seg.endTime;
-
-                    if (isActiveQuickAdd) {
-                        // Render inline input
-                        ImGui::TableNextColumn();
-                        ImGui::TextDisabled("%s", timeRange.c_str());
-
-                        ImGui::TableNextColumn();
-                        ImGui::SetNextItemWidth(-1);
-
-                        if (!quickAddFocusSet_) {
-                            ImGui::SetKeyboardFocusHere();
-                            quickAddFocusSet_ = true;
-                        }
-
-                        bool confirmed = autocomplete_.render("##quickAddInline", quickAddName_, sizeof(quickAddName_));
-                        if (confirmed && strlen(quickAddName_) > 0) {
-                            timeService_->addManualEntry(quickAddName_, quickAddStart_, quickAddEnd_);
-                            cancelQuickAdd();
-                            // Return no action - the view will refresh entries
-                        }
-
-                        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-                            cancelQuickAdd();
-                        }
-
-                        ImGui::TableNextColumn();  // Description
-                        ImGui::TableNextColumn();  // Duration
-                    } else {
-                        // Empty row - clickable
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.7f));
-
-                        ImGui::TableNextColumn();
-                        if (ImGui::Selectable(timeRange.c_str(), false,
-                                ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
-                            startQuickAdd(seg.startTime, seg.endTime);
-                        }
-
-                        ImGui::TableNextColumn();  // Activity
-                        ImGui::TableNextColumn();  // Description
-
-                        // Duration column - show slot duration dimmed
-                        ImGui::TableNextColumn();
-                        int64_t gapDuration = seg.endTime - seg.startTime;
-                        std::string gapDurStr = utils::TimeUtils::formatDuration(gapDuration);
-                        float colWidth = ImGui::GetContentRegionAvail().x;
-                        float txtWidth = ImGui::CalcTextSize(gapDurStr.c_str()).x;
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + colWidth - txtWidth);
-                        ImGui::Text("%s", gapDurStr.c_str());
-
-                        ImGui::PopStyleColor();
                     }
                 }
 
-                ImGui::PopID();
+                if (isOverlapping) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+                }
+
+                // Time column (clickable to edit)
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable(timeRange.c_str(), false,
+                        ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
+                    action.type = ScheduleAction::EditFact;
+                    action.factToEdit = blk.fact;
+                }
+
+                // Activity column
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", blk.fact->activityName.c_str());
+
+                // Description column
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", blk.fact->description.c_str());
+
+                // Duration column
+                ImGui::TableNextColumn();
+                float columnWidth = ImGui::GetContentRegionAvail().x;
+                float textWidth = ImGui::CalcTextSize(durationStr.c_str()).x;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + columnWidth - textWidth);
+                ImGui::Text("%s", durationStr.c_str());
+
+                if (isOverlapping) {
+                    ImGui::PopStyleColor();
+                }
+            } else {
+                // Empty gap block — clickable to open Add activity modal
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.7f));
+
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable(timeRange.c_str(), false,
+                        ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
+                    action.type = ScheduleAction::CreateFact;
+                    action.slotStart = blk.startTime;
+                    action.slotEnd = blk.endTime;
+                }
+
+                ImGui::TableNextColumn();  // Activity
+                ImGui::TableNextColumn();  // Description
+
+                // Duration column — show gap duration dimmed
+                ImGui::TableNextColumn();
+                int64_t gapDuration = blk.endTime - blk.startTime;
+                std::string gapDurStr = utils::TimeUtils::formatDuration(gapDuration);
+                float colWidth = ImGui::GetContentRegionAvail().x;
+                float txtWidth = ImGui::CalcTextSize(gapDurStr.c_str()).x;
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + colWidth - txtWidth);
+                ImGui::Text("%s", gapDurStr.c_str());
+
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::PopID();
         }
 
         ImGui::EndTable();
@@ -271,17 +226,12 @@ ScheduleAction BlockScheduleRenderer::renderDay(
     std::vector<const models::Fact*> outsideFacts;
     for (const auto& f : dayFacts) {
         int64_t fEnd = f.endTime.value_or(utils::TimeUtils::now());
-        // Fact is entirely outside if it ends before workday start or starts after workday end
         bool entirelyBefore = fEnd <= workdayStart;
         bool entirelyAfter = f.startTime >= workdayEnd;
 
         if (entirelyBefore || entirelyAfter) {
             outsideFacts.push_back(&f);
         } else if (f.startTime < workdayStart || fEnd > workdayEnd) {
-            // Partially outside - the part outside the workday window
-            // We show it in the outside section only if it extends before workday start or after end
-            // The in-workday portion is already handled by slot rendering above
-            // We only show facts that have a meaningful portion outside
             if (f.startTime < workdayStart && (workdayStart - f.startTime) >= 60) {
                 outsideFacts.push_back(&f);
             } else if (fEnd > workdayEnd && (fEnd - workdayEnd) >= 60) {
@@ -342,29 +292,6 @@ ScheduleAction BlockScheduleRenderer::renderDay(
     ImGui::Spacing();
 
     return action;
-}
-
-bool BlockScheduleRenderer::renderQuickAdd() {
-    // Quick add is rendered inline within renderDay
-    return false;
-}
-
-void BlockScheduleRenderer::cancelQuickAdd() {
-    quickAddActive_ = false;
-    quickAddStart_ = 0;
-    quickAddEnd_ = 0;
-    memset(quickAddName_, 0, sizeof(quickAddName_));
-    autocomplete_.clear();
-    quickAddFocusSet_ = false;
-}
-
-void BlockScheduleRenderer::startQuickAdd(int64_t start, int64_t end) {
-    quickAddActive_ = true;
-    quickAddStart_ = start;
-    quickAddEnd_ = end;
-    memset(quickAddName_, 0, sizeof(quickAddName_));
-    autocomplete_.clear();
-    quickAddFocusSet_ = false;
 }
 
 } // namespace timetracker::ui

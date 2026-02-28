@@ -43,7 +43,6 @@ private:
 
     // Block schedule settings
     bool blockScheduleEnabled_{false};
-    int blockSchedulePeriodIndex_{2};  // 0=15min, 1=30min, 2=1h, 3=2h
     int blockScheduleStartHour_{9};
     int blockScheduleStartMin_{0};
     int blockScheduleEndHour_{18};

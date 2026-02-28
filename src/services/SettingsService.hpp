@@ -129,18 +129,6 @@ public:
     void setBlockScheduleEnabled(bool enabled);
 
     /**
-     * Get the block schedule period length in minutes.
-     * @return Period length in minutes (15, 30, 60, or 120), defaults to 60
-     */
-    int getBlockSchedulePeriod() const;
-
-    /**
-     * Set the block schedule period length in minutes.
-     * @param minutes Period length (15, 30, 60, or 120)
-     */
-    void setBlockSchedulePeriod(int minutes);
-
-    /**
      * Get the workday start time for block schedule.
      * @return Start time as "HH:MM" string, defaults to "09:00"
      */

@@ -357,6 +357,8 @@ void TimeEntriesView::renderBlockSchedule() {
 
             if (action.type == ScheduleAction::EditFact && action.factToEdit) {
                 startEdit(*action.factToEdit);
+            } else if (action.type == ScheduleAction::CreateFact) {
+                startAddWithTimes(action.slotStart, action.slotEnd);
             }
 
             cursor = dayStart + 24 * 3600;  // Next day
@@ -421,6 +423,8 @@ void TimeEntriesView::renderBlockSchedule() {
 
         if (action.type == ScheduleAction::EditFact && action.factToEdit) {
             startEdit(*action.factToEdit);
+        } else if (action.type == ScheduleAction::CreateFact) {
+            startAddWithTimes(action.slotStart, action.slotEnd);
         }
     }
 }
@@ -481,13 +485,11 @@ void TimeEntriesView::renderEditForm() {
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
     if (ImGui::BeginPopupModal(L.get("Edit Entry"), &showEditForm_, ImGuiWindowFlags_NoResize)) {
-        ImGui::Text("%s", L.get("Activity:"));
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
 
-        ImGui::Text("%s", L.get("Description:"));
         ImGui::SetNextItemWidth(-1);
-        ImGui::InputText("##editDescription", editActivityDescription_, sizeof(editActivityDescription_));
+        ImGui::InputTextWithHint("##editDescription", L.get("Optional description"), editActivityDescription_, sizeof(editActivityDescription_));
 
         ImGui::Spacing();
         ImGui::Text("%s", L.get("Start:"));
@@ -514,31 +516,27 @@ void TimeEntriesView::renderEditForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Checkbox(L.get("Ongoing"), &editIsOngoing_);
+        ImGui::Text("%s", L.get("End:"));
+        widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
+        ImGui::SameLine();
 
-        if (!editIsOngoing_) {
-            ImGui::Text("%s", L.get("End:"));
-            widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
-            ImGui::SameLine();
+        // Format time with leading zeros
+        char endHourBuf[8], endMinBuf[8];
+        snprintf(endHourBuf, sizeof(endHourBuf), "%02d", editEndTime_[0]);
+        snprintf(endMinBuf, sizeof(endMinBuf), "%02d", editEndTime_[1]);
 
-            // Format time with leading zeros
-            char endHourBuf[8], endMinBuf[8];
-            snprintf(endHourBuf, sizeof(endHourBuf), "%02d", editEndTime_[0]);
-            snprintf(endMinBuf, sizeof(endMinBuf), "%02d", editEndTime_[1]);
-
-            ImGui::SetNextItemWidth(40);
-            if (ImGui::InputText("##endHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
-                int val = atoi(endHourBuf);
-                editEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
-            }
-            ImGui::SameLine();
-            ImGui::Text(":");
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(40);
-            if (ImGui::InputText("##endMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
-                int val = atoi(endMinBuf);
-                editEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
-            }
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##endHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(endHourBuf);
+            editEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        }
+        ImGui::SameLine();
+        ImGui::Text(":");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(40);
+        if (ImGui::InputText("##endMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+            int val = atoi(endMinBuf);
+            editEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
         }
 
         ImGui::Spacing();
@@ -573,13 +571,11 @@ void TimeEntriesView::renderAddForm() {
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
     if (ImGui::BeginPopupModal(L.get("Add Entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
-        ImGui::Text("%s", L.get("Activity:"));
         ImGui::SetNextItemWidth(-1);
         addAutocomplete_.render("##addActivity", addActivityName_, sizeof(addActivityName_));
 
-        ImGui::Text("%s", L.get("Description:"));
         ImGui::SetNextItemWidth(-1);
-        ImGui::InputText("##addDescription", addActivityDescription_, sizeof(addActivityDescription_));
+        ImGui::InputTextWithHint("##addDescription",  L.get("Optional description"), addActivityDescription_, sizeof(addActivityDescription_));
 
         ImGui::Spacing();
         ImGui::Text("%s", L.get("Start:"));
@@ -606,7 +602,9 @@ void TimeEntriesView::renderAddForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Checkbox(L.get("Ongoing"), &addIsOngoing_);
+        if (!addFromBlock_) {
+            ImGui::Checkbox(L.get("Ongoing"), &addIsOngoing_);
+        }
 
         if (!addIsOngoing_) {
             ImGui::Text("%s", L.get("End:"));
@@ -892,11 +890,7 @@ void TimeEntriesView::saveEdit() {
     models::Fact fact = *editingFact_;
     fact.startTime = getTimestampFromDate(editStartDate_, editStartTime_);
 
-    if (editIsOngoing_) {
-        fact.endTime = std::nullopt;
-    } else {
-        fact.endTime = getTimestampFromDate(editEndDate_, editEndTime_);
-    }
+    fact.endTime = getTimestampFromDate(editEndDate_, editEndTime_);
 
     timeService_->updateEntry(fact, editActivityName_, editActivityDescription_);
     refreshEntries();
@@ -917,6 +911,18 @@ void TimeEntriesView::startAdd() {
     setDateFromTimestamp(now, addStartDate_, addStartTime_);  // Default to current time
     setDateFromTimestamp(now, addEndDate_, addEndTime_);  // Initialize end time (but ongoing by default)
     addIsOngoing_ = true;  // Default to ongoing
+    addFromBlock_ = false;
+    showAddForm_ = true;
+}
+
+void TimeEntriesView::startAddWithTimes(int64_t start, int64_t end) {
+    memset(addActivityName_, 0, sizeof(addActivityName_));
+    memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
+    addAutocomplete_.clear();
+    setDateFromTimestamp(start, addStartDate_, addStartTime_);
+    setDateFromTimestamp(end, addEndDate_, addEndTime_);
+    addIsOngoing_ = false;
+    addFromBlock_ = true;
     showAddForm_ = true;
 }
 

@@ -69,6 +69,7 @@ private:
     int addEndDate_[3]{};
     int addEndTime_[2]{};
     bool addIsOngoing_{true};
+    bool addFromBlock_{false};  // True when opened via block click (hides Ongoing checkbox)
 
     // Activity breakdown state
     bool showActivityBreakdown_{false};
@@ -113,6 +114,7 @@ private:
     void saveEdit();
     void deleteEntry();
     void startAdd();
+    void startAddWithTimes(int64_t start, int64_t end);
     void saveAdd();
     void performCsvExport();
     void performYouTrackExport();

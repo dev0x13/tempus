@@ -125,20 +125,6 @@ void SettingsService::setBlockScheduleEnabled(bool enabled) {
     setSetting("block_schedule_enabled", enabled ? "true" : "false");
 }
 
-int SettingsService::getBlockSchedulePeriod() const {
-    std::string value = getSetting("block_schedule_period", "60");
-    try {
-        int period = std::stoi(value);
-        if (period == 15 || period == 30 || period == 60 || period == 120) {
-            return period;
-        }
-    } catch (...) {}
-    return 60;
-}
-
-void SettingsService::setBlockSchedulePeriod(int minutes) {
-    setSetting("block_schedule_period", std::to_string(minutes));
-}
 
 std::string SettingsService::getBlockScheduleWorkdayStart() const {
     return getSetting("block_schedule_workday_start", "09:00");

@@ -127,12 +127,6 @@ void SettingsWindow::loadSettings() {
 
     // Load block schedule settings
     blockScheduleEnabled_ = settingsService_->getBlockScheduleEnabled();
-    int period = settingsService_->getBlockSchedulePeriod();
-    if (period == 15) blockSchedulePeriodIndex_ = 0;
-    else if (period == 30) blockSchedulePeriodIndex_ = 1;
-    else if (period == 60) blockSchedulePeriodIndex_ = 2;
-    else if (period == 120) blockSchedulePeriodIndex_ = 3;
-    else blockSchedulePeriodIndex_ = 2;
 
     std::string startTime = settingsService_->getBlockScheduleWorkdayStart();
     if (sscanf(startTime.c_str(), "%d:%d", &blockScheduleStartHour_, &blockScheduleStartMin_) != 2) {
@@ -171,8 +165,6 @@ void SettingsWindow::saveSettings() {
 
     // Save block schedule settings
     settingsService_->setBlockScheduleEnabled(blockScheduleEnabled_);
-    const int periodValues[] = {15, 30, 60, 120};
-    settingsService_->setBlockSchedulePeriod(periodValues[blockSchedulePeriodIndex_]);
     char timeBuf[8];
     snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", blockScheduleStartHour_, blockScheduleStartMin_);
     settingsService_->setBlockScheduleWorkdayStart(timeBuf);
@@ -329,18 +321,6 @@ void SettingsWindow::renderBlockScheduleSettings() {
     }
 
     if (blockScheduleEnabled_) {
-        ImGui::Spacing();
-        ImGui::Text("%s", L.get("Period length:"));
-        ImGui::SameLine();
-        const char* periodOptions[] = {
-            L.get("15 minutes"),
-            L.get("30 minutes"),
-            L.get("1 hour"),
-            L.get("2 hours")
-        };
-        ImGui::SetNextItemWidth(150);
-        ImGui::Combo("##schedulePeriod", &blockSchedulePeriodIndex_, periodOptions, 4);
-
         ImGui::Spacing();
         ImGui::Text("%s", L.get("Workday start:"));
         ImGui::SameLine();

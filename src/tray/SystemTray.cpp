@@ -195,13 +195,13 @@ void SystemTray::showContextMenuWindows() {
   HMENU menu = CreatePopupMenu();
 
   // Show/Hide Window
-  AppendMenuW(menu, MF_STRING, 1, utils::Platform::utf8ToWide(L.get("Show Window")).c_str());
+  AppendMenuW(menu, MF_STRING, 1, utils::Platform::utf8ToWide(L.get("Show window")).c_str());
 
   // Stop Tracking (if tracking)
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string stopStr = L.get("Stop Tracking: ") + current->activityName;
+      std::string stopStr = L.get("Stop tracking: ") + current->activityName;
       AppendMenuW(menu, MF_STRING, 2, utils::Platform::utf8ToWide(stopStr).c_str());
     }
   }
@@ -217,7 +217,7 @@ void SystemTray::showContextMenuWindows() {
                   utils::Platform::utf8ToWide(recentActivities[i]).c_str());
     }
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
-                utils::Platform::utf8ToWide(L.get("Recent Activities")).c_str());
+                utils::Platform::utf8ToWide(L.get("Recent activities")).c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
   }
 
@@ -348,13 +348,13 @@ void SystemTray::createMenuLinux() {
   menu_ = gtk_menu_new();
 
   // "Quick Add Activity" menu item
-  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick Add Activity"));
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick add activity"));
   g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
 
   // "Show Window" menu item
-  menuItemShow_ = gtk_menu_item_new_with_label(L.get("Show Window"));
+  menuItemShow_ = gtk_menu_item_new_with_label(L.get("Show window"));
   g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemShow_);
@@ -364,7 +364,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
 
   // "Stop Tracking" menu item (initially hidden)
-  menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop Tracking"));
+  menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop tracking"));
   g_signal_connect(menuItemStop_, "activate", G_CALLBACK(onMenuStopActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);

@@ -20,7 +20,7 @@ void QuickAddDialog::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(350, 120), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.get("Quick Add Activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("Quick add activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
         ImGui::SetNextItemWidth(-1);
 
         // Auto-focus input when dialog appears
@@ -34,7 +34,7 @@ void QuickAddDialog::render() {
 
         // Start button
         bool shouldStart = false;
-        if (ImGui::Button(L.get("Start Tracking"), ImVec2(120, 0)) || enterPressed) {
+        if (ImGui::Button(L.get("Start tracking"), ImVec2(120, 0)) || enterPressed) {
             shouldStart = true;
         }
 

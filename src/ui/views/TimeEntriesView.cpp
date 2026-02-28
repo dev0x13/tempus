@@ -171,7 +171,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // KTalk Import button
     ImGui::SameLine();
-    if (ImGui::Button(L.get("KTalk Import"), ImVec2(130, 0))) {
+    if (ImGui::Button(L.get("KTalk import"), ImVec2(130, 0))) {
         if (kTalkImportCallback_) {
             kTalkImportCallback_();
         }
@@ -217,7 +217,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button(L.get("This Week"))) {
+    if (ImGui::Button(L.get("This week"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -226,7 +226,7 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
     ImGui::SameLine();
-    if (ImGui::Button(L.get("Last 10 Days"))) {
+    if (ImGui::Button(L.get("Last 10 days"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now) - 9 * 86400;
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
@@ -478,13 +478,13 @@ void TimeEntriesView::renderFixedFooter() {
 void TimeEntriesView::renderEditForm() {
     auto& L = localization::L10n();
 
-    ImGui::OpenPopup(L.get("Edit Entry"));
+    ImGui::OpenPopup(L.get("Edit entry"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal(L.get("Edit Entry"), &showEditForm_, ImGuiWindowFlags_NoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Edit entry"), &showEditForm_, ImGuiWindowFlags_NoResize)) {
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
 
@@ -564,13 +564,13 @@ void TimeEntriesView::renderEditForm() {
 void TimeEntriesView::renderAddForm() {
     auto& L = localization::L10n();
 
-    ImGui::OpenPopup(L.get("Add Entry"));
+    ImGui::OpenPopup(L.get("Add entry"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal(L.get("Add Entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Add entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
         ImGui::SetNextItemWidth(-1);
         addAutocomplete_.render("##addActivity", addActivityName_, sizeof(addActivityName_));
 

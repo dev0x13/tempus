@@ -216,7 +216,7 @@ void SettingsWindow::renderLanguageSettings() {
 
 void SettingsWindow::renderYouTrackSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("YouTrack Settings"));
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("YouTrack settings"));
     ImGui::Spacing();
 
     // URL input
@@ -240,7 +240,7 @@ void SettingsWindow::renderYouTrackSettings() {
     ImGui::Spacing();
 
     // Export Log button
-    if (ImGui::Button(L.get("Export Log"), ImVec2(130, 0))) {
+    if (ImGui::Button(L.get("Export log"), ImVec2(130, 0))) {
         if (exportLogCallback_) {
             exportLogCallback_();
         }
@@ -249,7 +249,7 @@ void SettingsWindow::renderYouTrackSettings() {
 
 void SettingsWindow::renderActivityAliases() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Activity Aliases"));
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Activity aliases"));
     ImGui::Spacing();
 
     ImGui::Text("%s", L.get("Map activity names to YouTrack issue IDs:"));
@@ -257,7 +257,7 @@ void SettingsWindow::renderActivityAliases() {
 
     // Table for aliases
     if (ImGui::BeginTable("AliasesTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-        ImGui::TableSetupColumn(L.get("Activity Name"), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(L.get("Activity name"), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn(L.get("Issue ID"), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 40.0f);
         ImGui::TableHeadersRow();
@@ -312,7 +312,7 @@ void SettingsWindow::renderActivityAliases() {
 
 void SettingsWindow::renderBlockScheduleSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Block Schedule"));
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Block schedule"));
     ImGui::Spacing();
 
     ImGui::Checkbox(L.get("Enable block schedule view"), &blockScheduleEnabled_);
@@ -369,7 +369,7 @@ void SettingsWindow::renderBlockScheduleSettings() {
 
 void SettingsWindow::renderKTalkSettings() {
     auto& L = localization::L10n();
-    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("KTalk Import"));
+    ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("KTalk import"));
     ImGui::Spacing();
 
     // Include unplanned meetings checkbox

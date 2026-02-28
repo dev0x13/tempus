@@ -25,7 +25,7 @@ void ExportLogWindow::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.get("YouTrack Export Log"), &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("YouTrack export log"), &visible_, ImGuiWindowFlags_NoCollapse)) {
         if (totalEntries_ == 0) {
             // Empty state
             ImGui::TextWrapped("%s", L.get("No export log entries found. Export some activities to YouTrack to see them logged here."));
@@ -79,10 +79,10 @@ void ExportLogWindow::renderLogTable() {
     // Table header
     if (ImGui::BeginTable("ExportLogTable", 5,
                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-        ImGui::TableSetupColumn(L.get("Export Time"), ImGuiTableColumnFlags_WidthFixed, 150.0f);
+        ImGui::TableSetupColumn(L.get("Export time"), ImGuiTableColumnFlags_WidthFixed, 150.0f);
         ImGui::TableSetupColumn(L.get("Activity"), ImGuiTableColumnFlags_WidthFixed, 200.0f);
         ImGui::TableSetupColumn(L.get("Issue ID"), ImGuiTableColumnFlags_WidthFixed, 120.0f);
-        ImGui::TableSetupColumn(L.get("Tracked Date"), ImGuiTableColumnFlags_WidthFixed, 100.0f);
+        ImGui::TableSetupColumn(L.get("Tracked date"), ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableSetupColumn(L.get("Duration"), ImGuiTableColumnFlags_WidthFixed, 100.0f);
         ImGui::TableHeadersRow();
 
@@ -162,24 +162,24 @@ void ExportLogWindow::renderPaginationControls() {
 void ExportLogWindow::renderClearLogControls() {
     auto& L = localization::L10n();
 
-    if (ImGui::Button(L.get("Clear Log"))) {
+    if (ImGui::Button(L.get("Clear log"))) {
         showClearConfirmation_ = true;
     }
 
     // Confirmation dialog
     if (showClearConfirmation_) {
-        ImGui::OpenPopup(L.get("Clear Log Confirmation"));
+        ImGui::OpenPopup(L.get("Clear log confirmation"));
     }
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal(L.get("Clear Log Confirmation"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Clear log confirmation"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s", L.get("Are you sure you want to clear all export log entries?"));
         ImGui::Text("%s", L.get("This action cannot be undone."));
         ImGui::Spacing();
 
-        if (ImGui::Button(L.get("Yes, Clear Log"), ImVec2(150, 0))) {
+        if (ImGui::Button(L.get("Yes, clear log"), ImVec2(150, 0))) {
             repository_->clearLog();
             showClearConfirmation_ = false;
             currentPage_ = 0;

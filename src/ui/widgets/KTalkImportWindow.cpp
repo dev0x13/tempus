@@ -145,7 +145,7 @@ void KTalkImportWindow::render() {
         ImGui::Spacing();
 
         // Fetch payload text area
-        ImGui::Text("%s", L.get("Fetch Payload:"));
+        ImGui::Text("%s", L.get("Fetch payload:"));
         ImGui::Spacing();
 
         ImGui::InputTextMultiline(

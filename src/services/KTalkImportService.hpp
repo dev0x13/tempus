@@ -11,6 +11,12 @@
 namespace timetracker {
 namespace services {
 
+// Maximum number of days allowed for a single KTalk import
+constexpr int KTALK_MAX_IMPORT_DAYS = 10;
+
+// Estimated maximum number of meetings per day (used for API pagination)
+constexpr int KTALK_MAX_MEETINGS_PER_DAY = 10;
+
 struct FetchPayload {
     std::string url;
     std::map<std::string, std::string> headers;

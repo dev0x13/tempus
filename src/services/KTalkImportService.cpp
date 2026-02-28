@@ -125,7 +125,8 @@ std::string KTalkImportService::buildApiUrl(const std::string& baseUrl, const st
         return baseUrl;  // Return base URL without parameters on error
     }
 
-    return baseUrl + "?fromDate=" + fromDateUtc + "&toDate=" + toDateUtc;
+    int top = KTALK_MAX_IMPORT_DAYS * KTALK_MAX_MEETINGS_PER_DAY;
+    return baseUrl + "?fromDate=" + fromDateUtc + "&toDate=" + toDateUtc + "&top=" + std::to_string(top);
 }
 
 std::pair<std::vector<models::KTalkConference>, std::string> KTalkImportService::fetchConferences(
@@ -238,6 +239,25 @@ ImportResult KTalkImportService::importConferences(
     if (fromDate > toDate) {
         result.errorMessage = "End date must be after start date";
         return result;
+    }
+
+    // Validate date range does not exceed maximum allowed days
+    {
+        std::tm fromTm = {}, toTm = {};
+        std::istringstream fromSs(fromDate), toSs(toDate);
+        fromSs >> std::get_time(&fromTm, "%Y-%m-%d %H:%M:%S");
+        toSs >> std::get_time(&toTm, "%Y-%m-%d %H:%M:%S");
+        if (!fromSs.fail() && !toSs.fail()) {
+            std::time_t fromTime = std::mktime(&fromTm);
+            std::time_t toTime = std::mktime(&toTm);
+            int days = static_cast<int>((toTime - fromTime) / (60 * 60 * 24)) + 1;
+            if (days > KTALK_MAX_IMPORT_DAYS) {
+                char buf[128];
+                snprintf(buf, sizeof(buf), L.get("Date range exceeds maximum of %d days"), KTALK_MAX_IMPORT_DAYS);
+                result.errorMessage = buf;
+                return result;
+            }
+        }
     }
 
     // Parse fetch payload

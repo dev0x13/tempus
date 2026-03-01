@@ -78,11 +78,10 @@ void TimeEntriesView::render() {
     ImGui::Separator();
 
     // Calculate footer height to fit its content exactly
-    float footerHeight = 1.0f + ImGui::GetStyle().ItemSpacing.y + 30.0f;  // separator + total row
+    float footerHeight = 1.0f + ImGui::GetFrameHeightWithSpacing();  // separator + CollapsingHeader row
     if (showActivityBreakdown_) {
         auto stats = statsService_->getStatistics(displayStartTime_, displayEndTime_);
-        footerHeight += ImGui::GetStyle().ItemSpacing.y  // separator
-                      + stats.byActivity.size() * ImGui::GetTextLineHeightWithSpacing();
+        footerHeight += stats.byActivity.size() * ImGui::GetTextLineHeightWithSpacing();
     }
 
     // Scrollable area for entries
@@ -452,15 +451,9 @@ void TimeEntriesView::renderFixedFooter() {
             totalStr += std::string("  |  ") + L.get("Undertime") + ": " + utils::TimeUtils::formatDuration(-balanceSeconds);
         }
     }
-    const char* arrow = showActivityBreakdown_ ? "[-] " : "[+] ";
+    showActivityBreakdown_ = ImGui::CollapsingHeader(totalStr.c_str());
 
-    if (ImGui::Selectable((arrow + totalStr).c_str(), false, 0, ImVec2(0, 30))) {
-        showActivityBreakdown_ = !showActivityBreakdown_;
-    }
-
-    // Activity breakdown (collapsible)
     if (showActivityBreakdown_ && !stats.byActivity.empty()) {
-        ImGui::Separator();
         ImGui::Indent(20.0f);
 
         // Sort activities by total duration (descending)

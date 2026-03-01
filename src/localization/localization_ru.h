@@ -159,6 +159,12 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Message", "Сообщение"},
         {"No export log entries", "Нет записей в журнале экспорта"},
 
+        // About
+        {"About", "О программе"},
+        {"Version:", "Версия:"},
+        {"Build date:", "Дата сборки:"},
+        {"Crafted by", "Автор:"},
+
         // Block Schedule
         {"Block schedule", "Блочное расписание"},
         {"Enable block schedule view", "Включить блочное расписание"},

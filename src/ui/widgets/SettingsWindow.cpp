@@ -1,5 +1,7 @@
 #include "SettingsWindow.hpp"
 #include "localization/LocalizationManager.hpp"
+#include "utils/Platform.hpp"
+#include "version.hpp"
 #include "imgui.h"
 #include <cstring>
 #include <algorithm>
@@ -45,7 +47,10 @@ void SettingsWindow::render() {
 
         renderKTalkSettings();
 
-        ImGui::Separator();
+        ImGui::Spacing();
+
+        renderAbout();
+
         ImGui::Spacing();
 
         // Validation error message
@@ -390,6 +395,32 @@ void SettingsWindow::renderKTalkSettings() {
     if (ktalkSnapInterval_ < 0) ktalkSnapInterval_ = 0;
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", L.get("Snaps meeting times to the nearest selected boundary.\\n0 = disabled."));
+    }
+}
+
+void SettingsWindow::renderAbout() {
+    auto& L = localization::L10n();
+    if (ImGui::CollapsingHeader(L.get("About"))) {
+        ImGui::Spacing();
+
+        ImGui::Text("%s %s", L.get("Version:"), APP_VERSION_STRING);
+        ImGui::Text("%s %s", L.get("Build date:"), APP_BUILD_DATETIME_STRING);
+
+        static const char* authorUrl = "https://github.com/dev0x13";
+        ImGui::Text("%s", L.get("Crafted by"));
+        ImGui::SameLine();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
+        ImGui::Text("dev0x13");
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            ImGui::SetTooltip("%s", authorUrl);
+        }
+        if (ImGui::IsItemClicked()) {
+            utils::Platform::openUrl(authorUrl);
+        }
+
+        ImGui::Spacing();
     }
 }
 

@@ -9,9 +9,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(DEFINED ENV{RELEASE_VERSION})
     set(APP_VERSION_STRING "$ENV{RELEASE_VERSION}")
 else()
-    set(APP_VERSION_STRING "0.0.0")
+    set(APP_VERSION_STRING "v0.0.0")
 endif()
 message(STATUS "App version: ${APP_VERSION_STRING}")
+
+string(TIMESTAMP APP_BUILD_DATETIME_STRING "%Y-%m-%dT%H:%M:%SZ" UTC)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/version.hpp.in"

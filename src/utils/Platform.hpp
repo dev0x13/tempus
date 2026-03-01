@@ -83,6 +83,15 @@ public:
         return assetsPath;
     }
 
+    static void openUrl(const std::string& url) {
+#ifdef _WIN32
+        ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#else
+        std::string cmd = "xdg-open " + url + " &";
+        std::system(cmd.c_str());
+#endif
+    }
+
     static std::optional<fs::path> showSaveFileDialog(
             const std::string& title,
             const std::string& defaultFilename,

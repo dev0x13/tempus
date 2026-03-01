@@ -71,6 +71,7 @@ private:
     void renderYouTrackSettings();
     void renderActivityAliases();
     void renderKTalkSettings();
+    void renderAbout();
 };
 
 } // namespace timetracker::ui::widgets

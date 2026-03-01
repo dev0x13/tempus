@@ -98,6 +98,29 @@ private:
      * @return UTC ISO 8601 string in "YYYY-MM-DDTHH:mm:ss.sssZ" format, or empty string on error
      */
     std::string convertToUtcIso8601(const std::string& localDateTime);
+
+    /**
+     * Snap a Unix timestamp to the nearest multiple of intervalMinutes in local time.
+     * Seconds are truncated. Ties (exact midpoint) round up.
+     * @param t Unix timestamp in seconds
+     * @param intervalMinutes Grid spacing in minutes
+     * @return Snapped Unix timestamp
+     */
+    int64_t snapGridTime(int64_t t, int intervalMinutes);
+
+    /**
+     * Compute snapped end time for an imported conference.
+     * Snaps to the start of the next nearby fact (DB + current batch) if one exists
+     * within intervalMinutes; otherwise snaps by the grid algorithm.
+     * Pushes end forward if it would equal or precede snappedStart.
+     * @param rawEndTime Raw (unsnapped) end time in seconds
+     * @param snappedStart Already-snapped start time for this conference
+     * @param intervalMinutes Snap interval in minutes
+     * @param batchSnappedStarts Snapped start times of already-processed batch conferences
+     * @return Snapped end time in seconds
+     */
+    int64_t computeSnappedEndTime(int64_t rawEndTime, int64_t snappedStart, int intervalMinutes,
+                                   const std::vector<int64_t>& batchSnappedStarts);
 };
 
 }  // namespace services

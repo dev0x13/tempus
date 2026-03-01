@@ -105,6 +105,18 @@ public:
     void setKTalkIncludeUnplanned(bool include);
 
     /**
+     * Get the KTalk import snap interval in minutes.
+     * @return Snap interval in minutes, or 0 if snapping is disabled (default)
+     */
+    int getKTalkSnapInterval() const;
+
+    /**
+     * Set the KTalk import snap interval in minutes.
+     * @param intervalMinutes Snap interval in minutes (0 = disabled)
+     */
+    void setKTalkSnapInterval(int intervalMinutes);
+
+    /**
      * Get the UI language preference.
      * @return Language code ("en" or "ru"), defaults to "ru"
      */

@@ -109,6 +109,20 @@ void SettingsService::setKTalkIncludeUnplanned(bool include) {
     setSetting("ktalk_include_unplanned", include ? "true" : "false");
 }
 
+int SettingsService::getKTalkSnapInterval() const {
+    std::string value = getSetting("ktalk_snap_interval", "0");
+    try {
+        int v = std::stoi(value);
+        return v < 0 ? 0 : v;
+    } catch (...) {
+        return 0;
+    }
+}
+
+void SettingsService::setKTalkSnapInterval(int intervalMinutes) {
+    setSetting("ktalk_snap_interval", std::to_string(intervalMinutes < 0 ? 0 : intervalMinutes));
+}
+
 std::string SettingsService::getLanguage() const {
     return getSetting("language", "ru");
 }

@@ -39,6 +39,7 @@ private:
     char youtrackToken_[256]{};
     std::vector<ActivityAlias> aliases_;
     bool ktalkIncludeUnplanned_{true};
+    int ktalkSnapInterval_{0};
     int selectedLanguage_{1};  // 0 = English, 1 = Russian
 
     // Block schedule settings

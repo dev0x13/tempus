@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <ctime>
 #include <iostream>
+#include <algorithm>
 
 namespace timetracker {
 namespace services {
@@ -221,6 +222,62 @@ int64_t KTalkImportService::parseIso8601(const std::string& iso8601) {
     return static_cast<int64_t>(time);
 }
 
+int64_t KTalkImportService::snapGridTime(int64_t t, int N) {
+    time_t raw = static_cast<time_t>(t);
+    struct tm localTm = {};
+#ifdef _WIN32
+    localtime_s(&localTm, &raw);
+#else
+    localtime_r(&raw, &localTm);
+#endif
+    int M = localTm.tm_min;
+    int S = localTm.tm_sec;
+
+    int64_t tNoSec = t - S;  // truncate to minute boundary
+
+    int remainder = M % N;
+    if (remainder * 2 < N) {
+        // Round down
+        return tNoSec - static_cast<int64_t>(remainder) * 60;
+    } else {
+        // Round up
+        return tNoSec + static_cast<int64_t>(N - remainder) * 60;
+    }
+}
+
+int64_t KTalkImportService::computeSnappedEndTime(int64_t rawEndTime, int64_t snappedStart,
+                                                   int N, const std::vector<int64_t>& batchSnappedStarts) {
+    int64_t intervalSecs = static_cast<int64_t>(N) * 60;
+
+    // Find the earliest next-fact start within N minutes after rawEndTime.
+    // Check already-processed meetings in the current batch.
+    int64_t nextStart = 0;
+    for (int64_t s : batchSnappedStarts) {
+        if (s > rawEndTime && s <= rawEndTime + intervalSecs) {
+            if (nextStart == 0 || s < nextStart) {
+                nextStart = s;
+            }
+        }
+    }
+
+    // Check existing DB facts.
+    auto dbFacts = timeTrackingService_.getEntriesForRange(rawEndTime + 1, rawEndTime + intervalSecs);
+    for (const auto& f : dbFacts) {
+        if (f.startTime > rawEndTime && (nextStart == 0 || f.startTime < nextStart)) {
+            nextStart = f.startTime;
+        }
+    }
+
+    int64_t snappedEnd = (nextStart > 0) ? nextStart : snapGridTime(rawEndTime, N);
+
+    // Prevent collapsed or zero-duration interval.
+    if (snappedEnd <= snappedStart) {
+        snappedEnd = snappedStart + intervalSecs;
+    }
+
+    return snappedEnd;
+}
+
 ImportResult KTalkImportService::importConferences(
     const std::string& fetchPayload,
     const std::string& fromDate,
@@ -303,8 +360,18 @@ ImportResult KTalkImportService::importConferences(
         return result;
     }
 
+    // Get snap interval; sort by start time so end-time snapping sees prior meetings
+    int snapInterval = settingsService_.getKTalkSnapInterval();
+    if (snapInterval > 0) {
+        std::sort(filteredConferences.begin(), filteredConferences.end(),
+            [](const models::KTalkConference& a, const models::KTalkConference& b) {
+                return a.startTime < b.startTime;
+            });
+    }
+
     // Import each conference
     int imported = 0;
+    std::vector<int64_t> batchSnappedStarts;  // snapped starts of already-processed batch meetings
     for (const auto& conf : filteredConferences) {
         // Parse timestamps
         int64_t startTime = parseIso8601(conf.startTime);
@@ -314,6 +381,15 @@ ImportResult KTalkImportService::importConferences(
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;
             std::cerr << "Warning: Skipping conference with invalid timestamps: " << displayTitle << std::endl;
             continue;
+        }
+
+        // Apply snapping if enabled
+        if (snapInterval > 0) {
+            int64_t snappedStart = snapGridTime(startTime, snapInterval);
+            int64_t snappedEnd = computeSnappedEndTime(endTime, snappedStart, snapInterval, batchSnappedStarts);
+            batchSnappedStarts.push_back(snappedStart);
+            startTime = snappedStart;
+            endTime = snappedEnd;
         }
 
         // Create description: "{title} (KTalk)" or "Unplanned meeting (KTalk)" if no title

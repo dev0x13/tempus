@@ -120,6 +120,7 @@ void SettingsWindow::loadSettings() {
 
     // Load KTalk settings
     ktalkIncludeUnplanned_ = settingsService_->getKTalkIncludeUnplanned();
+    ktalkSnapInterval_ = settingsService_->getKTalkSnapInterval();
 
     // Load language
     std::string lang = settingsService_->getLanguage();
@@ -156,6 +157,7 @@ void SettingsWindow::saveSettings() {
 
     // Save KTalk settings
     settingsService_->setKTalkIncludeUnplanned(ktalkIncludeUnplanned_);
+    settingsService_->setKTalkSnapInterval(ktalkSnapInterval_);
 
     // Save and apply language
     std::string lang = (selectedLanguage_ == 0) ? "en" : "ru";
@@ -375,7 +377,19 @@ void SettingsWindow::renderKTalkSettings() {
     // Include unplanned meetings checkbox
     ImGui::Checkbox(L.get("Include unplanned meetings"), &ktalkIncludeUnplanned_);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.get("When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title."));
+        ImGui::SetTooltip("%s", L.get("When enabled, imports all conferences including those without a title.\\nWhen disabled, only imports conferences that have a title."));
+    }
+
+    ImGui::Spacing();
+
+    // Snap interval input
+    ImGui::Text("%s", L.get("Snap interval (minutes):"));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(60);
+    ImGui::InputInt("##ktalk_snap_interval", &ktalkSnapInterval_, 0, 0);
+    if (ktalkSnapInterval_ < 0) ktalkSnapInterval_ = 0;
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", L.get("Snaps meeting times to the nearest selected boundary.\\n0 = disabled."));
     }
 }
 

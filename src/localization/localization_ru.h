@@ -79,6 +79,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"KTalk Import", "Импорт из KTalk"},
         {"Include unplanned meetings", "Включить незапланированные встречи"},
         {"When enabled, imports all conferences including those without a title.\\nWhen disabled, only imports conferences that have a title.", "Если включено, импортирует все конференции, включая те, у которых нет названия.\\nЕсли выключено, импортирует только конференции с названием."},
+        {"Snap interval (minutes):", "Интервал выравнивания (минуты):"},
+        {"Snaps meeting times to the nearest selected boundary.\\n0 = disabled.", "Выравнивает время встреч по ближайшему выбранному интервалу выравнивания.\\n0 — отключено."},
         {"URL must start with http:// or https://", "URL должен начинаться с http:// или https://"},
         {"All alias entries must have both activity name and issue ID", "Все записи псевдонимов должны иметь как название активности, так и ID задачи"},
         {"Language:", "Язык:"},

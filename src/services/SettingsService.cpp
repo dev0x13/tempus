@@ -132,7 +132,7 @@ void SettingsService::setLanguage(const std::string& language) {
 }
 
 bool SettingsService::getBlockScheduleEnabled() const {
-    return getSetting("block_schedule_enabled", "false") == "true";
+    return getSetting("block_schedule_enabled", "true") == "true";
 }
 
 void SettingsService::setBlockScheduleEnabled(bool enabled) {

@@ -51,6 +51,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"No entries for selected date range", "Нет записей за выбранный период"},
         {"Currently tracking", "Отслеживается сейчас"},
         {"Total", "Всего"},
+        {"Overtime", "Переработка"},
+        {"Undertime", "Недоработка"},
         {"Show activity breakdown", "Показать разбивку по активностям"},
         {"Hide activity breakdown", "Скрыть разбивку по активностям"},
         {"Activity name", "Название активности"},

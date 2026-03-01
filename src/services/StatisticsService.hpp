@@ -27,6 +27,9 @@ public:
     // Get monthly totals
     std::vector<models::MonthlyTotal> getMonthlyTotals(int64_t startTime, int64_t endTime) const;
 
+    // Get expected working seconds for a date range (weekdays × 8 h)
+    int64_t getExpectedSeconds(int64_t startTime, int64_t endTime) const;
+
 private:
     std::shared_ptr<repositories::IFactRepository> factRepo_;
 };

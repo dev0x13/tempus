@@ -132,6 +132,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         io.Fonts->GetGlyphRangesCyrillic()
     );
 
+
     // Apply custom theme
     Theme::apply();
 

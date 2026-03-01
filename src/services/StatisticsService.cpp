@@ -164,4 +164,8 @@ std::vector<models::MonthlyTotal> StatisticsService::getMonthlyTotals(int64_t st
     return result;
 }
 
+int64_t StatisticsService::getExpectedSeconds(int64_t startTime, int64_t endTime) const {
+    return static_cast<int64_t>(utils::TimeUtils::countWeekdays(startTime, endTime)) * 8 * 3600;
+}
+
 } // namespace timetracker::services

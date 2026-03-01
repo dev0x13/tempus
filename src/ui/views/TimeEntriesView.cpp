@@ -77,11 +77,12 @@ void TimeEntriesView::render() {
     renderDateSelector();
     ImGui::Separator();
 
-    // Calculate footer height (grand total + optional activity breakdown)
-    float footerHeight = 40.0f;  // Space for grand total row
+    // Calculate footer height to fit its content exactly
+    float footerHeight = 1.0f + ImGui::GetStyle().ItemSpacing.y + 30.0f;  // separator + total row
     if (showActivityBreakdown_) {
         auto stats = statsService_->getStatistics(displayStartTime_, displayEndTime_);
-        footerHeight += stats.byActivity.size() * 20.0f + 20.0f;  // Estimate height
+        footerHeight += ImGui::GetStyle().ItemSpacing.y  // separator
+                      + stats.byActivity.size() * ImGui::GetTextLineHeightWithSpacing();
     }
 
     // Scrollable area for entries
@@ -440,11 +441,20 @@ void TimeEntriesView::renderFixedFooter() {
         totalSeconds += activity.totalSeconds;
     }
 
-    // Grand total row (always visible, clickable)
+    // Build footer label with optional overtime/undertime segment
+    int64_t expectedSeconds = statsService_->getExpectedSeconds(displayStartTime_, displayEndTime_);
     std::string totalStr = std::string(L.get("Total")) + ": " + utils::TimeUtils::formatDuration(totalSeconds);
-    const char* arrow = showActivityBreakdown_ ? " ^" : " v";  // Simple ASCII arrows
+    if (expectedSeconds > 0) {
+        int64_t balanceSeconds = totalSeconds - expectedSeconds;
+        if (balanceSeconds > 0) {
+            totalStr += std::string("  |  ") + L.get("Overtime") + ": " + utils::TimeUtils::formatDuration(balanceSeconds);
+        } else if (balanceSeconds < 0) {
+            totalStr += std::string("  |  ") + L.get("Undertime") + ": " + utils::TimeUtils::formatDuration(-balanceSeconds);
+        }
+    }
+    const char* arrow = showActivityBreakdown_ ? "[-] " : "[+] ";
 
-    if (ImGui::Selectable((totalStr + arrow).c_str(), false, 0, ImVec2(0, 30))) {
+    if (ImGui::Selectable((arrow + totalStr).c_str(), false, 0, ImVec2(0, 30))) {
         showActivityBreakdown_ = !showActivityBreakdown_;
     }
 
@@ -462,13 +472,10 @@ void TimeEntriesView::renderFixedFooter() {
 
         for (const auto& activity : sortedActivities) {
             std::string durationStr = utils::TimeUtils::formatDuration(activity.totalSeconds);
-
-            // Format: Activity Name                         Duration
-            char activityLine[256];
-            snprintf(activityLine, sizeof(activityLine), "%-50s  %s",
-                     activity.activityName.c_str(), durationStr.c_str());
-
-            ImGui::Text("%s", activityLine);
+            float durationWidth = ImGui::CalcTextSize(durationStr.c_str()).x;
+            ImGui::Text("%s", activity.activityName.c_str());
+            ImGui::SameLine(ImGui::GetWindowWidth() - durationWidth - 20.0f);
+            ImGui::Text("%s", durationStr.c_str());
         }
 
         ImGui::Unindent(20.0f);

@@ -175,4 +175,21 @@ bool TimeUtils::isLeapYear(int year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
+int TimeUtils::countWeekdays(int64_t startTime, int64_t endTime) {
+    int count = 0;
+    int64_t day = startOfDay(startTime);
+    int64_t end = startOfDay(endTime);
+    while (day <= end) {
+        std::tm tm = toLocalTime(day);
+        // tm_wday: 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
+        if (tm.tm_wday >= 1 && tm.tm_wday <= 5) {
+            count++;
+        }
+        tm.tm_mday += 1;
+        tm.tm_isdst = -1;
+        day = static_cast<int64_t>(std::mktime(&tm));
+    }
+    return count;
+}
+
 } // namespace timetracker::utils

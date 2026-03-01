@@ -64,6 +64,9 @@ public:
 
     // Check if year is leap year
     static bool isLeapYear(int year);
+
+    // Count weekdays (Mon–Fri) in the range [startTime, endTime] (inclusive, by calendar day)
+    static int countWeekdays(int64_t startTime, int64_t endTime);
 };
 
 } // namespace timetracker::utils

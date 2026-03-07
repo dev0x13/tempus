@@ -207,10 +207,7 @@ bool YouTrackExportService::validateIssueId(const std::string& issueId) const {
 }
 
 int YouTrackExportService::roundUpToNearest10(int minutes) const {
-    if (minutes <= 0) {
-        return 10;  // Minimum billable unit
-    }
-    return ((minutes + 9) / 10) * 10;
+    return std::nearbyint((minutes + 1.0) / 10.0) * 10.0;
 }
 
 std::string YouTrackExportService::postWorkItem(const std::string& issueId, int minutes, const std::string& date) {

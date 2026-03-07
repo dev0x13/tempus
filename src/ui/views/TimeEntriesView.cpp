@@ -572,6 +572,7 @@ void TimeEntriesView::renderAddForm() {
 
     if (ImGui::BeginPopupModal(L.get("Add entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
         ImGui::SetNextItemWidth(-1);
+        ImGui::SetKeyboardFocusHere();
         addAutocomplete_.render("##addActivity", addActivityName_, sizeof(addActivityName_));
 
         ImGui::SetNextItemWidth(-1);

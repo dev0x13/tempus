@@ -677,7 +677,8 @@ void TimeEntriesView::renderExportConfirmationDialog() {
         ImGui::EndChild();
 
         ImGui::Separator();
-        ImGui::Text(L.get("Total: %.1f hours (%d minutes)"), totalMinutes / 60.0f, totalMinutes);
+        std::string totalDuration = utils::TimeUtils::formatDuration(static_cast<int64_t>(totalMinutes) * 60);
+        ImGui::Text(L.get("Total: %s"), totalDuration.c_str());
         ImGui::Separator();
 
         // Action buttons
@@ -789,7 +790,8 @@ void TimeEntriesView::renderExportSuccessDialog() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     if (ImGui::BeginPopupModal(L.get("Export Successful"), &showExportSuccess_, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text(L.get("Successfully exported %.1f hours to YouTrack!"), exportedMinutes_ / 60.0f);
+        std::string exportedDuration = utils::TimeUtils::formatDuration(static_cast<int64_t>(exportedMinutes_) * 60);
+        ImGui::Text(L.get("Successfully exported %s to YouTrack!"), exportedDuration.c_str());
         ImGui::Text(L.get("(%d work items)"), exportedItems_);
         ImGui::Separator();
 

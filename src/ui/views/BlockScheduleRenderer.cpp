@@ -33,7 +33,7 @@ std::vector<ScheduleBlock> BlockScheduleRenderer::computeBlocks(
         if (fStart < workdayEnd && fEnd > workdayStart) {
             int64_t clampedStart = std::max(fStart, workdayStart);
             int64_t clampedEnd = std::min(fEnd, workdayEnd);
-            if (clampedEnd - clampedStart >= 60) {  // At least 1 minute
+            if (clampedEnd - clampedStart >= 60 || !f.endTime.has_value()) {  // At least 1 minute (or ongoing)
                 slices.push_back({clampedStart, clampedEnd, &f});
             }
         }

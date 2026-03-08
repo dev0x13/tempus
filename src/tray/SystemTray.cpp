@@ -12,10 +12,13 @@
 #include <shellapi.h>
 #include <windowsx.h>
 #elif __linux__
+#include "ui/resources/TrayIcon.hpp"
 #include <gtk/gtk.h>
 #include <libayatana-appindicator/app-indicator.h>
-#include <limits.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <cstdio>
+#include <fstream>
 #endif
 
 namespace timetracker::tray {
@@ -276,33 +279,23 @@ bool SystemTray::initLinux() {
     return true; // Allow app to continue without tray
   }
 
-  // Get the absolute path to the icon file
-  // AppIndicator on Unity requires absolute paths
-  char exePath[PATH_MAX];
-  ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
-  if (len == -1) {
-    std::cerr << "Failed to get executable path" << std::endl;
-    return true;
-  }
-  exePath[len] = '\0';
-
-  // Get directory containing executable
-  std::string exeDir(exePath);
-  size_t lastSlash = exeDir.find_last_of('/');
-  if (lastSlash != std::string::npos) {
-    exeDir = exeDir.substr(0, lastSlash);
-  }
-
-  // Construct icon path (relative to executable)
-  std::string iconDir = exeDir + "/assets/icons";
+  // Write the embedded PNG icon to a temporary directory
+  // AppIndicator requires an icon file on disk; we use a temp path so the
+  // binary has no external file dependency.
+  std::string iconDir = "/tmp/tempus-tray-" + std::to_string(getpid());
   std::string iconPath = iconDir + "/tray_icon.png";
   std::string iconName = "tray_icon";
 
-  // Verify icon file exists
-  bool iconExists = (access(iconPath.c_str(), F_OK) == 0);
-  if (!iconExists) {
-    std::cerr << "Warning: Icon file not found at: " << iconPath << std::endl;
-    std::cerr << "Using fallback icon theme name" << std::endl;
+  if (mkdir(iconDir.c_str(), 0700) == 0) {
+    std::ofstream out(iconPath, std::ios::binary);
+    if (out.write(reinterpret_cast<const char*>(kTrayIconPng), kTrayIconPngLen)) {
+      tempIconDir_ = iconDir;
+    } else {
+      std::cerr << "Warning: Failed to write tray icon to " << iconPath << std::endl;
+      iconName = "application-x-executable";
+    }
+  } else {
+    std::cerr << "Warning: Failed to create temp icon dir " << iconDir << std::endl;
     iconName = "application-x-executable";
   }
 
@@ -317,10 +310,9 @@ bool SystemTray::initLinux() {
     return true; // Allow app to continue without tray
   }
 
-  // Set icon theme path for Unity compatibility
-  // This tells AppIndicator where to find icon files
-  if (iconExists) {
-    app_indicator_set_icon_theme_path(indicator_, iconDir.c_str());
+  // Tell AppIndicator where to find the icon
+  if (!tempIconDir_.empty()) {
+    app_indicator_set_icon_theme_path(indicator_, tempIconDir_.c_str());
   }
 
   // Set status to active (show the indicator)
@@ -332,9 +324,6 @@ bool SystemTray::initLinux() {
   // Create and set menu
   createMenuLinux();
   app_indicator_set_menu(indicator_, GTK_MENU(menu_));
-
-  // Store icon name for updates
-  currentIconPath_ = iconName;
 
   running_ = true;
 
@@ -461,6 +450,14 @@ void SystemTray::cleanupLinux() {
   if (indicator_) {
     g_object_unref(indicator_);
     indicator_ = nullptr;
+  }
+
+  // Remove temp icon files written at init
+  if (!tempIconDir_.empty()) {
+    std::string iconPath = tempIconDir_ + "/tray_icon.png";
+    std::remove(iconPath.c_str());
+    rmdir(tempIconDir_.c_str());
+    tempIconDir_.clear();
   }
 
   menuItemQuickAdd_ = nullptr;

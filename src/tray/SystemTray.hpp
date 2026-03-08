@@ -75,7 +75,7 @@ private:
     GtkWidget* menuItemShow_{nullptr};
     GtkWidget* menuItemStop_{nullptr};
     GtkWidget* menuItemExit_{nullptr};
-    std::string currentIconPath_;
+    std::string tempIconDir_;
 
     bool initLinux();
     void cleanupLinux();

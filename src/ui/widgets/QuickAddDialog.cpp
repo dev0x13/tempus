@@ -44,7 +44,10 @@ void QuickAddDialog::render() {
         }
 
         if (shouldStart) {
-            const std::string& activity = autocomplete_.getSelectedActivity();
+            std::string activity = autocomplete_.getSelectedActivity();
+            if (activity.empty() && strlen(activityInput_) > 0) {
+                activity = activityInput_;
+            }
             if (!activity.empty()) {
                 // Start tracking
                 timeService_->startTracking(activity);

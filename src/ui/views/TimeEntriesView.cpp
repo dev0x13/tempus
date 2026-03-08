@@ -650,14 +650,15 @@ void TimeEntriesView::renderAddForm() {
 }
 
 void TimeEntriesView::renderExportConfirmationDialog() {
-    ImGui::OpenPopup("Confirm YouTrack Export");
+    auto& L = localization::L10n();
+    ImGui::OpenPopup(L.get("Confirm YouTrack Export"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal("Confirm YouTrack Export", &showExportConfirmation_)) {
-        ImGui::Text("The following time entries will be exported to YouTrack:");
+    if (ImGui::BeginPopupModal(L.get("Confirm YouTrack Export"), &showExportConfirmation_)) {
+        ImGui::Text("%s", L.get("The following time entries will be exported to YouTrack:"));
         ImGui::Separator();
 
         // Scrollable list of work items
@@ -665,10 +666,10 @@ void TimeEntriesView::renderExportConfirmationDialog() {
 
         int totalMinutes = 0;
         for (const auto& item : pendingWorkItems_) {
-            ImGui::Text("%s: %d min (%s)", item.issueId.c_str(), item.minutes, item.date.c_str());
+            ImGui::Text(L.get("%s: %d min (%s)"), item.issueId.c_str(), item.minutes, item.date.c_str());
             if (!item.activityName.empty() && item.activityName != item.issueId) {
                 ImGui::SameLine();
-                ImGui::TextDisabled("(activity: %s)", item.activityName.c_str());
+                ImGui::TextDisabled(L.get("(activity: %s)"), item.activityName.c_str());
             }
             totalMinutes += item.minutes;
         }
@@ -676,11 +677,11 @@ void TimeEntriesView::renderExportConfirmationDialog() {
         ImGui::EndChild();
 
         ImGui::Separator();
-        ImGui::Text("Total: %.1f hours (%d minutes)", totalMinutes / 60.0f, totalMinutes);
+        ImGui::Text(L.get("Total: %.1f hours (%d minutes)"), totalMinutes / 60.0f, totalMinutes);
         ImGui::Separator();
 
         // Action buttons
-        if (ImGui::Button("Export", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("Export"), ImVec2(120, 0))) {
             showExportConfirmation_ = false;
             showExportProgress_ = true;
 
@@ -716,8 +717,12 @@ void TimeEntriesView::renderExportConfirmationDialog() {
                     // Check if it was a cancellation
                     if (result.errorMessage == "Export cancelled by user") {
                         // Show cancellation message with partial export info
-                        exportErrorMessage_ = "Export cancelled. " + std::to_string(result.itemsExported) +
-                                             " of " + std::to_string(totalProgress_) + " activities exported.";
+                        auto& L2 = localization::L10n();
+                        char cancelMsg[256];
+                        snprintf(cancelMsg, sizeof(cancelMsg),
+                            L2.get("Export cancelled. %d of %d activities exported."),
+                            result.itemsExported, totalProgress_);
+                        exportErrorMessage_ = std::string(cancelMsg);
                         // Refresh to show the partial export
                         if (result.itemsExported > 0) {
                             refreshEntries();
@@ -731,7 +736,7 @@ void TimeEntriesView::renderExportConfirmationDialog() {
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(120, 0))) {
             showExportConfirmation_ = false;
         }
 
@@ -740,16 +745,17 @@ void TimeEntriesView::renderExportConfirmationDialog() {
 }
 
 void TimeEntriesView::renderExportProgressDialog() {
-    ImGui::OpenPopup("Exporting to YouTrack");
+    auto& L = localization::L10n();
+    ImGui::OpenPopup(L.get("Exporting to YouTrack"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(400, 150), ImGuiCond_Appearing);
 
     bool open = true;
-    if (ImGui::BeginPopupModal("Exporting to YouTrack", &open, ImGuiWindowFlags_NoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Exporting to YouTrack"), &open, ImGuiWindowFlags_NoResize)) {
         // Progress text
-        ImGui::Text("Exporting activity %d of %d", currentProgress_, totalProgress_);
+        ImGui::Text(L.get("Exporting activity %d of %d"), currentProgress_, totalProgress_);
         ImGui::Spacing();
 
         // Progress bar
@@ -760,7 +766,7 @@ void TimeEntriesView::renderExportProgressDialog() {
         ImGui::Separator();
 
         // Cancel button
-        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("Cancel"), ImVec2(120, 0))) {
             cancelExport_.store(true);
             showExportProgress_ = false;
         }
@@ -776,17 +782,18 @@ void TimeEntriesView::renderExportProgressDialog() {
 }
 
 void TimeEntriesView::renderExportSuccessDialog() {
-    ImGui::OpenPopup("Export Successful");
+    auto& L = localization::L10n();
+    ImGui::OpenPopup(L.get("Export Successful"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("Export Successful", &showExportSuccess_, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Successfully exported %.1f hours to YouTrack!", exportedMinutes_ / 60.0f);
-        ImGui::Text("(%d work items)", exportedItems_);
+    if (ImGui::BeginPopupModal(L.get("Export Successful"), &showExportSuccess_, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text(L.get("Successfully exported %.1f hours to YouTrack!"), exportedMinutes_ / 60.0f);
+        ImGui::Text(L.get("(%d work items)"), exportedItems_);
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("OK"), ImVec2(120, 0))) {
             showExportSuccess_ = false;
         }
 
@@ -795,17 +802,18 @@ void TimeEntriesView::renderExportSuccessDialog() {
 }
 
 void TimeEntriesView::renderExportErrorDialog() {
-    ImGui::OpenPopup("Export Failed");
+    auto& L = localization::L10n();
+    ImGui::OpenPopup(L.get("Export Failed"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(500, 200), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal("Export Failed", &showExportError_)) {
+    if (ImGui::BeginPopupModal(L.get("Export Failed"), &showExportError_)) {
         ImGui::TextWrapped("%s", exportErrorMessage_.c_str());
         ImGui::Separator();
 
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("OK"), ImVec2(120, 0))) {
             showExportError_ = false;
         }
 
@@ -814,15 +822,16 @@ void TimeEntriesView::renderExportErrorDialog() {
 }
 
 void TimeEntriesView::renderOverlapErrorDialog() {
-    ImGui::OpenPopup("Cannot Export: Overlapping Facts");
+    auto& L = localization::L10n();
+    ImGui::OpenPopup(L.get("Cannot Export: Overlapping Facts"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal("Cannot Export: Overlapping Facts", &showOverlapError_)) {
-        ImGui::TextWrapped("Cannot export to YouTrack: overlapping facts detected.");
-        ImGui::TextWrapped("Please fix these entries manually before exporting:");
+    if (ImGui::BeginPopupModal(L.get("Cannot Export: Overlapping Facts"), &showOverlapError_)) {
+        ImGui::TextWrapped("%s", L.get("Cannot export to YouTrack: overlapping facts detected."));
+        ImGui::TextWrapped("%s", L.get("Please fix these entries manually before exporting:"));
         ImGui::Separator();
 
         // Scrollable list of overlapping facts
@@ -835,7 +844,7 @@ void TimeEntriesView::renderOverlapErrorDialog() {
             if (fact.endTime.has_value()) {
                 endTime = utils::TimeUtils::formatDateTime(*fact.endTime);
             } else {
-                endTime = "(ongoing)";
+                endTime = L.get("(ongoing)");
             }
 
             // Build activity display name with description
@@ -852,9 +861,9 @@ void TimeEntriesView::renderOverlapErrorDialog() {
         ImGui::EndChild();
 
         ImGui::Separator();
-        ImGui::TextWrapped("Fix these entries by editing their start/end times so they no longer overlap.");
+        ImGui::TextWrapped("%s", L.get("Fix these entries by editing their start/end times so they no longer overlap."));
 
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        if (ImGui::Button(L.get("OK"), ImVec2(120, 0))) {
             showOverlapError_ = false;
         }
 
@@ -968,6 +977,8 @@ void TimeEntriesView::performCsvExport() {
 }
 
 void TimeEntriesView::performYouTrackExport() {
+    auto& L = localization::L10n();
+
     // Check for overlapping facts first
     overlappingFacts_ = youTrackExportService_->checkForOverlaps(displayStartTime_, displayEndTime_);
     if (!overlappingFacts_.empty()) {
@@ -979,7 +990,6 @@ void TimeEntriesView::performYouTrackExport() {
     auto prepareResult = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
 
     if (!prepareResult.unresolvedActivities.empty()) {
-        auto& L = localization::L10n();
         exportErrorMessage_ = std::string(L.get("Cannot export: the following activities have no YouTrack issue ID mapping:")) + "\n";
         for (const auto& name : prepareResult.unresolvedActivities) {
             exportErrorMessage_ += "  - " + name + "\n";
@@ -992,7 +1002,7 @@ void TimeEntriesView::performYouTrackExport() {
     pendingWorkItems_ = std::move(prepareResult.workItems);
 
     if (pendingWorkItems_.empty()) {
-        exportErrorMessage_ = "No completed time entries found in selected date range.";
+        exportErrorMessage_ = L.get("No completed time entries found in selected date range.");
         showExportError_ = true;
         return;
     }

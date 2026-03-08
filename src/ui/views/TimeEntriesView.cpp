@@ -639,12 +639,22 @@ void TimeEntriesView::renderAddForm() {
         ImGui::Spacing();
 
         if (ImGui::Button(L.get("Add"), ImVec2(100, 0))) {
-            saveAdd();
-            showAddForm_ = false;
+            if (strlen(addActivityName_) == 0) {
+                addNameError_ = true;
+            } else {
+                addNameError_ = false;
+                saveAdd();
+                showAddForm_ = false;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button(L.get("Cancel"), ImVec2(100, 0))) {
             showAddForm_ = false;
+        }
+
+        if (addNameError_) {
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Activity name is required"));
         }
 
         ImGui::EndPopup();
@@ -920,6 +930,7 @@ void TimeEntriesView::deleteEntry() {
 void TimeEntriesView::startAdd() {
     memset(addActivityName_, 0, sizeof(addActivityName_));
     memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
+    addNameError_ = false;
     addAutocomplete_.clear();
     int64_t now = utils::TimeUtils::now();
     setDateFromTimestamp(now, addStartDate_, addStartTime_);  // Default to current time
@@ -932,6 +943,7 @@ void TimeEntriesView::startAdd() {
 void TimeEntriesView::startAddWithTimes(int64_t start, int64_t end) {
     memset(addActivityName_, 0, sizeof(addActivityName_));
     memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
+    addNameError_ = false;
     addAutocomplete_.clear();
     setDateFromTimestamp(start, addStartDate_, addStartTime_);
     setDateFromTimestamp(end, addEndDate_, addEndTime_);
@@ -941,8 +953,6 @@ void TimeEntriesView::startAddWithTimes(int64_t start, int64_t end) {
 }
 
 void TimeEntriesView::saveAdd() {
-    if (strlen(addActivityName_) == 0) return;
-
     int64_t startTime = getTimestampFromDate(addStartDate_, addStartTime_);
 
     if (addIsOngoing_) {

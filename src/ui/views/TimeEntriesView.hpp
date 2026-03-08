@@ -70,6 +70,7 @@ private:
     int addEndTime_[2]{};
     bool addIsOngoing_{true};
     bool addFromBlock_{false};  // True when opened via block click (hides Ongoing checkbox)
+    bool addNameError_{false};
 
     // Activity breakdown state
     bool showActivityBreakdown_{false};

@@ -18,7 +18,7 @@ void QuickAddDialog::render() {
     // Position dialog near cursor (or center of screen)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(350, 120), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(350, 145), ImGuiCond_Appearing);
 
     if (ImGui::Begin(L.get("Quick add activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
         ImGui::SetNextItemWidth(-1);
@@ -48,7 +48,11 @@ void QuickAddDialog::render() {
             if (activity.empty() && strlen(activityInput_) > 0) {
                 activity = activityInput_;
             }
-            if (!activity.empty()) {
+            if (activity.empty()) {
+                nameError_ = true;
+            } else {
+                nameError_ = false;
+
                 // Start tracking
                 timeService_->startTracking(activity);
 
@@ -62,6 +66,11 @@ void QuickAddDialog::render() {
                 hide();
             }
         }
+
+        if (nameError_) {
+            ImGui::Spacing();
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Activity name is required"));
+        }
     }
     ImGui::End();
 
@@ -73,6 +82,7 @@ void QuickAddDialog::render() {
 
 void QuickAddDialog::show() {
     visible_ = true;
+    nameError_ = false;
     memset(activityInput_, 0, sizeof(activityInput_));
     autocomplete_.clear();
 }

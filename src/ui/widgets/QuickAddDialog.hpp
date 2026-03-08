@@ -34,6 +34,7 @@ private:
     std::function<void()> onDialogClosed_;
 
     ActivityAutocomplete autocomplete_;
+    bool nameError_{false};
 };
 
 } // namespace timetracker::ui::widgets

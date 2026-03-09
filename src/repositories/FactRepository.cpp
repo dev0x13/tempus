@@ -1,5 +1,7 @@
 #include "FactRepository.hpp"
 
+#include <algorithm>
+
 namespace timetracker::repositories {
 
 FactRepository::FactRepository(database::Database& db) : db_(db) {}

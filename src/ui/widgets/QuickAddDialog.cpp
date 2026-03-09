@@ -34,6 +34,8 @@ void QuickAddDialog::render() {
         }
 
         bool enterPressed = autocomplete_.render("##activityInput", activityInput_, sizeof(activityInput_));
+        // Fix for GNOME (#36)
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
 
         ImGui::Spacing();
 

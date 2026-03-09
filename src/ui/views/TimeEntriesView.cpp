@@ -538,9 +538,13 @@ void TimeEntriesView::renderEditForm() {
     if (ImGui::BeginPopupModal(L.get("Edit entry"), &showEditForm_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
+        // Fix for GNOME (#36)
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
 
         ImGui::SetNextItemWidth(-1);
         ImGui::InputTextWithHint("##editDescription", L.get("Optional description"), editActivityDescription_, sizeof(editActivityDescription_));
+        // Fix for GNOME (#36)
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
 
         ImGui::Spacing();
         ImGui::Text("%s", L.get("Start:"));
@@ -652,9 +656,11 @@ void TimeEntriesView::renderAddForm() {
             ImGui::SetKeyboardFocusHere();
         }
         addAutocomplete_.render("##addActivity", addActivityName_, sizeof(addActivityName_));
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
 
         ImGui::SetNextItemWidth(-1);
         ImGui::InputTextWithHint("##addDescription",  L.get("Optional description"), addActivityDescription_, sizeof(addActivityDescription_));
+        ImGui::SetItemKeyOwner(ImGuiMod_Alt);
 
         ImGui::Spacing();
         ImGui::Text("%s", L.get("Start:"));

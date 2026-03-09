@@ -207,6 +207,8 @@ void TimeEntriesView::renderDateSelector() {
         refreshEntries();
     }
 
+    int64_t rangeDuration = displayEndTime_ - displayStartTime_ + 1;
+
     // Quick date buttons
     ImGui::SameLine();
     if (ImGui::Button(L.get("Today"))) {
@@ -231,6 +233,22 @@ void TimeEntriesView::renderDateSelector() {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfDay(now) - 9 * 86400;
         displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
+        refreshEntries();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("◀")) {
+        displayStartTime_ -= rangeDuration;
+        displayEndTime_ -= rangeDuration;
+        widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
+        widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
+        refreshEntries();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("▶")) {
+        displayStartTime_ += rangeDuration;
+        displayEndTime_ += rangeDuration;
         widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
         widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();

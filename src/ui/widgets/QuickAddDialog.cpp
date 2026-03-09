@@ -18,7 +18,7 @@ void QuickAddDialog::render() {
     // Position dialog near cursor (or center of screen)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(350, 145), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
 
     if (ImGui::Begin(L.get("Quick add activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
         ImGui::SetNextItemWidth(-1);

@@ -22,9 +22,8 @@ void SettingsWindow::render() {
     // Center the window
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 850), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         renderLanguageSettings();
 
         ImGui::Separator();

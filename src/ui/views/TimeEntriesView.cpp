@@ -582,9 +582,9 @@ void TimeEntriesView::renderAddForm() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(400, 350));
+    //ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal(L.get("Add entry"), &showAddForm_, ImGuiWindowFlags_NoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Add entry"), &showAddForm_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::SetNextItemWidth(-1);
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetKeyboardFocusHere();
@@ -681,9 +681,8 @@ void TimeEntriesView::renderExportConfirmationDialog() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal(L.get("Confirm YouTrack Export"), &showExportConfirmation_)) {
+    if (ImGui::BeginPopupModal(L.get("Confirm YouTrack Export"), &showExportConfirmation_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s", L.get("The following time entries will be exported to YouTrack:"));
         ImGui::Separator();
 
@@ -835,9 +834,8 @@ void TimeEntriesView::renderExportErrorDialog() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(500, 200), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal(L.get("Export Failed"), &showExportError_)) {
+    if (ImGui::BeginPopupModal(L.get("Export Failed"), &showExportError_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", exportErrorMessage_.c_str());
         ImGui::Separator();
 
@@ -855,15 +853,14 @@ void TimeEntriesView::renderOverlapErrorDialog() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal(L.get("Cannot Export: Overlapping Facts"), &showOverlapError_)) {
+    if (ImGui::BeginPopupModal(L.get("Cannot Export: Overlapping Facts"), &showOverlapError_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", L.get("Cannot export to YouTrack: overlapping facts detected."));
         ImGui::TextWrapped("%s", L.get("Please fix these entries manually before exporting:"));
         ImGui::Separator();
 
         // Scrollable list of overlapping facts
-        ImGui::BeginChild("OverlappingFactsList", ImVec2(0, 250), true);
+        ImGui::BeginChild("OverlappingFactsList", ImVec2(500, 250), true);
 
         for (const auto& fact : overlappingFacts_) {
             // Format: Activity Name: YYYY-MM-DD HH:MM - HH:MM

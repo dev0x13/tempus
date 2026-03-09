@@ -105,9 +105,8 @@ void KTalkImportWindow::render() {
     // Center the window on first appearance
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.get("Import from KTalk"), &visible_, ImGuiWindowFlags_NoCollapse)) {
+    if (ImGui::Begin(L.get("Import from KTalk"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", L.get("Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab."));
 
         ImGui::Spacing();
@@ -152,7 +151,7 @@ void KTalkImportWindow::render() {
             "##fetchPayload",
             fetchPayload_,
             sizeof(fetchPayload_),
-            ImVec2(-1, 200),
+            ImVec2(300, 200),
             ImGuiInputTextFlags_None
         );
 

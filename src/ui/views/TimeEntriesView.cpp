@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "TimeEntriesView.hpp"
 #include "BlockScheduleRenderer.hpp"
 #include "utils/TimeUtils.hpp"

@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include <ctime>
 #include <iomanip>
+#include <sstream>
 #include <cmath>
 #include <cstdio>
 

@@ -204,6 +204,15 @@ void ImGuiApp::run() {
         }
 #endif
 
+        // Update system tray periodically (every second), regardless of window state
+        if (systemTray_ && systemTray_->isRunning()) {
+            double currentTime = glfwGetTime();
+            if (currentTime - lastTrayUpdate_ >= 1.0) {
+                systemTray_->update();
+                lastTrayUpdate_ = currentTime;
+            }
+        }
+
         // Skip rendering if window is minimized
         if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
             continue;
@@ -214,15 +223,6 @@ void ImGuiApp::run() {
 }
 
 void ImGuiApp::render() {
-    // Update system tray periodically (every second)
-    if (systemTray_ && systemTray_->isRunning()) {
-        double currentTime = glfwGetTime();
-        if (currentTime - lastTrayUpdate_ >= 1.0) {
-            systemTray_->update();
-            lastTrayUpdate_ = currentTime;
-        }
-    }
-
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

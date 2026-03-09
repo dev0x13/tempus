@@ -126,13 +126,14 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
     // Render table
     std::string tableId = "ScheduleTable_" + isoDate;
-    if (ImGui::BeginTable(tableId.c_str(), 5,
+    if (ImGui::BeginTable(tableId.c_str(), 6,
             ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 110.0f);
         ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
         ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 80.0f);
         ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
         ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 28.0f);
 
         int64_t now = utils::TimeUtils::now();
 
@@ -230,6 +231,22 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                     ImGui::SetWindowFontScale(1.0f);
                 }
 
+                // Actions column
+                ImGui::TableNextColumn();
+                ImGui::SetWindowFontScale(0.6f);
+                if (blk.fact->isOngoing()) {
+                    if (ImGui::Button("■")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->stopTracking();
+                    }
+                } else {
+                    if (ImGui::Button("▶")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->startTracking(blk.fact->activityName);
+                    }
+                }
+                ImGui::SetWindowFontScale(1.0f);
+
                 // Picker popup for merged blocks
                 if (isMultiMerged && ImGui::BeginPopup(popupId.c_str())) {
                     ImGui::TextDisabled("%s", L.get("Entry to edit:"));
@@ -276,6 +293,7 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                 ImGui::Text("%s", gapDurStr.c_str());
 
                 ImGui::TableNextColumn();  // YT (empty for gap blocks)
+                ImGui::TableNextColumn();  // Actions (empty for gap blocks)
 
                 ImGui::PopStyleColor();
             }
@@ -308,13 +326,14 @@ ScheduleAction BlockScheduleRenderer::renderDay(
         ImGui::Spacing();
         ImGui::TextDisabled("%s", L.get("Outside workday"));
         std::string outsideTableId = "OutsideTable_" + isoDate;
-        if (ImGui::BeginTable(outsideTableId.c_str(), 5,
+        if (ImGui::BeginTable(outsideTableId.c_str(), 6,
                 ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 110.0f);
             ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
             ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 80.0f);
             ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
             ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 28.0f);
 
             int64_t now = utils::TimeUtils::now();
             for (const auto* fp : outsideFacts) {
@@ -359,6 +378,22 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                     ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "YT");
                     ImGui::SetWindowFontScale(1.0f);
                 }
+
+                // Actions column
+                ImGui::TableNextColumn();
+                ImGui::SetWindowFontScale(0.6f);
+                if (fp->isOngoing()) {
+                    if (ImGui::Button("■")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->stopTracking();
+                    }
+                } else {
+                    if (ImGui::Button("▶")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->startTracking(fp->activityName);
+                    }
+                }
+                ImGui::SetWindowFontScale(1.0f);
 
                 ImGui::PopID();
             }

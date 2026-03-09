@@ -254,7 +254,7 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
         // Render entries for this date using a table for proper alignment
         ImGui::Indent(20.0f);
-        if (ImGui::BeginTable("EntriesTable", 6, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("EntriesTable", 7, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
             // Set up columns
             ImGui::TableSetupColumn("Start", ImGuiTableColumnFlags_WidthFixed, 50.0f);
             ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 80.0f);
@@ -262,6 +262,7 @@ void TimeEntriesView::renderDateGroupedEntries() {
             ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 120.0f);
             ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
             ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 28.0f);
 
             for (const auto& fact : dateEntries) {
                 ImGui::TableNextRow();
@@ -323,6 +324,24 @@ void TimeEntriesView::renderDateGroupedEntries() {
                     ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "YT");
                     ImGui::SetWindowFontScale(1.0f);
                 }
+
+                // Actions column
+                ImGui::TableNextColumn();
+                ImGui::SetWindowFontScale(0.6f);
+                if (fact.endTime.has_value()) {
+                    if (ImGui::Button("▶")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->startTracking(fact.activityName);
+                        refreshEntries();
+                    }
+                } else {
+                    if (ImGui::Button("■")) {
+                        ImGui::SetWindowFontScale(1.0f);
+                        timeService_->stopTracking();
+                        refreshEntries();
+                    }
+                }
+                ImGui::SetWindowFontScale(1.0f);
 
                 ImGui::PopID();
 

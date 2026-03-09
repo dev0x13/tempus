@@ -8,6 +8,7 @@
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "resources/PTSansFont.hpp"
+#include "resources/SymbolsFont.hpp"
 #include "localization/LocalizationManager.hpp"
 
 #include "imgui.h"
@@ -132,6 +133,18 @@ bool ImGuiApp::init(int width, int height, const char* title) {
         io.Fonts->GetGlyphRangesCyrillic()
     );
 
+    // Merge geometric symbols (▶ U+25B6, ■ U+25A0) from a separate subset font
+    ImFontConfig symbolConfig;
+    symbolConfig.MergeMode = true;
+    symbolConfig.FontDataOwnedByAtlas = false;
+    static const ImWchar symbolRanges[] = { 0x25A0, 0x25A0, 0x25B6, 0x25C0, 0 };
+    io.Fonts->AddFontFromMemoryTTF(
+        const_cast<unsigned char*>(fonts::SymbolsFont),
+        fonts::SymbolsFontSize,
+        20.0f,
+        &symbolConfig,
+        symbolRanges
+    );
 
     // Apply custom theme
     Theme::apply();

@@ -20,7 +20,12 @@ void QuickAddDialog::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_Appearing);
 
-    if (ImGui::Begin(L.get("Quick add activity"), &visible_, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+    // Prevent the dialog from jumping in front of the suggestion dropdown when re-focused
+    if (autocomplete_.hasSuggestions())
+        windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    if (ImGui::Begin(L.get("Quick add activity"), &visible_, windowFlags)) {
         ImGui::SetNextItemWidth(-1);
 
         // Auto-focus input when dialog appears
@@ -74,8 +79,13 @@ void QuickAddDialog::render() {
     }
     ImGui::End();
 
-    // Allow closing with Escape
-    if (visible_ && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+    // Render the suggestion dropdown as a top-level window so it overlays everything
+    // and receives mouse clicks without stealing keyboard focus from the input.
+    autocomplete_.renderDropdown();
+
+    // Escape closes the dialog only when the dropdown is not open; when the dropdown
+    // is open, Escape is handled inside ActivityAutocomplete::render() to close it first.
+    if (visible_ && !autocomplete_.hasSuggestions() && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
         hide();
     }
 }

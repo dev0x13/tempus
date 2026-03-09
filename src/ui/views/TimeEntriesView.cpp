@@ -751,6 +751,10 @@ void TimeEntriesView::renderAddForm() {
             }
         }
 
+        // Render the autocomplete dropdown. Inside a modal it appears as a top-level
+        // window rendered after modal content, which keeps it on top of the modal.
+        addAutocomplete_.renderDropdown();
+
         ImGui::EndPopup();
     }
 }

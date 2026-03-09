@@ -32,6 +32,10 @@ public:
 
     // Stop ongoing fact by setting end time
     virtual void stopOngoing(int64_t endTime) = 0;
+
+    // Clip end time of any completed fact that would overlap with a new activity starting at startTime
+    // (i.e., facts where start_time < startTime AND end_time > startTime)
+    virtual void clipFactsOverlappingStart(int64_t startTime) = 0;
 };
 
 } // namespace timetracker::repositories

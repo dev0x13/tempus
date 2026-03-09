@@ -18,6 +18,7 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
 
     // Create new fact with current time and description
     int64_t now = utils::TimeUtils::now();
+    factRepo_->clipFactsOverlappingStart(now);
     auto fact = factRepo_->create(activity.id, now, std::nullopt, description);
     fact.activityName = activity.name;
 
@@ -36,6 +37,7 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
     auto activity = activityRepo_->getOrCreate(activityName);
 
     // Create new fact with custom start time and description
+    factRepo_->clipFactsOverlappingStart(startTime);
     auto fact = factRepo_->create(activity.id, startTime, std::nullopt, description);
     fact.activityName = activity.name;
 

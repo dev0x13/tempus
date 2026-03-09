@@ -496,9 +496,8 @@ void TimeEntriesView::renderEditForm() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(400, 350));
 
-    if (ImGui::BeginPopupModal(L.get("Edit entry"), &showEditForm_, ImGuiWindowFlags_NoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Edit entry"), &showEditForm_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::SetNextItemWidth(-1);
         ImGui::InputText("##editActivity", editActivityName_, sizeof(editActivityName_));
 

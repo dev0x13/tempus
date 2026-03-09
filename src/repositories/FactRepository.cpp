@@ -184,6 +184,15 @@ void FactRepository::stopOngoing(int64_t endTime) {
     update.exec();
 }
 
+void FactRepository::clipFactsOverlappingStart(int64_t startTime) {
+    SQLite::Statement update(db_.getHandle(),
+        "UPDATE facts SET end_time = ? WHERE start_time < ? AND end_time > ?");
+    update.bind(1, startTime);
+    update.bind(2, startTime);
+    update.bind(3, startTime);
+    update.exec();
+}
+
 void FactRepository::markFactsAsExported(const std::vector<int64_t>& factIds) {
     if (factIds.empty()) {
         return;

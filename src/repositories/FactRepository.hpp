@@ -21,6 +21,7 @@ public:
     std::vector<models::Fact> findByActivity(int64_t activityId) override;
     std::vector<models::Fact> findRecent(int limit = 10) override;
     void stopOngoing(int64_t endTime) override;
+    void clipFactsOverlappingStart(int64_t startTime) override;
 
     // YouTrack export status management
     void markFactsAsExported(const std::vector<int64_t>& factIds);

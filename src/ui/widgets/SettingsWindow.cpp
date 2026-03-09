@@ -24,27 +24,27 @@ void SettingsWindow::render() {
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
-        renderLanguageSettings();
+        if (ImGui::BeginTable("##settings_layout", 2, ImGuiTableFlags_None)) {
+            ImGui::TableSetupColumn("##col_left", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("##col_right", ImGuiTableColumnFlags_WidthStretch);
 
-        ImGui::Separator();
-        ImGui::Spacing();
+            ImGui::TableNextColumn(); // Left column
+            renderLanguageSettings();
+            ImGui::Separator();
+            ImGui::Spacing();
+            renderBlockScheduleSettings();
+            ImGui::Separator();
+            ImGui::Spacing();
+            renderKTalkSettings();
 
-        renderBlockScheduleSettings();
+            ImGui::TableNextColumn(); // Right column
+            renderYouTrackSettings();
+            ImGui::Separator();
+            ImGui::Spacing();
+            renderActivityAliases();
 
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        renderYouTrackSettings();
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        renderActivityAliases();
-
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        renderKTalkSettings();
+            ImGui::EndTable();
+        }
 
         ImGui::Spacing();
 

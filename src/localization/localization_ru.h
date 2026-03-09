@@ -135,6 +135,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Time overlap detected", "Обнаружено пересечение времени"},
         {"This entry overlaps with an existing entry:\\n\\nExisting: %s (%s - %s)\\n\\nPlease adjust the times to avoid overlap.", "Эта запись пересекается с существующей записью:\\n\\nСуществующая: %s (%s - %s)\\n\\nПожалуйста, измените время, чтобы избежать пересечения."},
         {"End time must be after start time", "Время окончания должно быть после времени начала"},
+        {"Start time cannot be in the future", "Время начала не может быть в будущем"},
+        {"Start time must be before end time", "Время начала должно быть раньше времени окончания"},
         {"Activity name is required", "Требуется название активности"},
         {"YouTrack is not configured. Please set URL and token in Settings.", "YouTrack не настроен. Пожалуйста, установите URL и токен в настройках."},
         {"No YouTrack issue ID configured for activity: %s", "Не настроен ID задачи YouTrack для активности: %s"},

@@ -198,6 +198,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"To date", "Дата окончания"},
         {"Fetch payload:", "Данные запроса:"},
         {"Select date to import:", "Выберите дату для импорта:"},
+        {"Entry to edit:", "Запись для редактирования:"},
         {"Import", "Импорт"},
         {"Importing...", "Импортирование..."},
         {"Import successful", "Импорт успешен"},

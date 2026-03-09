@@ -117,8 +117,10 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                          mergedBlocks.back().fact->description == blk.fact->description)) &&
                 mergedBlocks.back().endTime >= blk.startTime) {
             mergedBlocks.back().endTime = std::max(mergedBlocks.back().endTime, blk.endTime);
+            mergedBlocks.back().mergedFacts.push_back(blk.fact);
         } else {
             mergedBlocks.push_back(blk);
+            if (blk.fact) mergedBlocks.back().mergedFacts = {blk.fact};
         }
     }
 
@@ -163,17 +165,28 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
                 }
 
+                bool isMultiMerged = blk.mergedFacts.size() > 1;
+                std::string popupId = "##MergedPicker_" + std::to_string(blk.startTime);
+
                 // Time column (clickable to edit)
                 ImGui::TableNextColumn();
                 if (ImGui::Selectable(timeRange.c_str(), false,
                         ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
-                    action.type = ScheduleAction::EditFact;
-                    action.factToEdit = blk.fact;
+                    if (isMultiMerged) {
+                        ImGui::OpenPopup(popupId.c_str());
+                    } else {
+                        action.type = ScheduleAction::EditFact;
+                        action.factToEdit = blk.fact;
+                    }
                 }
 
                 // Activity column
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", blk.fact->activityName.c_str());
+                if (isMultiMerged) {
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("(%zu)", blk.mergedFacts.size());
+                }
 
                 // Description column
                 ImGui::TableNextColumn();
@@ -188,6 +201,27 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
                 if (isOverlapping) {
                     ImGui::PopStyleColor();
+                }
+
+                // Picker popup for merged blocks
+                if (isMultiMerged && ImGui::BeginPopup(popupId.c_str())) {
+                    ImGui::TextDisabled("%s", L.get("Entry to edit:"));
+                    ImGui::Separator();
+                    for (const auto* fp : blk.mergedFacts) {
+                        std::string entryStart = utils::TimeUtils::formatTime(fp->startTime);
+                        std::string entryEnd = fp->endTime.has_value()
+                            ? utils::TimeUtils::formatTime(*fp->endTime)
+                            : std::string(L.get("(ongoing)"));
+                        std::string label = entryStart + " - " + entryEnd;
+                        if (!fp->description.empty()) {
+                            label += "  " + fp->description;
+                        }
+                        if (ImGui::Selectable(label.c_str())) {
+                            action.type = ScheduleAction::EditFact;
+                            action.factToEdit = fp;
+                        }
+                    }
+                    ImGui::EndPopup();
                 }
             } else {
                 // Empty gap block — clickable to open Add activity modal

@@ -15,7 +15,8 @@ struct ScheduleBlock {
     int64_t startTime{0};
     int64_t endTime{0};
     bool isFact{false};
-    const models::Fact* fact{nullptr};  // Non-null if isFact is true
+    const models::Fact* fact{nullptr};  // Non-null if isFact is true; first merged fact when multiple
+    std::vector<const models::Fact*> mergedFacts;  // All constituent facts (populated for isFact blocks)
 };
 
 // For backward compatibility, alias ScheduleSegment to ScheduleBlock

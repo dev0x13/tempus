@@ -126,12 +126,13 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
     // Render table
     std::string tableId = "ScheduleTable_" + isoDate;
-    if (ImGui::BeginTable(tableId.c_str(), 4,
+    if (ImGui::BeginTable(tableId.c_str(), 5,
             ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 110.0f);
         ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
         ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 80.0f);
         ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+        ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
 
         int64_t now = utils::TimeUtils::now();
 
@@ -203,6 +204,32 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                     ImGui::PopStyleColor();
                 }
 
+                // YT export indicator column
+                ImGui::TableNextColumn();
+                {
+                    int exportedCount = 0;
+                    for (const auto* fp : blk.mergedFacts) {
+                        if (fp->exportedToYoutrack) ++exportedCount;
+                    }
+                    int total = static_cast<int>(blk.mergedFacts.size());
+                    float fullLineHeight = ImGui::GetTextLineHeight();
+                    ImGui::SetWindowFontScale(0.65f);
+                    float ytColWidth = ImGui::GetContentRegionAvail().x;
+                    float ytTextWidth = ImGui::CalcTextSize("YT").x;
+                    float ytOffsetX = (ytColWidth - ytTextWidth) * 0.5f;
+                    float ytOffsetY = (fullLineHeight - ImGui::GetTextLineHeight()) * 0.5f;
+                    if (exportedCount == total && total > 0) {
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ytOffsetX);
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ytOffsetY);
+                        ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "YT");
+                    } else if (exportedCount > 0) {
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ytOffsetX);
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ytOffsetY);
+                        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.4f, 1.0f), "YT");
+                    }
+                    ImGui::SetWindowFontScale(1.0f);
+                }
+
                 // Picker popup for merged blocks
                 if (isMultiMerged && ImGui::BeginPopup(popupId.c_str())) {
                     ImGui::TextDisabled("%s", L.get("Entry to edit:"));
@@ -240,12 +267,15 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
                 // Duration column — show gap duration dimmed
                 ImGui::TableNextColumn();
+
                 int64_t gapDuration = blk.endTime - blk.startTime;
                 std::string gapDurStr = utils::TimeUtils::formatDuration(gapDuration);
                 float colWidth = ImGui::GetContentRegionAvail().x;
                 float txtWidth = ImGui::CalcTextSize(gapDurStr.c_str()).x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + colWidth - txtWidth);
                 ImGui::Text("%s", gapDurStr.c_str());
+
+                ImGui::TableNextColumn();  // YT (empty for gap blocks)
 
                 ImGui::PopStyleColor();
             }
@@ -278,12 +308,13 @@ ScheduleAction BlockScheduleRenderer::renderDay(
         ImGui::Spacing();
         ImGui::TextDisabled("%s", L.get("Outside workday"));
         std::string outsideTableId = "OutsideTable_" + isoDate;
-        if (ImGui::BeginTable(outsideTableId.c_str(), 4,
+        if (ImGui::BeginTable(outsideTableId.c_str(), 5,
                 ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
             ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 110.0f);
             ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
             ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 80.0f);
             ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
 
             int64_t now = utils::TimeUtils::now();
             for (const auto* fp : outsideFacts) {
@@ -315,6 +346,19 @@ ScheduleAction BlockScheduleRenderer::renderDay(
                 float tw = ImGui::CalcTextSize(dur.c_str()).x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + cw - tw);
                 ImGui::Text("%s", dur.c_str());
+
+                // YT export indicator column
+                ImGui::TableNextColumn();
+                if (fp->exportedToYoutrack) {
+                    float fullLineHeight = ImGui::GetTextLineHeight();
+                    ImGui::SetWindowFontScale(0.65f);
+                    float ytColWidth = ImGui::GetContentRegionAvail().x;
+                    float ytTextWidth = ImGui::CalcTextSize("YT").x;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ytColWidth - ytTextWidth) * 0.5f);
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (fullLineHeight - ImGui::GetTextLineHeight()) * 0.5f);
+                    ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "YT");
+                    ImGui::SetWindowFontScale(1.0f);
+                }
 
                 ImGui::PopID();
             }

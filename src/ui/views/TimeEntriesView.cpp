@@ -254,13 +254,14 @@ void TimeEntriesView::renderDateGroupedEntries() {
 
         // Render entries for this date using a table for proper alignment
         ImGui::Indent(20.0f);
-        if (ImGui::BeginTable("EntriesTable", 5, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
+        if (ImGui::BeginTable("EntriesTable", 6, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
             // Set up columns
             ImGui::TableSetupColumn("Start", ImGuiTableColumnFlags_WidthFixed, 50.0f);
             ImGui::TableSetupColumn("End", ImGuiTableColumnFlags_WidthFixed, 80.0f);
             ImGui::TableSetupColumn("Activity", ImGuiTableColumnFlags_WidthStretch, 40.0f);
             ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch, 120.0f);
             ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableSetupColumn("YT", ImGuiTableColumnFlags_WidthFixed, 24.0f);
 
             for (const auto& fact : dateEntries) {
                 ImGui::TableNextRow();
@@ -309,6 +310,19 @@ void TimeEntriesView::renderDateGroupedEntries() {
                 float textWidth = ImGui::CalcTextSize(duration.c_str()).x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + columnWidth - textWidth);
                 ImGui::Text("%s", duration.c_str());
+
+                // YT export indicator column
+                ImGui::TableNextColumn();
+                if (fact.exportedToYoutrack) {
+                    float fullLineHeight = ImGui::GetTextLineHeight();
+                    ImGui::SetWindowFontScale(0.65f);
+                    float ytColWidth = ImGui::GetContentRegionAvail().x;
+                    float ytTextWidth = ImGui::CalcTextSize("YT").x;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ytColWidth - ytTextWidth) * 0.5f);
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (fullLineHeight - ImGui::GetTextLineHeight()) * 0.5f);
+                    ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "YT");
+                    ImGui::SetWindowFontScale(1.0f);
+                }
 
                 ImGui::PopID();
 

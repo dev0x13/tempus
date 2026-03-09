@@ -56,6 +56,13 @@ std::optional<models::Fact> TimeTrackingService::stopTracking() {
     }
 
     int64_t now = utils::TimeUtils::now();
+
+    if (now - currentTracking_->startTime < 60) {
+        factRepo_->remove(currentTracking_->id);
+        invalidateCache();
+        return std::nullopt;
+    }
+
     factRepo_->stopOngoing(now);
 
     auto stoppedFact = *currentTracking_;

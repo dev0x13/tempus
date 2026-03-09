@@ -58,6 +58,7 @@ private:
     int editEndDate_[3]{};
     int editEndTime_[2]{};
     bool editIsOngoing_{false};
+    bool editStartTimeError_{false};
 
     // Add form state
     bool showAddForm_{false};
@@ -71,6 +72,7 @@ private:
     bool addIsOngoing_{true};
     bool addFromBlock_{false};  // True when opened via block click (hides Ongoing checkbox)
     bool addNameError_{false};
+    bool addStartTimeError_{false};
 
     // Activity breakdown state
     bool showActivityBreakdown_{false};

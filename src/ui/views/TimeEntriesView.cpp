@@ -6,6 +6,7 @@
 #include "localization/LocalizationManager.hpp"
 #include "imgui.h"
 #include <cstring>
+#include <limits>
 #include <thread>
 #include <algorithm>
 #include <vector>
@@ -548,27 +549,33 @@ void TimeEntriesView::renderEditForm() {
         }
 
         ImGui::Spacing();
-        ImGui::Text("%s", L.get("End:"));
-        widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
-        ImGui::SameLine();
-
-        // Format time with leading zeros
-        char endHourBuf[8], endMinBuf[8];
-        snprintf(endHourBuf, sizeof(endHourBuf), "%02d", editEndTime_[0]);
-        snprintf(endMinBuf, sizeof(endMinBuf), "%02d", editEndTime_[1]);
-
-        ImGui::SetNextItemWidth(40);
-        if (ImGui::InputText("##endHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
-            int val = atoi(endHourBuf);
-            editEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+        if (editIsOngoing_) {
+            ImGui::Checkbox(L.get("Ongoing"), &editIsOngoing_);
         }
-        ImGui::SameLine();
-        ImGui::Text(":");
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(40);
-        if (ImGui::InputText("##endMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
-            int val = atoi(endMinBuf);
-            editEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+
+        if (!editIsOngoing_) {
+            ImGui::Text("%s", L.get("End:"));
+            widgets::DatePicker::renderWithCalendar("##editEndDate", editEndDate_);
+            ImGui::SameLine();
+
+            // Format time with leading zeros
+            char endHourBuf[8], endMinBuf[8];
+            snprintf(endHourBuf, sizeof(endHourBuf), "%02d", editEndTime_[0]);
+            snprintf(endMinBuf, sizeof(endMinBuf), "%02d", editEndTime_[1]);
+
+            ImGui::SetNextItemWidth(40);
+            if (ImGui::InputText("##endHour", endHourBuf, sizeof(endHourBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(endHourBuf);
+                editEndTime_[0] = (val < 0) ? 0 : (val > 23) ? 23 : val;
+            }
+            ImGui::SameLine();
+            ImGui::Text(":");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(40);
+            if (ImGui::InputText("##endMin", endMinBuf, sizeof(endMinBuf), ImGuiInputTextFlags_CharsDecimal)) {
+                int val = atoi(endMinBuf);
+                editEndTime_[1] = (val < 0) ? 0 : (val > 59) ? 59 : val;
+            }
         }
 
         ImGui::Spacing();
@@ -576,8 +583,16 @@ void TimeEntriesView::renderEditForm() {
         ImGui::Spacing();
 
         if (ImGui::Button(L.get("Save"), ImVec2(100, 0))) {
-            saveEdit();
-            showEditForm_ = false;
+            int64_t startTs = getTimestampFromDate(editStartDate_, editStartTime_);
+            int64_t endTs = editIsOngoing_ ? std::numeric_limits<int64_t>::max() : getTimestampFromDate(editEndDate_, editEndTime_);
+            int64_t now = utils::TimeUtils::now();
+            if (startTs > now || startTs >= endTs) {
+                editStartTimeError_ = true;
+            } else {
+                editStartTimeError_ = false;
+                saveEdit();
+                showEditForm_ = false;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button(L.get("Delete"), ImVec2(100, 0))) {
@@ -587,6 +602,17 @@ void TimeEntriesView::renderEditForm() {
         ImGui::SameLine();
         if (ImGui::Button(L.get("Cancel"), ImVec2(100, 0))) {
             showEditForm_ = false;
+        }
+
+        if (editStartTimeError_) {
+            ImGui::Spacing();
+            int64_t startTs = getTimestampFromDate(editStartDate_, editStartTime_);
+            int64_t now = utils::TimeUtils::now();
+            if (startTs > now) {
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Start time cannot be in the future"));
+            } else {
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Start time must be before end time"));
+            }
         }
 
         ImGui::EndPopup();
@@ -671,10 +697,18 @@ void TimeEntriesView::renderAddForm() {
         ImGui::Spacing();
 
         if (ImGui::Button(L.get("Add"), ImVec2(100, 0))) {
+            int64_t startTs = getTimestampFromDate(addStartDate_, addStartTime_);
+            int64_t endTs = addIsOngoing_ ? std::numeric_limits<int64_t>::max() : getTimestampFromDate(addEndDate_, addEndTime_);
+            int64_t now = utils::TimeUtils::now();
             if (strlen(addActivityName_) == 0) {
                 addNameError_ = true;
+                addStartTimeError_ = false;
+            } else if (startTs > now || startTs >= endTs) {
+                addNameError_ = false;
+                addStartTimeError_ = true;
             } else {
                 addNameError_ = false;
+                addStartTimeError_ = false;
                 saveAdd();
                 showAddForm_ = false;
             }
@@ -687,6 +721,16 @@ void TimeEntriesView::renderAddForm() {
         if (addNameError_) {
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Activity name is required"));
+        }
+        if (addStartTimeError_) {
+            ImGui::Spacing();
+            int64_t startTs = getTimestampFromDate(addStartDate_, addStartTime_);
+            int64_t now = utils::TimeUtils::now();
+            if (startTs > now) {
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Start time cannot be in the future"));
+            } else {
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", L.get("Start time must be before end time"));
+            }
         }
 
         ImGui::EndPopup();
@@ -934,6 +978,7 @@ void TimeEntriesView::startEdit(const models::Fact& fact) {
         setDateFromTimestamp(utils::TimeUtils::now(), editEndDate_, editEndTime_);
     }
 
+    editStartTimeError_ = false;
     showEditForm_ = true;
 }
 
@@ -943,7 +988,11 @@ void TimeEntriesView::saveEdit() {
     models::Fact fact = *editingFact_;
     fact.startTime = getTimestampFromDate(editStartDate_, editStartTime_);
 
-    fact.endTime = getTimestampFromDate(editEndDate_, editEndTime_);
+    if (editIsOngoing_) {
+        fact.endTime = std::nullopt;
+    } else {
+        fact.endTime = getTimestampFromDate(editEndDate_, editEndTime_);
+    }
 
     timeService_->updateEntry(fact, editActivityName_, editActivityDescription_);
     refreshEntries();
@@ -960,6 +1009,7 @@ void TimeEntriesView::startAdd() {
     memset(addActivityName_, 0, sizeof(addActivityName_));
     memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
     addNameError_ = false;
+    addStartTimeError_ = false;
     addAutocomplete_.clear();
     int64_t now = utils::TimeUtils::now();
     setDateFromTimestamp(now, addStartDate_, addStartTime_);  // Default to current time
@@ -973,6 +1023,7 @@ void TimeEntriesView::startAddWithTimes(int64_t start, int64_t end) {
     memset(addActivityName_, 0, sizeof(addActivityName_));
     memset(addActivityDescription_, 0, sizeof(addActivityDescription_));
     addNameError_ = false;
+    addStartTimeError_ = false;
     addAutocomplete_.clear();
     setDateFromTimestamp(start, addStartDate_, addStartTime_);
     setDateFromTimestamp(end, addEndDate_, addEndTime_);

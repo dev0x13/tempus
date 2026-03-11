@@ -204,7 +204,7 @@ void SystemTray::showContextMenuWindows() {
   if (isTracking_) {
     auto current = timeService_->getCurrentTracking();
     if (current.has_value()) {
-      std::string stopStr = L.get("Stop tracking: ") + current->activityName;
+      std::string stopStr = L.get("Stop: ") + current->activityName;
       AppendMenuW(menu, MF_STRING, 2, utils::Platform::utf8ToWide(stopStr).c_str());
     }
   }
@@ -353,7 +353,7 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
 
   // "Stop Tracking" menu item (initially hidden)
-  menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop tracking"));
+  menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop"));
   g_signal_connect(menuItemStop_, "activate", G_CALLBACK(onMenuStopActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);
@@ -380,6 +380,8 @@ void SystemTray::updateLinux() {
   if (!running_ || !indicator_)
     return;
 
+  auto& L = localization::L10n();
+
   // Check current tracking status
   auto current = timeService_->getCurrentTracking();
   bool nowTracking = current.has_value();
@@ -404,11 +406,11 @@ void SystemTray::updateLinux() {
       app_indicator_set_label(indicator_, label.c_str(), nullptr);
 
       // Update title (shown in some environments)
-      std::string title = "Tracking: " + current->activityName;
+      std::string title = L.get("Tracking: ") + current->activityName;
       app_indicator_set_title(indicator_, title.c_str());
 
       // Update Stop menu item label with activity name
-      std::string stopLabel = "Stop Tracking: " + current->activityName;
+      std::string stopLabel = L.get("Stop: ") + current->activityName;
       gtk_menu_item_set_label(GTK_MENU_ITEM(menuItemStop_), stopLabel.c_str());
     }
 

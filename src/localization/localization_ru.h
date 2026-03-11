@@ -94,11 +94,10 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Tempus - Tracking: ", "Tempus - Отслеживание: "},
         {"Quick add activity", "Быстрое добавление активности"},
         {"Show window", "Показать окно"},
-        {"Stop tracking", "Остановить отслеживание"},
-        {"Stop tracking: ", "Остановить отслеживание: "},
+        {"Stop: ", "Стоп: "},
         {"Recent activities", "Недавние активности"},
         {"Exit", "Выход"},
-        {"Tracking: ", "Отслеживание: "},
+        {"Tracking: ", "В процессе: "},
 
         // Export
         {"Export to YouTrack", "Экспорт в YouTrack"},

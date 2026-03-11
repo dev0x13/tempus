@@ -28,7 +28,7 @@ public:
     virtual std::vector<models::Fact> findByActivity(int64_t activityId) = 0;
 
     // Get recent facts (ordered by start_time descending)
-    virtual std::vector<models::Fact> findRecent(int limit = 10) = 0;
+    virtual std::vector<models::Fact> findRecent(int limit = 10, int offset = 0) = 0;
 
     // Stop ongoing fact by setting end time
     virtual void stopOngoing(int64_t endTime) = 0;

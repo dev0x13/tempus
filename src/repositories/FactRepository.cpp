@@ -163,15 +163,16 @@ std::vector<models::Fact> FactRepository::findByActivity(int64_t activityId) {
     return facts;
 }
 
-std::vector<models::Fact> FactRepository::findRecent(int limit) {
+std::vector<models::Fact> FactRepository::findRecent(int limit, int offset) {
     std::vector<models::Fact> facts;
 
     SQLite::Statement query(db_.getHandle(),
         "SELECT f.id, f.activity_id, f.start_time, f.end_time, f.exported_to_youtrack, f.description, a.name "
         "FROM facts f "
         "JOIN activities a ON f.activity_id = a.id "
-        "ORDER BY f.start_time DESC LIMIT ?");
+        "ORDER BY f.start_time DESC LIMIT ? OFFSET ?");
     query.bind(1, limit);
+    query.bind(2, offset);
 
     while (query.executeStep()) {
         facts.push_back(mapRowWithActivity(query));

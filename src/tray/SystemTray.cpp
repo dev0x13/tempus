@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctime>
+#include <cstdio>
 
 #include "ui/resources/Resources.hpp"
 
@@ -76,10 +77,53 @@ void SystemTray::setShowQuickAddCallback(std::function<void()> callback) {
 bool SystemTray::isRunning() const { return running_; }
 
 std::vector<std::string> SystemTray::getRecentActivities() {
-  // Get last 5 unique activities
-  // For now, return empty - will be implemented when we add activity history to
-  // TimeTrackingService
-  return {};
+  auto current = timeService_->getCurrentTracking();
+  std::string currentName = current.has_value() ? current->activityName : "";
+  std::vector<std::string> result;
+  const int batchSize = 20;
+  int offset = 0;
+  while (result.size() < 5) {
+    auto entries = timeService_->getRecentEntries(batchSize, offset);
+    if (entries.empty()) break;
+    for (const auto& fact : entries) {
+      const std::string& name = fact.activityName;
+      if (name == currentName) continue;
+      bool found = false;
+      for (const auto& r : result) {
+        if (r == name) { found = true; break; }
+      }
+      if (!found) {
+        result.push_back(name);
+        if (result.size() >= 5) break;
+      }
+    }
+    if (static_cast<int>(entries.size()) < batchSize) break;
+    offset += batchSize;
+  }
+  return result;
+}
+
+std::string SystemTray::formatTodayTotal() {
+  auto& L = localization::L10n();
+  time_t now = std::time(nullptr);
+  struct tm* t = std::localtime(&now);
+  t->tm_hour = 0;
+  t->tm_min = 0;
+  t->tm_sec = 0;
+  int64_t todayStart = static_cast<int64_t>(std::mktime(t));
+  int64_t nowSecs = static_cast<int64_t>(now);
+
+  auto entries = timeService_->getEntriesForRange(todayStart, nowSecs);
+  int64_t totalSeconds = 0;
+  for (const auto& fact : entries) {
+    totalSeconds += fact.getDuration(nowSecs);
+  }
+
+  int hours = static_cast<int>(totalSeconds / 3600);
+  int minutes = static_cast<int>((totalSeconds % 3600) / 60);
+  char buf[32];
+  std::snprintf(buf, sizeof(buf), L.get("%dh %02dm"), hours, minutes);
+  return L.get("Today: ") + std::string(buf);
 }
 
 #ifdef _WIN32
@@ -195,10 +239,16 @@ void SystemTray::showContextMenuWindows() {
   POINT pt;
   GetCursorPos(&pt);
 
+  auto recentActivities = getRecentActivities();
+
   HMENU menu = CreatePopupMenu();
 
   // Show/Hide Window
   AppendMenuW(menu, MF_STRING, 1, utils::Platform::utf8ToWide(L.get("Show window")).c_str());
+
+  // Today's total (non-clickable informational item)
+  AppendMenuW(menu, MF_STRING | MF_GRAYED, 0,
+              utils::Platform::utf8ToWide(formatTodayTotal()).c_str());
 
   // Stop Tracking (if tracking)
   if (isTracking_) {
@@ -209,20 +259,17 @@ void SystemTray::showContextMenuWindows() {
     }
   }
 
-  AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-
-  // Recent Activities submenu
-  auto recentActivities = getRecentActivities();
+  // Continue: recent activities (inline, below Stop:)
   if (!recentActivities.empty()) {
-    HMENU recentMenu = CreatePopupMenu();
-    for (size_t i = 0; i < recentActivities.size() && i < 5; i++) {
-      AppendMenuW(recentMenu, MF_STRING, 100 + static_cast<UINT>(i),
-                  utils::Platform::utf8ToWide(recentActivities[i]).c_str());
-    }
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(recentMenu),
-                utils::Platform::utf8ToWide(L.get("Recent activities")).c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    for (size_t i = 0; i < recentActivities.size(); i++) {
+      std::string continueStr = L.get("Continue: ") + recentActivities[i];
+      AppendMenuW(menu, MF_STRING, 100 + static_cast<UINT>(i),
+                  utils::Platform::utf8ToWide(continueStr).c_str());
+    }
   }
+
+  AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
 
   // Exit
   AppendMenuW(menu, MF_STRING, 3, utils::Platform::utf8ToWide(L.get("Exit")).c_str());
@@ -337,7 +384,7 @@ void SystemTray::createMenuLinux() {
   menu_ = gtk_menu_new();
 
   // "Quick Add Activity" menu item
-  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick add activity"));
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick start"));
   g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
@@ -347,6 +394,11 @@ void SystemTray::createMenuLinux() {
   g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
                    this);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemShow_);
+
+  // Today's total (non-clickable informational item)
+  menuItemTodayTotal_ = gtk_menu_item_new_with_label(formatTodayTotal().c_str());
+  gtk_widget_set_sensitive(menuItemTodayTotal_, FALSE);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemTodayTotal_);
 
   // Separator
   GtkWidget *separator1 = gtk_separator_menu_item_new();
@@ -359,7 +411,20 @@ void SystemTray::createMenuLinux() {
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemStop_);
   gtk_widget_set_visible(menuItemStop_, FALSE); // Hidden until tracking starts
 
-  // Separator (for when Stop is visible)
+  // Separator before "Continue:" items (hidden until there are recent activities)
+  menuItemContinueSeparator_ = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemContinueSeparator_);
+
+  // "Continue: X" menu items — 5 pre-allocated slots, shown/hidden dynamically
+  for (int i = 0; i < 5; i++) {
+    menuItemContinue_[i] = gtk_menu_item_new_with_label("");
+    g_object_set_data(G_OBJECT(menuItemContinue_[i]), "index", GINT_TO_POINTER(i));
+    g_signal_connect(menuItemContinue_[i], "activate",
+                     G_CALLBACK(onMenuContinueActivate), this);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemContinue_[i]);
+  }
+
+  // Separator before Exit
   GtkWidget *separator2 = gtk_separator_menu_item_new();
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator2);
 
@@ -372,8 +437,12 @@ void SystemTray::createMenuLinux() {
   // Show all menu items
   gtk_widget_show_all(menu_);
 
-  // Hide the stop item again (gtk_widget_show_all showed it)
+  // Hide dynamic items (gtk_widget_show_all showed them)
   gtk_widget_set_visible(menuItemStop_, FALSE);
+  gtk_widget_set_visible(menuItemContinueSeparator_, FALSE);
+  for (int i = 0; i < 5; i++) {
+    gtk_widget_set_visible(menuItemContinue_[i], FALSE);
+  }
 }
 
 void SystemTray::updateLinux() {
@@ -424,6 +493,23 @@ void SystemTray::updateLinux() {
     // Hide the Stop menu item
     gtk_widget_set_visible(menuItemStop_, FALSE);
   }
+
+  // Update "Continue: X" slots
+  auto recent = getRecentActivities();
+  for (int i = 0; i < 5; i++) {
+    if (i < static_cast<int>(recent.size())) {
+      std::string label = L.get("Continue: ") + recent[i];
+      gtk_menu_item_set_label(GTK_MENU_ITEM(menuItemContinue_[i]), label.c_str());
+      g_object_set_data_full(G_OBJECT(menuItemContinue_[i]), "activity",
+                             g_strdup(recent[i].c_str()), g_free);
+      gtk_widget_set_visible(menuItemContinue_[i], TRUE);
+    } else {
+      gtk_widget_set_visible(menuItemContinue_[i], FALSE);
+    }
+  }
+  gtk_widget_set_visible(menuItemContinueSeparator_, recent.empty() ? FALSE : TRUE);
+
+  gtk_menu_item_set_label(GTK_MENU_ITEM(menuItemTodayTotal_), formatTodayTotal().c_str());
 }
 
 void SystemTray::cleanupLinux() {
@@ -439,6 +525,11 @@ void SystemTray::cleanupLinux() {
   }
   if (menuItemStop_) {
     g_signal_handlers_disconnect_by_data(menuItemStop_, this);
+  }
+  for (int i = 0; i < 5; i++) {
+    if (menuItemContinue_[i]) {
+      g_signal_handlers_disconnect_by_data(menuItemContinue_[i], this);
+    }
   }
   if (menuItemExit_) {
     g_signal_handlers_disconnect_by_data(menuItemExit_, this);
@@ -464,7 +555,12 @@ void SystemTray::cleanupLinux() {
 
   menuItemQuickAdd_ = nullptr;
   menuItemShow_ = nullptr;
+  menuItemTodayTotal_ = nullptr;
   menuItemStop_ = nullptr;
+  menuItemContinueSeparator_ = nullptr;
+  for (int i = 0; i < 5; i++) {
+    menuItemContinue_[i] = nullptr;
+  }
   menuItemExit_ = nullptr;
   running_ = false;
 }
@@ -489,6 +585,17 @@ void SystemTray::onMenuStopActivate(GtkMenuItem * /*item*/, void *user_data) {
   auto *tray = static_cast<SystemTray *>(user_data);
   if (tray && tray->timeService_) {
     tray->timeService_->stopTracking();
+    tray->update();
+  }
+}
+
+void SystemTray::onMenuContinueActivate(GtkMenuItem *item, void *user_data) {
+  auto *tray = static_cast<SystemTray *>(user_data);
+  if (!tray || !tray->timeService_) return;
+  const char *name = static_cast<const char *>(
+      g_object_get_data(G_OBJECT(item), "activity"));
+  if (name && *name) {
+    tray->timeService_->startTracking(name);
     tray->update();
   }
 }

@@ -42,7 +42,7 @@ public:
     void deleteEntry(int64_t factId);
 
     // Get recent entries
-    std::vector<models::Fact> getRecentEntries(int limit = 10) const;
+    std::vector<models::Fact> getRecentEntries(int limit = 10, int offset = 0) const;
 
     // Get entries for a date range
     std::vector<models::Fact> getEntriesForRange(int64_t startTime, int64_t endTime) const;

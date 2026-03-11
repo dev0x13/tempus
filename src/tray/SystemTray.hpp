@@ -73,7 +73,10 @@ private:
     GtkWidget* menu_{nullptr};
     GtkWidget* menuItemQuickAdd_{nullptr};
     GtkWidget* menuItemShow_{nullptr};
+    GtkWidget* menuItemTodayTotal_{nullptr};
     GtkWidget* menuItemStop_{nullptr};
+    GtkWidget* menuItemContinueSeparator_{nullptr};
+    GtkWidget* menuItemContinue_[5]{};
     GtkWidget* menuItemExit_{nullptr};
     std::string tempIconDir_;
 
@@ -86,10 +89,12 @@ private:
     static void onMenuQuickAddActivate(GtkMenuItem* item, void* user_data);
     static void onMenuShowActivate(GtkMenuItem* item, void* user_data);
     static void onMenuStopActivate(GtkMenuItem* item, void* user_data);
+    static void onMenuContinueActivate(GtkMenuItem* item, void* user_data);
     static void onMenuExitActivate(GtkMenuItem* item, void* user_data);
 #endif
 
     std::vector<std::string> getRecentActivities();
+    std::string formatTodayTotal();
 };
 
 } // namespace timetracker::tray

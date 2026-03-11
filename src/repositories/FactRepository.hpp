@@ -19,7 +19,7 @@ public:
     std::optional<models::Fact> findOngoing() override;
     std::vector<models::Fact> findByDateRange(int64_t startTime, int64_t endTime) override;
     std::vector<models::Fact> findByActivity(int64_t activityId) override;
-    std::vector<models::Fact> findRecent(int limit = 10) override;
+    std::vector<models::Fact> findRecent(int limit = 10, int offset = 0) override;
     void stopOngoing(int64_t endTime) override;
     void clipFactsOverlappingStart(int64_t startTime) override;
 

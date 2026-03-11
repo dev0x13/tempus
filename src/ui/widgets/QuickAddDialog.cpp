@@ -25,7 +25,7 @@ void QuickAddDialog::render() {
     if (autocomplete_.hasSuggestions())
         windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-    if (ImGui::Begin(L.get("Quick add activity"), &visible_, windowFlags)) {
+    if (ImGui::Begin(L.get("Quick start"), &visible_, windowFlags)) {
         ImGui::SetNextItemWidth(-1);
 
         // Auto-focus input when dialog appears

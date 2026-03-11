@@ -92,9 +92,11 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         // System Tray
         {"Tempus - Idle", "Tempus - Простой"},
         {"Tempus - Tracking: ", "Tempus - Отслеживание: "},
-        {"Quick add activity", "Быстрое добавление активности"},
+        {"Quick start", "Быстрый старт"},
         {"Show window", "Показать окно"},
+        {"Today: ", "Сегодня: "},
         {"Stop: ", "Стоп: "},
+        {"Continue: ", "Продолжить: "},
         {"Recent activities", "Недавние активности"},
         {"Exit", "Выход"},
         {"Tracking: ", "В процессе: "},
@@ -154,7 +156,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday", "Воскресенье,Понедельник,Вторник,Среда,Четверг,Пятница,Суббота"},
 
         // Quick Add
-        {"Quick add activity", "Быстрое добавление активности"},
+        {"Quick start", "Быстрый старт"},
         {"Start tracking", "Начать"},
         {"Activity name", "Название активности"},
 

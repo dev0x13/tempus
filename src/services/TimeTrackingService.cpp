@@ -122,8 +122,8 @@ void TimeTrackingService::deleteEntry(int64_t factId) {
     invalidateCache();
 }
 
-std::vector<models::Fact> TimeTrackingService::getRecentEntries(int limit) const {
-    return factRepo_->findRecent(limit);
+std::vector<models::Fact> TimeTrackingService::getRecentEntries(int limit, int offset) const {
+    return factRepo_->findRecent(limit, offset);
 }
 
 std::vector<models::Fact> TimeTrackingService::getEntriesForRange(int64_t startTime, int64_t endTime) const {

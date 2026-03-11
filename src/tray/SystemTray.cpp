@@ -383,12 +383,6 @@ void SystemTray::createMenuLinux() {
   // Create menu
   menu_ = gtk_menu_new();
 
-  // "Quick Add Activity" menu item
-  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick start"));
-  g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
-                   this);
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
-
   // "Show Window" menu item
   menuItemShow_ = gtk_menu_item_new_with_label(L.get("Show window"));
   g_signal_connect(menuItemShow_, "activate", G_CALLBACK(onMenuShowActivate),
@@ -403,6 +397,12 @@ void SystemTray::createMenuLinux() {
   // Separator
   GtkWidget *separator1 = gtk_separator_menu_item_new();
   gtk_menu_shell_append(GTK_MENU_SHELL(menu_), separator1);
+
+  // "Quick Add Activity" menu item
+  menuItemQuickAdd_ = gtk_menu_item_new_with_label(L.get("Quick start"));
+  g_signal_connect(menuItemQuickAdd_, "activate", G_CALLBACK(onMenuQuickAddActivate),
+                   this);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu_), menuItemQuickAdd_);
 
   // "Stop Tracking" menu item (initially hidden)
   menuItemStop_ = gtk_menu_item_new_with_label(L.get("Stop"));

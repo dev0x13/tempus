@@ -224,7 +224,7 @@ void TimeEntriesView::renderDateSelector() {
     if (ImGui::Button(L.get("This week"))) {
         int64_t now = utils::TimeUtils::now();
         displayStartTime_ = utils::TimeUtils::startOfWeek(now);
-        displayEndTime_ = utils::TimeUtils::endOfDay(now);
+        displayEndTime_ = utils::TimeUtils::endOfWeek(now);
         widgets::DatePicker::timestampToDate(displayStartTime_, displayStartDate_);
         widgets::DatePicker::timestampToDate(displayEndTime_, displayEndDate_);
         refreshEntries();

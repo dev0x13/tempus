@@ -35,6 +35,17 @@ int64_t TimeUtils::startOfWeek(int64_t timestamp) {
     return std::mktime(&tm);
 }
 
+int64_t TimeUtils::endOfWeek(int64_t timestamp) {
+    std::tm tm = toLocalTime(timestamp);
+    // Adjust to Sunday (tm_wday: 0=Sunday, 1=Monday, ..., 6=Saturday)
+    int daysToAdd = (tm.tm_wday == 0) ? 0 : (7 - tm.tm_wday);
+    tm.tm_mday += daysToAdd;
+    tm.tm_hour = 23;
+    tm.tm_min = 59;
+    tm.tm_sec = 59;
+    return std::mktime(&tm);
+}
+
 int64_t TimeUtils::startOfMonth(int64_t timestamp) {
     std::tm tm = toLocalTime(timestamp);
     tm.tm_mday = 1;

@@ -23,6 +23,9 @@ public:
     // Get start of week (Monday) for a given timestamp
     static int64_t startOfWeek(int64_t timestamp);
 
+    // Get end of week (Sunday 23:59:59) for a given timestamp
+    static int64_t endOfWeek(int64_t timestamp);
+
     // Get start of month for a given timestamp
     static int64_t startOfMonth(int64_t timestamp);
 

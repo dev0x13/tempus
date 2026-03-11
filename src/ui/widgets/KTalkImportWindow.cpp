@@ -105,14 +105,9 @@ void KTalkImportWindow::render() {
     // Center the window on first appearance
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
 
     if (ImGui::Begin(L.get("Import from KTalk"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("%s", L.get("Import conference history from KTalk. Copy the fetch() request from your browser's DevTools Network tab."));
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
         // Date range selectors
         ImGui::Text("%s", L.get("Select date to import:"));
         ImGui::Spacing();
@@ -151,9 +146,12 @@ void KTalkImportWindow::render() {
             "##fetchPayload",
             fetchPayload_,
             sizeof(fetchPayload_),
-            ImVec2(300, 200),
+            ImVec2(400, 200),
             ImGuiInputTextFlags_None
         );
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", L.get("Copy the fetch() request from your browser's DevTools Network tab"));
+        }
 
         ImGui::Spacing();
         ImGui::Separator();

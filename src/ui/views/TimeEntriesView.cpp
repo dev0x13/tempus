@@ -772,6 +772,7 @@ void TimeEntriesView::renderExportConfirmationDialog() {
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(500, 0), ImGuiCond_Appearing);
 
     if (ImGui::BeginPopupModal(L.get("Confirm YouTrack Export"), &showExportConfirmation_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s", L.get("The following time entries will be exported to YouTrack:"));
@@ -908,7 +909,7 @@ void TimeEntriesView::renderExportSuccessDialog() {
     if (ImGui::BeginPopupModal(L.get("Export Successful"), &showExportSuccess_, ImGuiWindowFlags_AlwaysAutoResize)) {
         std::string exportedDuration = utils::TimeUtils::formatDuration(static_cast<int64_t>(exportedMinutes_) * 60);
         ImGui::Text(L.get("Successfully exported %s to YouTrack!"), exportedDuration.c_str());
-        ImGui::Text(L.get("(%d work items)"), exportedItems_);
+        ImGui::Text(L.get("(%d tasks)"), exportedItems_);
         ImGui::Separator();
 
         if (ImGui::Button(L.get("OK"), ImVec2(120, 0))) {
@@ -921,12 +922,13 @@ void TimeEntriesView::renderExportSuccessDialog() {
 
 void TimeEntriesView::renderExportErrorDialog() {
     auto& L = localization::L10n();
-    ImGui::OpenPopup(L.get("Export Failed"));
+    ImGui::OpenPopup(L.get("Export failed"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal(L.get("Export Failed"), &showExportError_, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal(L.get("Export failed"), &showExportError_, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", exportErrorMessage_.c_str());
         ImGui::Separator();
 
@@ -940,13 +942,13 @@ void TimeEntriesView::renderExportErrorDialog() {
 
 void TimeEntriesView::renderOverlapErrorDialog() {
     auto& L = localization::L10n();
-    ImGui::OpenPopup(L.get("Cannot Export: Overlapping Facts"));
+    ImGui::OpenPopup(L.get("Export failed"));
 
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal(L.get("Cannot Export: Overlapping Facts"), &showOverlapError_, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("%s", L.get("Cannot export to YouTrack: overlapping facts detected."));
+    if (ImGui::BeginPopupModal(L.get("Export failed"), &showOverlapError_, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped("%s", L.get("Overlapping activities detected."));
         ImGui::TextWrapped("%s", L.get("Please fix these entries manually before exporting:"));
         ImGui::Separator();
 
@@ -975,9 +977,6 @@ void TimeEntriesView::renderOverlapErrorDialog() {
         }
 
         ImGui::EndChild();
-
-        ImGui::Separator();
-        ImGui::TextWrapped("%s", L.get("Fix these entries by editing their start/end times so they no longer overlap."));
 
         if (ImGui::Button(L.get("OK"), ImVec2(120, 0))) {
             showOverlapError_ = false;
@@ -1113,7 +1112,7 @@ void TimeEntriesView::performYouTrackExport() {
     auto prepareResult = youTrackExportService_->prepareExport(displayStartTime_, displayEndTime_);
 
     if (!prepareResult.unresolvedActivities.empty()) {
-        exportErrorMessage_ = std::string(L.get("Cannot export: the following activities have no YouTrack issue ID mapping:")) + "\n";
+        exportErrorMessage_ = std::string(L.get("The following activities have no YouTrack issue ID mapping:")) + "\n";
         for (const auto& name : prepareResult.unresolvedActivities) {
             exportErrorMessage_ += "  - " + name + "\n";
         }

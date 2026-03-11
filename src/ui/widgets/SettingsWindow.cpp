@@ -381,7 +381,7 @@ void SettingsWindow::renderKTalkSettings() {
     // Include unplanned meetings checkbox
     ImGui::Checkbox(L.get("Include unplanned meetings"), &ktalkIncludeUnplanned_);
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.get("When enabled, imports all conferences including those without a title.\\nWhen disabled, only imports conferences that have a title."));
+        ImGui::SetTooltip("%s", L.get("When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title."));
     }
 
     ImGui::Spacing();
@@ -393,7 +393,7 @@ void SettingsWindow::renderKTalkSettings() {
     ImGui::InputInt("##ktalk_snap_interval", &ktalkSnapInterval_, 0, 0);
     if (ktalkSnapInterval_ < 0) ktalkSnapInterval_ = 0;
     if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", L.get("Snaps meeting times to the nearest selected boundary.\\n0 = disabled."));
+        ImGui::SetTooltip("%s", L.get("Snaps meeting times to the nearest selected boundary.\n0 = disabled."));
     }
 }
 

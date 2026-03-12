@@ -8,6 +8,7 @@ Tempus is heavily inspired by [Hamster](https://github.com/projecthamster/hamste
 
 - Start/stop time tracking with a single click
 - Manual time entry with custom start and end times
+- All data is stored and processed locally, network connection is only needed for external export/import
 - Activity breakdown and statistics
 - CSV export
 - YouTrack integration for exporting work items

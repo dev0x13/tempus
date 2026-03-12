@@ -405,18 +405,18 @@ void SettingsWindow::renderAbout() {
         ImGui::Text("%s %s", L.get("Version:"), APP_VERSION_STRING);
         ImGui::Text("%s %s", L.get("Build date:"), APP_BUILD_DATETIME_STRING);
 
-        static const char* authorUrl = "https://github.com/dev0x13";
-        ImGui::Text("%s", L.get("Crafted by"));
+        static const char* projectUrl = "https://github.com/dev0x13/tempus";
+        ImGui::Text("%s", L.get("Project homepage:"));
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
-        ImGui::Text("dev0x13");
+        ImGui::Text("github.com/dev0x13/tempus");
         ImGui::PopStyleColor();
         if (ImGui::IsItemHovered()) {
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImGui::SetTooltip("%s", authorUrl);
+            ImGui::SetTooltip("%s", projectUrl);
         }
         if (ImGui::IsItemClicked()) {
-            utils::Platform::openUrl(authorUrl);
+            utils::Platform::openUrl(projectUrl);
         }
 
         ImGui::Spacing();

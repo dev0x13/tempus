@@ -400,7 +400,7 @@ ImportResult KTalkImportService::importConferences(
 
         try {
             // Create time entry with activity name "KTalk Meeting" and conference title in description
-            timeTrackingService_.addManualEntry(L.get("KTalk Meeting"), startTime, endTime, description);
+            timeTrackingService_.addManualEntry(L.get("KTalk meeting"), startTime, endTime, description);
             imported++;
         } catch (const std::exception& e) {
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;

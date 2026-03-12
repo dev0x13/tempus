@@ -105,7 +105,7 @@ ScheduleAction BlockScheduleRenderer::renderDay(
 
     // Merge consecutive fact blocks with the same activity,
     // except KTalk meetings which are always shown individually.
-    const std::string& ktalkActivity = L.get("KTalk Meeting");
+    const std::string& ktalkActivity = L.get("KTalk meeting");
     std::vector<ScheduleBlock> mergedBlocks;
     for (const auto& blk : blocks) {
         if (!mergedBlocks.empty() &&

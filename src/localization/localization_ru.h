@@ -176,7 +176,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"About", "О программе"},
         {"Version:", "Версия:"},
         {"Build date:", "Дата сборки:"},
-        {"Crafted by", "Автор:"},
+        {"Project homepage:", "Домашняя страница:"},
 
         // Block Schedule
         {"Block schedule", "Блочное расписание"},
@@ -187,8 +187,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Outside workday", "Вне рабочего дня"},
 
         // KTalk Import
-        {"Import from KTalk", "Импорт из KTalk"},
-        {"\"Copy the fetch() request from your browser's DevTools Network tab", "Скопируйте запрос fetch() из вкладки Network в DevTools вашего браузера"},
+        {"Import from KTalk", "Импорт из Толка"},
+        {"Copy the fetch() request from your browser's DevTools Network tab", "Скопируйте запрос fetch() из вкладки Network в DevTools вашего браузера"},
         {"From date", "Дата начала"},
         {"To date", "Дата окончания"},
         {"Fetch payload:", "Данные запроса:"},
@@ -200,7 +200,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Successfully imported %d conferences.", "Успешно импортировано конференций: %d."},
         {"Import failed", "Импорт не удался"},
         {"No conferences found for the selected date.", "Не найдено конференций для выбранной даты."},
-        {"KTalk meeting", "Встреча в KTalk"},
+        {"KTalk meeting", "Встреча в Толке"},
         {"Date range exceeds maximum of %d days", "Диапазон дат превышает максимум в %d дней"}
     };
 }

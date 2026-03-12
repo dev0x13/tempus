@@ -28,7 +28,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Stop", "Стоп"},
         {"Export CSV", "Экспорт CSV"},
         {"Export to YouTrack", "Экспорт в YouTrack"},
-        {"KTalk import", "Импорт из KTalk"},
+        {"KTalk import", "Импорт из Толка"},
         {"Settings", "Настройки"},
 
         // Date Selector
@@ -73,7 +73,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Activity name", "Название активности"},
         {"Issue ID", "ID задачи"},
         {"+ Add Alias", "+ Добавить псевдоним"},
-        {"KTalk Import", "Импорт из KTalk"},
+        {"KTalk Import", "Импорт из Толка"},
         {"Include unplanned meetings", "Включить незапланированные встречи"},
         {"When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title.", "Если включено, импортирует все конференции, включая те, у которых нет названия.\nЕсли выключено, импортирует только конференции с названием."},
         {"Snap interval (minutes):", "Интервал выравнивания (минуты):"},

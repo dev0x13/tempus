@@ -12,8 +12,8 @@
 #include "localization/LocalizationManager.hpp"
 
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include "bindings/imgui_impl_glfw.h"
+#include "bindings/imgui_impl_opengl3.h"
 
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32

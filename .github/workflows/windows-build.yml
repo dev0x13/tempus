@@ -27,9 +27,6 @@ jobs:
       run: |
         pip install conan
 
-    - name: Set up MSVC environment
-      uses: ilammy/msvc-dev-cmd@v1
-
     - name: Detect Conan profile
       run: |
         conan profile detect --force

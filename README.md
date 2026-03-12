@@ -2,6 +2,8 @@
 
 Tempus is a desktop application for tracking time spent on various activities. It provides an intuitive interface for managing time entries, viewing statistics, and integrating with external services.
 
+Tempus is heavily inspired by [Hamster](https://github.com/projecthamster/hamster).
+
 ## Features
 
 - Start/stop time tracking with a single click
@@ -95,11 +97,6 @@ On Windows:
 ```bash
 build\Release\tempus.exe
 ```
-
-## Documentation
-
-- [User Guide (English)](docs/USER_GUIDE.md)
-- [User Guide (Russian)](docs/USER_GUIDE_RU.md)
 
 ## License
 

@@ -35,8 +35,7 @@ find_package(ghc_filesystem REQUIRED)
 
 # ImGui backends
 set(IMGUI_BACKENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings/imgui_impl_glfw.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings/imgui_impl_opengl3.cpp
+
 )
 
 # Source files
@@ -66,7 +65,8 @@ set(SOURCES
     src/ui/widgets/KTalkImportWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
-    ${IMGUI_BACKENDS}
+    src/bindings/imgui_impl_glfw.cpp
+    src/bindings/imgui_impl_opengl3.cpp
 )
 
 if(WIN32)
@@ -85,7 +85,6 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings
     ${CMAKE_CURRENT_BINARY_DIR}/src
 )
 

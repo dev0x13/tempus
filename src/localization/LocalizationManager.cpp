@@ -30,9 +30,9 @@ const char* LocalizationManager::get(const char* key) const {
 
 int LocalizationManager::getInt(const char* key, int defaultValue) const {
     if (currentLanguage_ == Language::English) {
-        // For English, return default value (English settings)
+        // English follows the application's Monday-first week convention.
         if (std::string(key) == "FirstDayOfWeek") {
-            return 0; // Sunday
+            return 1; // Monday
         }
         return defaultValue;
     }

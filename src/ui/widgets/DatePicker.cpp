@@ -1,6 +1,7 @@
 #include "DatePicker.hpp"
 #include "localization/LocalizationManager.hpp"
 #include "imgui.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -100,11 +101,13 @@ bool DatePicker::renderWithCalendar(const char* label, int* date) {
 void DatePicker::renderCalendarPopup(const char* popupId, int* date, bool& changed) {
     if (ImGui::BeginPopup(popupId)) {
         auto& L = localization::L10n();
+        constexpr float kCalendarCellWidth = 32.0f;
+        constexpr float kCalendarCellHeight = 28.0f;
 
         // Get localized month and weekday names
         auto months = splitByComma(L.get("January,February,March,April,May,June,July,August,September,October,November,December"));
         auto weekdays = splitByComma(L.get("Sun,Mon,Tue,Wed,Thu,Fri,Sat"));
-        int firstDayOfWeek = L.getInt("FirstDayOfWeek", 0);
+        int firstDayOfWeek = L.getInt("FirstDayOfWeek", 1);
 
         // Month/Year navigation
         if (ImGui::ArrowButton("##prev_month", ImGuiDir_Left)) {
@@ -135,53 +138,68 @@ void DatePicker::renderCalendarPopup(const char* popupId, int* date, bool& chang
             changed = true;
         }
 
+        date[2] = (std::min)(date[2], getDaysInMonth(date[0], date[1]));
+
         ImGui::Separator();
 
-        // Day headers - reorder based on first day of week
-        // weekdays is in order: Sun, Mon, Tue, Wed, Thu, Fri, Sat
-        // firstDayOfWeek: 0=Sunday, 1=Monday
-        if (weekdays.size() >= 7) {
-            for (int i = 0; i < 7; i++) {
-                if (i > 0) ImGui::SameLine();
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
-                int dayIndex = (firstDayOfWeek + i) % 7;
-                ImGui::Text("%s", weekdays[dayIndex].c_str());
+        if (ImGui::BeginTable("##calendar_grid", 7, ImGuiTableFlags_SizingFixedFit)) {
+            for (int i = 0; i < 7; ++i) {
+                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, kCalendarCellWidth);
             }
-        }
-
-        // Calendar grid
-        int daysInMonth = getDaysInMonth(date[0], date[1]);
-        int firstDay = getFirstDayOfMonth(date[0], date[1]);
-
-        int row = 0;
-        for (int i = 0; i < firstDay; i++) {
-            if (i > 0) ImGui::SameLine();
-            ImGui::Dummy(ImVec2(25, 25));
-        }
-
-        for (int day = 1; day <= daysInMonth; day++) {
-            int col = (firstDay + day - 1) % 7;
-            if (col > 0) {
-                ImGui::SameLine();
+            ImGui::TableNextRow();
+            for (int i = 0; i < 7; ++i) {
+                ImGui::TableSetColumnIndex(i);
+                if (weekdays.size() >= 7) {
+                    int dayIndex = (firstDayOfWeek + i) % 7;
+                    ImVec2 textSize = ImGui::CalcTextSize(weekdays[dayIndex].c_str());
+                    float textOffset = (kCalendarCellWidth - textSize.x) * 0.5f;
+                    if (textOffset > 0.0f) {
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + textOffset);
+                    }
+                    ImGui::TextUnformatted(weekdays[dayIndex].c_str());
+                } else {
+                    ImGui::Dummy(ImVec2(kCalendarCellWidth, 0.0f));
+                }
             }
 
-            char dayStr[8];
-            snprintf(dayStr, sizeof(dayStr), "%d", day);
+            int daysInMonth = getDaysInMonth(date[0], date[1]);
+            int firstDay = getFirstDayOfMonth(date[0], date[1]);
+            int totalCells = firstDay + daysInMonth;
+            int rowCount = (totalCells + 6) / 7;
 
-            bool isSelected = (day == date[2]);
-            if (isSelected) {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.9f, 1.0f));
+            for (int row = 0; row < rowCount; ++row) {
+                ImGui::TableNextRow();
+                for (int col = 0; col < 7; ++col) {
+                    ImGui::TableSetColumnIndex(col);
+                    int cellIndex = row * 7 + col;
+                    int day = cellIndex - firstDay + 1;
+
+                    if (day < 1 || day > daysInMonth) {
+                        ImGui::Dummy(ImVec2(kCalendarCellWidth, kCalendarCellHeight));
+                        continue;
+                    }
+
+                    char dayStr[8];
+                    snprintf(dayStr, sizeof(dayStr), "%d", day);
+
+                    bool isSelected = (day == date[2]);
+                    if (isSelected) {
+                        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.9f, 1.0f));
+                    }
+
+                    if (ImGui::Button(dayStr, ImVec2(kCalendarCellWidth, kCalendarCellHeight))) {
+                        date[2] = day;
+                        changed = true;
+                        ImGui::CloseCurrentPopup();
+                    }
+
+                    if (isSelected) {
+                        ImGui::PopStyleColor();
+                    }
+                }
             }
 
-            if (ImGui::Button(dayStr, ImVec2(25, 25))) {
-                date[2] = day;
-                changed = true;
-                ImGui::CloseCurrentPopup();
-            }
-
-            if (isSelected) {
-                ImGui::PopStyleColor();
-            }
+            ImGui::EndTable();
         }
 
         ImGui::EndPopup();
@@ -210,7 +228,7 @@ int DatePicker::getFirstDayOfMonth(int year, int month) {
 
     // tm.tm_wday is 0=Sunday, 1=Monday, ..., 6=Saturday
     // Convert to calendar grid position based on locale's first day of week
-    int firstDayOfWeek = L.getInt("FirstDayOfWeek", 0);
+    int firstDayOfWeek = L.getInt("FirstDayOfWeek", 1);
     return (tm.tm_wday - firstDayOfWeek + 7) % 7;
 }
 

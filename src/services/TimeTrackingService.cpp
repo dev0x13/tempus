@@ -25,6 +25,7 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
     // Update cache
     currentTracking_ = fact;
     currentTrackingCached_ = true;
+    ++dataRevision_;
 
     return fact;
 }
@@ -44,6 +45,7 @@ models::Fact TimeTrackingService::startTracking(const std::string& activityName,
     // Update cache
     currentTracking_ = fact;
     currentTrackingCached_ = true;
+    ++dataRevision_;
 
     return fact;
 }
@@ -59,7 +61,7 @@ std::optional<models::Fact> TimeTrackingService::stopTracking() {
 
     if (now - currentTracking_->startTime < 60) {
         factRepo_->remove(currentTracking_->id);
-        invalidateCache();
+        onEntriesChanged();
         return std::nullopt;
     }
 
@@ -68,7 +70,7 @@ std::optional<models::Fact> TimeTrackingService::stopTracking() {
     auto stoppedFact = *currentTracking_;
     stoppedFact.endTime = now;
 
-    invalidateCache();
+    onEntriesChanged();
 
     return stoppedFact;
 }
@@ -89,6 +91,7 @@ models::Fact TimeTrackingService::addManualEntry(const std::string& activityName
     // Create fact with description (description is per-fact, not per-activity)
     auto fact = factRepo_->create(activity.id, startTime, endTime, description);
     fact.activityName = activity.name;
+    ++dataRevision_;
     return fact;
 }
 
@@ -101,7 +104,7 @@ void TimeTrackingService::updateEntry(const models::Fact& fact, const std::strin
     updatedFact.description = description;
 
     factRepo_->update(updatedFact);
-    invalidateCache();
+    onEntriesChanged();
 }
 
 void TimeTrackingService::deleteEntry(int64_t factId) {
@@ -119,7 +122,7 @@ void TimeTrackingService::deleteEntry(int64_t factId) {
     // Clean up orphaned activity
     activityRepo_->deleteIfOrphaned(activityId);
 
-    invalidateCache();
+    onEntriesChanged();
 }
 
 std::vector<models::Fact> TimeTrackingService::getRecentEntries(int limit, int offset) const {
@@ -140,6 +143,11 @@ std::vector<models::Activity> TimeTrackingService::searchActivities(const std::s
 
 void TimeTrackingService::invalidateCache() {
     currentTrackingCached_ = false;
+}
+
+void TimeTrackingService::onEntriesChanged() {
+    invalidateCache();
+    ++dataRevision_;
 }
 
 void TimeTrackingService::refreshCurrentTracking() const {

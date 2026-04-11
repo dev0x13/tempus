@@ -68,8 +68,11 @@ TimeEntriesView::TimeEntriesView(
 }
 
 void TimeEntriesView::render() {
-    // Refresh entries to pick up changes
-    refreshEntries();
+    if (timeService_->getDataRevision() != displayedDataRevision_) {
+        refreshEntries();
+    }
+
+    visibleStats_ = statsService_->getStatistics(entries_);
 
     // Top button row
     renderTopButtons();
@@ -82,8 +85,7 @@ void TimeEntriesView::render() {
     // Calculate footer height to fit its content exactly
     float footerHeight = 1.0f + ImGui::GetFrameHeightWithSpacing();  // separator + CollapsingHeader row
     if (showActivityBreakdown_) {
-        auto stats = statsService_->getStatistics(displayStartTime_, displayEndTime_);
-        footerHeight += stats.byActivity.size() * ImGui::GetTextLineHeightWithSpacing();
+        footerHeight += visibleStats_.byActivity.size() * ImGui::GetTextLineHeightWithSpacing();
     }
 
     // Scrollable area for entries
@@ -124,6 +126,20 @@ void TimeEntriesView::render() {
     if (showOverlapError_) {
         renderOverlapErrorDialog();
     }
+}
+
+bool TimeEntriesView::requiresPeriodicRedraw() const {
+    return showExportProgress_ || timeService_->isTracking();
+}
+
+double TimeEntriesView::periodicRedrawIntervalSeconds() const {
+    if (showExportProgress_) {
+        return 0.1;
+    }
+    if (timeService_->isTracking()) {
+        return 1.0;
+    }
+    return 0.0;
 }
 
 void TimeEntriesView::renderTopButtons() {
@@ -487,9 +503,8 @@ void TimeEntriesView::renderFixedFooter() {
     ImGui::Separator();
 
     // Calculate totals
-    auto stats = statsService_->getStatistics(displayStartTime_, displayEndTime_);
     int64_t totalSeconds = 0;
-    for (const auto& activity : stats.byActivity) {
+    for (const auto& activity : visibleStats_.byActivity) {
         totalSeconds += activity.totalSeconds;
     }
 
@@ -506,11 +521,11 @@ void TimeEntriesView::renderFixedFooter() {
     }
     showActivityBreakdown_ = ImGui::CollapsingHeader(totalStr.c_str());
 
-    if (showActivityBreakdown_ && !stats.byActivity.empty()) {
+    if (showActivityBreakdown_ && !visibleStats_.byActivity.empty()) {
         ImGui::Indent(20.0f);
 
         // Sort activities by total duration (descending)
-        auto sortedActivities = stats.byActivity;
+        auto sortedActivities = visibleStats_.byActivity;
         std::sort(sortedActivities.begin(), sortedActivities.end(),
                   [](const models::ActivityTotal& a, const models::ActivityTotal& b) {
                       return a.totalSeconds > b.totalSeconds;
@@ -988,6 +1003,7 @@ void TimeEntriesView::renderOverlapErrorDialog() {
 
 void TimeEntriesView::refreshEntries() {
     entries_ = timeService_->getEntriesForRange(displayStartTime_, displayEndTime_);
+    displayedDataRevision_ = timeService_->getDataRevision();
 }
 
 void TimeEntriesView::startEdit(const models::Fact& fact) {

@@ -28,6 +28,8 @@ public:
     ~TimeEntriesView() = default;
 
     void render();
+    bool requiresPeriodicRedraw() const;
+    double periodicRedrawIntervalSeconds() const;
 
     // Set callbacks for external buttons
     void setKTalkImportCallback(std::function<void()> callback) { kTalkImportCallback_ = std::move(callback); }
@@ -43,6 +45,8 @@ private:
 
     // Entry list
     std::vector<models::Fact> entries_;
+    models::Statistics visibleStats_;
+    std::size_t displayedDataRevision_{0};
     int64_t displayStartTime_{0};
     int64_t displayEndTime_{0};
     int displayStartDate_[3]{};  // year, month, day

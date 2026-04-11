@@ -5,6 +5,7 @@
 #include "models/Activity.hpp"
 #include "models/Fact.hpp"
 #include <memory>
+#include <cstddef>
 #include <optional>
 #include <string>
 
@@ -53,6 +54,9 @@ public:
     // Search activities
     std::vector<models::Activity> searchActivities(const std::string& query, int limit = 10) const;
 
+    // Monotonic revision of persisted time-entry data.
+    std::size_t getDataRevision() const noexcept { return dataRevision_; }
+
 private:
     std::shared_ptr<repositories::IActivityRepository> activityRepo_;
     std::shared_ptr<repositories::IFactRepository> factRepo_;
@@ -60,8 +64,10 @@ private:
     // Cached current tracking state
     mutable std::optional<models::Fact> currentTracking_;
     mutable bool currentTrackingCached_{false};
+    std::size_t dataRevision_{0};
 
     void invalidateCache();
+    void onEntriesChanged();
     void refreshCurrentTracking() const;
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "repositories/IFactRepository.hpp"
+#include "models/Fact.hpp"
 #include "models/Statistics.hpp"
 #include <memory>
 #include <cstdint>
@@ -14,6 +15,9 @@ public:
 
     // Get statistics for a date range
     models::Statistics getStatistics(int64_t startTime, int64_t endTime) const;
+
+    // Get statistics for an already-loaded fact collection.
+    models::Statistics getStatistics(const std::vector<models::Fact>& facts) const;
 
     // Get totals grouped by activity
     std::vector<models::ActivityTotal> getTotalsByActivity(int64_t startTime, int64_t endTime) const;
@@ -32,6 +36,11 @@ public:
 
 private:
     std::shared_ptr<repositories::IFactRepository> factRepo_;
+
+    std::vector<models::ActivityTotal> getTotalsByActivity(const std::vector<models::Fact>& facts, int64_t now) const;
+    std::vector<models::DailyTotal> getDailyTotals(const std::vector<models::Fact>& facts, int64_t now) const;
+    std::vector<models::WeeklyTotal> getWeeklyTotals(const std::vector<models::Fact>& facts, int64_t now) const;
+    std::vector<models::MonthlyTotal> getMonthlyTotals(const std::vector<models::Fact>& facts, int64_t now) const;
 };
 
 } // namespace timetracker::services

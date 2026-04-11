@@ -24,6 +24,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 #include "resources/Resources.hpp"
 
@@ -208,7 +209,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
 void ImGuiApp::run() {
     while (!glfwWindowShouldClose(window_)) {
-        glfwPollEvents();
+        glfwWaitEventsTimeout(nextWakeDelaySeconds());
 
 #ifndef _WIN32
         // Process GTK events for system tray on Linux
@@ -226,13 +227,30 @@ void ImGuiApp::run() {
             }
         }
 
-        // Skip rendering if window is minimized
         if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
             continue;
         }
 
-        render();
+        if (glfwGetWindowAttrib(window_, GLFW_VISIBLE)) {
+            render();
+        }
     }
+}
+
+double ImGuiApp::nextWakeDelaySeconds() const {
+    double delaySeconds = 1.0;
+
+    if (timeEntriesView_ && timeEntriesView_->requiresPeriodicRedraw()) {
+        delaySeconds = std::min(delaySeconds, timeEntriesView_->periodicRedrawIntervalSeconds());
+    }
+
+#ifndef _WIN32
+    if (systemTray_ && systemTray_->isRunning()) {
+        delaySeconds = std::min(delaySeconds, 0.1);
+    }
+#endif
+
+    return delaySeconds;
 }
 
 void ImGuiApp::render() {

@@ -114,6 +114,7 @@ private:
     // Track if window was shown specifically for quick add dialog
     bool windowShownForQuickAdd_{false};
 
+    double nextWakeDelaySeconds() const;
     void render();
     void cleanup();
 };

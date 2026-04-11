@@ -9,12 +9,17 @@ StatisticsService::StatisticsService(std::shared_ptr<repositories::IFactReposito
     : factRepo_(std::move(factRepo)) {}
 
 models::Statistics StatisticsService::getStatistics(int64_t startTime, int64_t endTime) const {
-    models::Statistics stats;
+    return getStatistics(factRepo_->findByDateRange(startTime, endTime));
+}
 
-    stats.byActivity = getTotalsByActivity(startTime, endTime);
-    stats.daily = getDailyTotals(startTime, endTime);
-    stats.weekly = getWeeklyTotals(startTime, endTime);
-    stats.monthly = getMonthlyTotals(startTime, endTime);
+models::Statistics StatisticsService::getStatistics(const std::vector<models::Fact>& facts) const {
+    models::Statistics stats;
+    int64_t now = utils::TimeUtils::now();
+
+    stats.byActivity = getTotalsByActivity(facts, now);
+    stats.daily = getDailyTotals(facts, now);
+    stats.weekly = getWeeklyTotals(facts, now);
+    stats.monthly = getMonthlyTotals(facts, now);
 
     // Calculate overall totals
     for (const auto& activity : stats.byActivity) {
@@ -26,11 +31,12 @@ models::Statistics StatisticsService::getStatistics(int64_t startTime, int64_t e
 }
 
 std::vector<models::ActivityTotal> StatisticsService::getTotalsByActivity(int64_t startTime, int64_t endTime) const {
-    auto facts = factRepo_->findByDateRange(startTime, endTime);
+    return getTotalsByActivity(factRepo_->findByDateRange(startTime, endTime), utils::TimeUtils::now());
+}
 
+std::vector<models::ActivityTotal> StatisticsService::getTotalsByActivity(const std::vector<models::Fact>& facts, int64_t now) const {
     // Group by activity
     std::map<int64_t, models::ActivityTotal> totals;
-    int64_t now = utils::TimeUtils::now();
 
     for (const auto& fact : facts) {
         auto& total = totals[fact.activityId];
@@ -57,11 +63,12 @@ std::vector<models::ActivityTotal> StatisticsService::getTotalsByActivity(int64_
 }
 
 std::vector<models::DailyTotal> StatisticsService::getDailyTotals(int64_t startTime, int64_t endTime) const {
-    auto facts = factRepo_->findByDateRange(startTime, endTime);
+    return getDailyTotals(factRepo_->findByDateRange(startTime, endTime), utils::TimeUtils::now());
+}
 
+std::vector<models::DailyTotal> StatisticsService::getDailyTotals(const std::vector<models::Fact>& facts, int64_t now) const {
     // Group by day
     std::map<std::string, models::DailyTotal> totals;
-    int64_t now = utils::TimeUtils::now();
 
     for (const auto& fact : facts) {
         auto tm = utils::TimeUtils::toLocalTime(fact.startTime);
@@ -94,11 +101,12 @@ std::vector<models::DailyTotal> StatisticsService::getDailyTotals(int64_t startT
 }
 
 std::vector<models::WeeklyTotal> StatisticsService::getWeeklyTotals(int64_t startTime, int64_t endTime) const {
-    auto facts = factRepo_->findByDateRange(startTime, endTime);
+    return getWeeklyTotals(factRepo_->findByDateRange(startTime, endTime), utils::TimeUtils::now());
+}
 
+std::vector<models::WeeklyTotal> StatisticsService::getWeeklyTotals(const std::vector<models::Fact>& facts, int64_t now) const {
     // Group by week
     std::map<std::string, models::WeeklyTotal> totals;
-    int64_t now = utils::TimeUtils::now();
 
     for (const auto& fact : facts) {
         auto tm = utils::TimeUtils::toLocalTime(fact.startTime);
@@ -130,11 +138,12 @@ std::vector<models::WeeklyTotal> StatisticsService::getWeeklyTotals(int64_t star
 }
 
 std::vector<models::MonthlyTotal> StatisticsService::getMonthlyTotals(int64_t startTime, int64_t endTime) const {
-    auto facts = factRepo_->findByDateRange(startTime, endTime);
+    return getMonthlyTotals(factRepo_->findByDateRange(startTime, endTime), utils::TimeUtils::now());
+}
 
+std::vector<models::MonthlyTotal> StatisticsService::getMonthlyTotals(const std::vector<models::Fact>& facts, int64_t now) const {
     // Group by month
     std::map<std::string, models::MonthlyTotal> totals;
-    int64_t now = utils::TimeUtils::now();
 
     for (const auto& fact : facts) {
         auto tm = utils::TimeUtils::toLocalTime(fact.startTime);

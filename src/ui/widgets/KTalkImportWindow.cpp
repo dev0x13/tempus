@@ -83,7 +83,11 @@ void KTalkImportWindow::handleImport() {
 
     if (result.success) {
         char buffer[256];
-        snprintf(buffer, sizeof(buffer), L.get("Successfully imported %d conferences."), result.conferencesImported);
+        if (result.duplicatesSkipped > 0) {
+            snprintf(buffer, sizeof(buffer), L.get("Imported %d meetings, %d already existed"), result.conferencesImported, result.duplicatesSkipped);
+        } else {
+            snprintf(buffer, sizeof(buffer), L.get("Successfully imported %d meetings"), result.conferencesImported);
+        }
         statusMessage_ = buffer;
         showSuccess_ = true;
 
@@ -178,13 +182,7 @@ void KTalkImportWindow::render() {
                 handleImport();
             }
             ImGui::SameLine();
-            if (ImGui::Button(L.get("Cancel"), ImVec2(120, 0))) {
-                hide();
-            }
-
-            // Auto-close after successful import
-            if (showSuccess_) {
-                // Close the window after showing success message
+            if (ImGui::Button(L.get(showSuccess_ ? "Close" : "Cancel"), ImVec2(120, 0))) {
                 hide();
             }
         }

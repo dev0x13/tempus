@@ -75,7 +75,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"+ Add Alias", "+ Добавить псевдоним"},
         {"KTalk Import", "Импорт из Толка"},
         {"Include unplanned meetings", "Включить незапланированные встречи"},
-        {"When enabled, imports all conferences including those without a title.\nWhen disabled, only imports conferences that have a title.", "Если включено, импортирует все конференции, включая те, у которых нет названия.\nЕсли выключено, импортирует только конференции с названием."},
+        {"When enabled, imports all meetings including those without a title.\nWhen disabled, only imports meetings that have a title.", "Если включено, импортирует все встречи, включая те, у которых нет названия.\nЕсли выключено, импортирует только встречи с названием."},
         {"Snap interval (minutes):", "Интервал выравнивания (минуты):"},
         {"Snaps meeting times to the nearest selected boundary.\n0 = disabled.", "Выравнивает время встреч по ближайшему выбранному интервалу выравнивания.\n0 - отключено."},
         {"URL must start with http:// or https://", "URL должен начинаться с http:// или https://"},
@@ -197,11 +197,14 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Import", "Импорт"},
         {"Importing...", "Импортирование..."},
         {"Import successful", "Импорт успешен"},
-        {"Successfully imported %d conferences.", "Успешно импортировано конференций: %d."},
+        {"Successfully imported %d meetings", "Успешно импортировано встреч: %d"},
+        {"Imported %d meetings, %d already existed", "Импортировано встреч: %d, уже существовало: %d"},
+        {"All meetings in this range have already been imported", "Все встречи в выбранные даты уже были импортированы"},
         {"Import failed", "Импорт не удался"},
-        {"No conferences found for the selected date.", "Не найдено конференций для выбранной даты."},
+        {"No meetings found in selected date range", "Не найдено встреч в выбранные даты"},
         {"KTalk meeting", "Встреча в Толке"},
-        {"Date range exceeds maximum of %d days", "Диапазон дат превышает максимум в %d дней"}
+        {"Date range exceeds maximum of %d days", "Диапазон дат превышает максимум в %d дней"},
+        {"End date must be after start date", "Дата окончания должна быть больше либо равна дате начала"}
     };
 }
 

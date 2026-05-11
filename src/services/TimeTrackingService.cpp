@@ -133,6 +133,16 @@ std::vector<models::Fact> TimeTrackingService::getEntriesForRange(int64_t startT
     return factRepo_->findByDateRange(startTime, endTime);
 }
 
+bool TimeTrackingService::hasMatchingEntry(const std::string& activityName, int64_t startTime, int64_t endTime) const {
+    auto entries = factRepo_->findByDateRange(startTime, startTime);
+    for (const auto& entry : entries) {
+        if (entry.activityName == activityName && entry.startTime == startTime && entry.endTime.has_value() && *entry.endTime == endTime) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<models::Activity> TimeTrackingService::getAllActivities() const {
     return activityRepo_->findAll();
 }

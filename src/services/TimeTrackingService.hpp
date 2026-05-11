@@ -48,6 +48,9 @@ public:
     // Get entries for a date range
     std::vector<models::Fact> getEntriesForRange(int64_t startTime, int64_t endTime) const;
 
+    // Check if an entry with the given activity name and exact timestamps already exists
+    bool hasMatchingEntry(const std::string& activityName, int64_t startTime, int64_t endTime) const;
+
     // Get all activities
     std::vector<models::Activity> getAllActivities() const;
 

@@ -289,12 +289,12 @@ ImportResult KTalkImportService::importConferences(
 
     // Validate date range
     if (fromDate.empty() || toDate.empty()) {
-        result.errorMessage = "Please select both from and to dates";
+        result.errorMessage = L.get("Please select both from and to dates");
         return result;
     }
 
     if (fromDate > toDate) {
-        result.errorMessage = "End date must be after start date";
+        result.errorMessage = L.get("End date must be after start date");
         return result;
     }
 
@@ -320,7 +320,7 @@ ImportResult KTalkImportService::importConferences(
     // Parse fetch payload
     auto payloadOpt = parseFetchPayload(fetchPayload);
     if (!payloadOpt.has_value()) {
-        result.errorMessage = "Invalid fetch payload. Expected JavaScript fetch() code.";
+        result.errorMessage = L.get("Invalid fetch payload. Expected JavaScript fetch() code.");
         return result;
     }
 
@@ -338,7 +338,7 @@ ImportResult KTalkImportService::importConferences(
     }
 
     if (conferences.empty()) {
-        result.errorMessage = "No conferences found in selected date range";
+        result.errorMessage = L.get("No meetings found in selected date range");
         return result;
     }
 
@@ -356,7 +356,7 @@ ImportResult KTalkImportService::importConferences(
     }
 
     if (filteredConferences.empty()) {
-        result.errorMessage = "No conferences found matching filter criteria";
+        result.errorMessage = L.get("No meetings found matching filter criteria");
         return result;
     }
 
@@ -371,6 +371,8 @@ ImportResult KTalkImportService::importConferences(
 
     // Import each conference
     int imported = 0;
+    int duplicatesSkipped = 0;
+    std::string activityName = L.get("KTalk meeting");
     std::vector<int64_t> batchSnappedStarts;  // snapped starts of already-processed batch meetings
     for (const auto& conf : filteredConferences) {
         // Parse timestamps
@@ -379,7 +381,7 @@ ImportResult KTalkImportService::importConferences(
 
         if (startTime == 0 || endTime == 0) {
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;
-            std::cerr << "Warning: Skipping conference with invalid timestamps: " << displayTitle << std::endl;
+            std::cerr << "Warning: Skipping meetings with invalid timestamps: " << displayTitle << std::endl;
             continue;
         }
 
@@ -392,6 +394,12 @@ ImportResult KTalkImportService::importConferences(
             endTime = snappedEnd;
         }
 
+        // Check for duplicate before inserting
+        if (timeTrackingService_.hasMatchingEntry(activityName, startTime, endTime)) {
+            duplicatesSkipped++;
+            continue;
+        }
+
         // Create description: "{title} (KTalk)" or "Unplanned meeting (KTalk)" if no title
         std::string description;
         if (!conf.title.empty()) {
@@ -400,16 +408,22 @@ ImportResult KTalkImportService::importConferences(
 
         try {
             // Create time entry with activity name "KTalk Meeting" and conference title in description
-            timeTrackingService_.addManualEntry(L.get("KTalk meeting"), startTime, endTime, description);
+            timeTrackingService_.addManualEntry(activityName, startTime, endTime, description);
             imported++;
         } catch (const std::exception& e) {
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;
-            std::cerr << "Error importing conference '" << displayTitle << "': " << e.what() << std::endl;
+            std::cerr << "Error importing meeting '" << displayTitle << "': " << e.what() << std::endl;
         }
+    }
+
+    if (imported == 0 && duplicatesSkipped > 0) {
+        result.errorMessage = L.get("All meetings in this range have already been imported");
+        return result;
     }
 
     result.success = true;
     result.conferencesImported = imported;
+    result.duplicatesSkipped = duplicatesSkipped;
     return result;
 }
 

@@ -26,6 +26,7 @@ struct ImportResult {
     bool success{false};
     std::string errorMessage;
     int conferencesImported{0};
+    int duplicatesSkipped{0};
 };
 
 class KTalkImportService {

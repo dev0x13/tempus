@@ -258,7 +258,7 @@ void SettingsWindow::renderActivityAliases() {
     ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("Activity aliases"));
     ImGui::Spacing();
 
-    ImGui::Text("%s", L.get("Map activity names to YouTrack issue IDs:"));
+    ImGui::TextWrapped("%s", L.get("Arbitrary activity names can be mapped to YouTrack issue IDs for export.\nActivities named like YouTrack issue IDs (XXX-123) are exported automatically."));
     ImGui::Spacing();
 
     // Table for aliases

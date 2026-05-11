@@ -69,7 +69,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"YouTrack permanent token for authentication", "Постоянный токен YouTrack для аутентификации"},
         {"Export log", "Журнал экспорта"},
         {"Activity aliases", "Псевдонимы активностей"},
-        {"Map activity names to YouTrack issue IDs:", "Сопоставьте названия активностей с ID задач YouTrack:"},
+        {"Arbitrary activity names can be mapped to YouTrack issue IDs for export.\nActivities named like YouTrack issue IDs (XXX-123) are exported automatically.", "Произвольные названия активностей можно сопоставить с ID задач YouTrack для экспорта.\nАктивности, названные как ID задач YouTrack (XXX-123), экспортируются автоматически."},
         {"Activity name", "Название активности"},
         {"Issue ID", "ID задачи"},
         {"+ Add Alias", "+ Добавить псевдоним"},
@@ -151,7 +151,7 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         // Quick Add
         {"Quick start", "Быстрый старт"},
         {"Start tracking", "Начать"},
-        {"Activity name", "Название активности"},
+        {"Activity name or YouTrack issue ID", "Название активности или ID задачи в YouTrack"},
 
         // Export Log
         {"YouTrack export log", "Журнал экспорта YouTrack"},

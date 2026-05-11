@@ -74,7 +74,7 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
 
     ImGui::PushID(label);
 
-    ImGui::SetNextItemWidth(300);
+    ImGui::SetNextItemWidth(350);
 
     // Reclaim keyboard focus after a mouse click on a dropdown item.
     if (needsRefocus_) {
@@ -89,7 +89,7 @@ bool ActivityAutocomplete::render(const char* label, char* buffer, size_t buffer
         ImGuiInputTextFlags_CallbackHistory;
 
     bool enterPressed = ImGui::InputTextWithHint(
-        "##input", L.get("Activity name"),
+        "##input", L.get("Activity name or YouTrack issue ID"),
         buffer, bufferSize,
         flags, inputCallback, this);
 

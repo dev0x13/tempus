@@ -310,6 +310,9 @@ void ImGuiApp::requestClose() {
 }
 
 void ImGuiApp::show() {
+    if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
+        glfwRestoreWindow(window_);
+    }
     glfwShowWindow(window_);
     glfwFocusWindow(window_);
 }
@@ -332,11 +335,10 @@ void ImGuiApp::setCloseCallback(std::function<void()> callback) {
 
 void ImGuiApp::showQuickAddDialog() {
     if (quickAddDialog_) {
-        // Track if we need to show the window for quick add
         if (!isVisible()) {
             windowShownForQuickAdd_ = true;
-            show();
         }
+        show();
         quickAddDialog_->show();
     }
 }

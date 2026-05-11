@@ -30,6 +30,7 @@ struct ExportResult {
 struct PrepareExportResult {
     std::vector<AggregatedWorkItem> workItems;
     std::vector<std::string> unresolvedActivities;  // Activities that couldn't be mapped to valid issue IDs
+    int skippedExportedCount{0};  // Facts skipped because they were already exported
 };
 
 class YouTrackExportService {

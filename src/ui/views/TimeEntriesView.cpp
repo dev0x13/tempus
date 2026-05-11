@@ -813,6 +813,11 @@ void TimeEntriesView::renderExportConfirmationDialog() {
         ImGui::Separator();
         std::string totalDuration = utils::TimeUtils::formatDuration(static_cast<int64_t>(totalMinutes) * 60);
         ImGui::Text(L.get("Total: %s"), totalDuration.c_str());
+
+        if (skippedExportedCount_ > 0) {
+            ImGui::TextDisabled(L.get("%d already exported entries were skipped."), skippedExportedCount_);
+        }
+
         ImGui::Separator();
 
         // Action buttons
@@ -1140,9 +1145,14 @@ void TimeEntriesView::performYouTrackExport() {
     }
 
     pendingWorkItems_ = std::move(prepareResult.workItems);
+    skippedExportedCount_ = prepareResult.skippedExportedCount;
 
     if (pendingWorkItems_.empty()) {
-        exportErrorMessage_ = L.get("No completed time entries found in selected date range.");
+        if (skippedExportedCount_ > 0) {
+            exportErrorMessage_ = L.get("All entries in this range have already been exported to YouTrack.");
+        } else {
+            exportErrorMessage_ = L.get("No completed time entries found in selected date range.");
+        }
         showExportError_ = true;
         return;
     }

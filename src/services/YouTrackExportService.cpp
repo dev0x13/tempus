@@ -45,17 +45,23 @@ std::vector<models::Fact> YouTrackExportService::checkForOverlaps(int64_t startT
 }
 
 PrepareExportResult YouTrackExportService::prepareExport(int64_t startTime, int64_t endTime) {
-    // Get all facts in date range (not just unexported ones - allow re-export)
     auto facts = factRepository_.findByDateRange(startTime, endTime);
 
     // Aggregate by (date, issue_id)
     // Key: "YYYY-MM-DD|ISSUE-ID"
     std::map<std::string, AggregatedWorkItem> aggregated;
     std::set<std::string> unresolvedActivities;
+    int skippedExportedCount = 0;
 
     for (const auto& fact : facts) {
         // Skip ongoing facts (no end time)
         if (!fact.endTime.has_value()) {
+            continue;
+        }
+
+        // Skip already-exported facts
+        if (fact.exportedToYoutrack) {
+            skippedExportedCount++;
             continue;
         }
 
@@ -97,6 +103,7 @@ PrepareExportResult YouTrackExportService::prepareExport(int64_t startTime, int6
 
     PrepareExportResult result;
     result.unresolvedActivities = std::vector<std::string>(unresolvedActivities.begin(), unresolvedActivities.end());
+    result.skippedExportedCount = skippedExportedCount;
 
     // Round up durations and convert to vector
     for (auto& pair : aggregated) {

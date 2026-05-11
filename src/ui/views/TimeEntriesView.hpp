@@ -93,6 +93,7 @@ private:
     bool showOverlapError_{false};
     std::string exportErrorMessage_;
     std::vector<services::AggregatedWorkItem> pendingWorkItems_;
+    int skippedExportedCount_{0};
     std::vector<models::Fact> overlappingFacts_;
     int exportedMinutes_{0};
     int exportedItems_{0};

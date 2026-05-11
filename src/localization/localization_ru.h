@@ -113,6 +113,8 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"Overlapping activities detected.", "Обнаружены перекрывающиеся записи."},
         {"Please fix these entries manually before exporting:", "Пожалуйста, исправьте эти записи вручную перед экспортом:"},
         {"No completed time entries found in selected date range.", "Нет завершённых записей за выбранный период."},
+        {"All entries in this range have already been exported to YouTrack.", "Все записи в этом диапазоне уже были экспортированы в YouTrack."},
+        {"%d already exported entries were skipped.", "Пропущено уже экспортированных записей: %d."},
         {"Export cancelled. %d of %d activities exported.", "Экспорт отменён. Экспортировано %d из %d активностей."},
         {"Export %d time entries to YouTrack?", "Экспортировать %d записей времени в YouTrack?"},
         {"Confirm", "Подтвердить"},

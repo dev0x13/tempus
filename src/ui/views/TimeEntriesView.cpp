@@ -509,7 +509,9 @@ void TimeEntriesView::renderFixedFooter() {
     }
 
     // Build footer label with optional overtime/undertime segment
-    int64_t expectedSeconds = statsService_->getExpectedSeconds(displayStartTime_, displayEndTime_);
+    int64_t now = utils::TimeUtils::now();
+    int64_t effectiveEndTime = std::min(displayEndTime_, utils::TimeUtils::endOfDay(now));
+    int64_t expectedSeconds = statsService_->getExpectedSeconds(displayStartTime_, effectiveEndTime);
     std::string totalStr = std::string(L.get("Total")) + ": " + utils::TimeUtils::formatDuration(totalSeconds);
     if (expectedSeconds > 0) {
         int64_t balanceSeconds = totalSeconds - expectedSeconds;

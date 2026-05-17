@@ -1,3 +1,5 @@
+#define NOMINMAX
+
 #include "ImGuiApp.hpp"
 #include "Theme.hpp"
 #include "views/TimeEntriesView.hpp"

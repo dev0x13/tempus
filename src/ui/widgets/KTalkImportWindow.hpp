@@ -1,6 +1,7 @@
 #pragma once
 
 #include "services/KTalkImportService.hpp"
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -21,6 +22,9 @@ public:
     void hide();
     bool isVisible() const { return visible_; }
 
+    // Set callback for the Open settings button, shown when credentials need attention
+    void setOpenSettingsCallback(std::function<void()> callback) { openSettingsCallback_ = std::move(callback); }
+
 private:
     std::shared_ptr<services::KTalkImportService> importService_;
     bool visible_{false};
@@ -29,16 +33,19 @@ private:
     int fromDate_[3];
     int toDate_[3];
 
-    // Fetch payload input
-    char fetchPayload_[8192];  // Large buffer for payload
-
     // Import state
     bool isImporting_{false};
     std::string statusMessage_;
     bool showSuccess_{false};
     bool showError_{false};
 
-    // Initialize default date range (last 30 days)
+    // Set after an authentication failure, so the way to Settings is offered
+    bool offerSettings_{false};
+
+    // Opens the settings window, where the space address and token are edited
+    std::function<void()> openSettingsCallback_;
+
+    // Initialize default date range (today)
     void initializeDefaultDates();
 
     // Convert date array to YYYY-MM-DD HH:MM:SS string
@@ -47,6 +54,9 @@ private:
 
     // Handle import button click
     void handleImport();
+
+    // Connection status line, plus a way into Settings when something needs fixing
+    void renderConnectionStatus();
 };
 
 }  // namespace widgets

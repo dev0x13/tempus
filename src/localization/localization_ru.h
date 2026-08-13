@@ -190,10 +190,6 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
 
         // KTalk Import
         {"Import from KTalk", "Импорт из Толка"},
-        {"Copy the fetch() request from your browser's DevTools Network tab", "Скопируйте запрос fetch() из вкладки Network в DevTools вашего браузера"},
-        {"From date", "Дата начала"},
-        {"To date", "Дата окончания"},
-        {"Fetch payload:", "Данные запроса:"},
         {"Select date to import:", "Выберите дату для импорта:"},
         {"Entry to edit:", "Запись для редактирования:"},
         {"Import", "Импорт"},
@@ -207,6 +203,29 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"KTalk meeting", "Встреча в Толке"},
         {"Date range exceeds maximum of %d days", "Диапазон дат превышает максимум в %d дней"},
         {"End date must be after start date", "Дата окончания должна быть больше либо равна дате начала"},
+
+        // KTalk connection
+        {"Space address:", "Адрес пространства:"},
+        {"Session token:", "Session-токен:"},
+        {"Copy command", "Скопировать команду"},
+        {"Open a logged-in KTalk tab, press F12, paste this into the Console and press Enter.\nThe token lands in your clipboard.", "Откройте вкладку Толка, где вы уже вошли, нажмите F12, вставьте это в Console и нажмите Enter.\nТокен окажется в буфере обмена."},
+        {"Test connection", "Проверить подключение"},
+        {"Connection works", "Подключение работает"},
+        {"Enter the KTalk space address first", "Сначала укажите адрес пространства Толка"},
+        {"Enter the KTalk token first", "Сначала укажите токен Толка"},
+        {"KTalk is not configured", "Толк не настроен"},
+        {"Open settings", "Открыть настройки"},
+        {"Token saved today", "токен сохранён сегодня"},
+        {"Token saved %d days ago", "токен сохранён %d дн. назад"},
+
+        // KTalk import errors
+        {"KTalk is not configured yet. Set the space address and token in Settings.", "Толк ещё не настроен. Укажите адрес пространства и токен в настройках."},
+        {"KTalk rejected the saved credentials. The session token has most likely expired.", "Толк отклонил сохранённые данные. Скорее всего, истёк session-токен."},
+        {"Failed to connect to KTalk API: ", "Не удалось соединиться с API Толка: "},
+        {"KTalk API error. Please try again later.", "Ошибка API Толка. Попробуйте позже."},
+        {"KTalk API error ", "Ошибка API Толка "},
+        {"Unexpected response format from KTalk API", "Неожиданный формат ответа от API Толка"},
+        {"Exception during import: ", "Исключение во время импорта: "},
 
         // Auto-fill
         {"Auto-fill", "Автозаполнение"},

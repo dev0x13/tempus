@@ -14,12 +14,24 @@ namespace services {
 // Maximum number of days allowed for a single KTalk import
 constexpr int KTALK_MAX_IMPORT_DAYS = 10;
 
-// Estimated maximum number of meetings per day (used for API pagination)
-constexpr int KTALK_MAX_MEETINGS_PER_DAY = 10;
+// Per-day cap sent as the API's `top` parameter. The range is walked one day at a time
+// because the API stops responding when a single reply would carry more than roughly a
+// dozen conferences — see fetchConferences.
+constexpr int KTALK_MAX_MEETINGS_PER_DAY = 100;
 
-struct FetchPayload {
-    std::string url;
-    std::map<std::string, std::string> headers;
+// API path appended to the configured space URL. Matched case-insensitively by the server.
+constexpr const char* KTALK_API_PATH = "/api/conferencesHistory";
+
+// Run in the browser's DevTools console on a logged-in KTalk tab: copies the session token
+// to the clipboard. localStorage is where the web app keeps it; the cookie branch covers
+// spaces that authenticate the other documented way.
+constexpr const char* KTALK_TOKEN_SNIPPET =
+    R"JS((()=>{try{const t=JSON.parse(localStorage.session).data.token;copy(t);return t}catch(e){}const m=document.cookie.match(/(?:^|;\s*)sessionToken=([^;]+)/);if(m){copy(m[1]);return m[1]}return 'TOKEN NOT FOUND'})())JS";
+
+struct FetchResult {
+    std::vector<models::KTalkConference> conferences;
+    std::string errorMessage;
+    bool authFailed{false};
 };
 
 struct ImportResult {
@@ -27,6 +39,9 @@ struct ImportResult {
     std::string errorMessage;
     int conferencesImported{0};
     int duplicatesSkipped{0};
+    // Set when KTalk rejected the credentials, so the UI can point at the settings
+    // instead of showing a generic error.
+    bool authFailed{false};
 };
 
 class KTalkImportService {
@@ -41,39 +56,64 @@ public:
     KTalkImportService& operator=(KTalkImportService&&) = delete;
 
     /**
-     * Parse JavaScript fetch() payload to extract URL and headers.
-     * @param payload JavaScript fetch() code as string
-     * @return FetchPayload with URL and headers, or std::nullopt if parsing fails
-     */
-    std::optional<FetchPayload> parseFetchPayload(const std::string& payload);
-
-    /**
-     * Build KTalk API URL with date range parameters.
-     * @param baseUrl Base URL (without query parameters)
-     * @param fromDate Start date in YYYY-MM-DD format
-     * @param toDate End date in YYYY-MM-DD format
+     * Build the API URL for a single day.
+     * @param spaceUrl Configured space URL
+     * @param fromDateTime Start of the window, "YYYY-MM-DD HH:MM:SS" local time
+     * @param toDateTime End of the window, "YYYY-MM-DD HH:MM:SS" local time
      * @return Complete API URL with query parameters
      */
-    std::string buildApiUrl(const std::string& baseUrl, const std::string& fromDate, const std::string& toDate);
+    std::string buildApiUrl(const std::string& spaceUrl, const std::string& fromDateTime, const std::string& toDateTime);
 
     /**
-     * Fetch conferences from KTalk API.
-     * @param url API URL with date range parameters
-     * @param headers HTTP headers for authentication
-     * @return Vector of conferences or error message
+     * Fetch conferences for a date range, one request per day.
+     * @param fromDate Range start, "YYYY-MM-DD HH:MM:SS" local time
+     * @param toDate Range end, "YYYY-MM-DD HH:MM:SS" local time
+     * @return Conferences, or an error message with the authentication flag set
      */
-    std::pair<std::vector<models::KTalkConference>, std::string> fetchConferences(
-        const std::string& url,
-        const std::map<std::string, std::string>& headers);
+    FetchResult fetchConferences(const std::string& fromDate, const std::string& toDate);
 
     /**
-     * Import conferences as time tracking entries.
-     * @param fetchPayload JavaScript fetch() payload
-     * @param fromDate Start date in YYYY-MM-DD format
-     * @param toDate End date in YYYY-MM-DD format
+     * Import conferences as time tracking entries using the configured connection.
+     * @param fromDate Start date in "YYYY-MM-DD HH:MM:SS" format
+     * @param toDate End date in "YYYY-MM-DD HH:MM:SS" format
      * @return Import result with success status and details
      */
-    ImportResult importConferences(const std::string& fetchPayload, const std::string& fromDate, const std::string& toDate);
+    ImportResult importConferences(const std::string& fromDate, const std::string& toDate);
+
+    /**
+     * Whether both a space URL and a token are configured.
+     */
+    bool hasConnection() const;
+
+    /**
+     * Host of the configured space, for display purposes.
+     * @return Host part of the space URL, or an empty string if unconfigured
+     */
+    std::string getSpaceHost() const;
+
+    /**
+     * When the session token was last saved.
+     * @return Unix timestamp in seconds, or 0 if no token is stored
+     */
+    int64_t getTokenSavedAt() const;
+
+    /**
+     * Store the connection. The space URL is normalised to scheme and host.
+     * @param spaceUrl Space URL, e.g. "https://example.ktalk.ru"
+     * @param token Session token; pass an empty string to leave the stored one untouched
+     */
+    void setConnection(const std::string& spaceUrl, const std::string& token);
+
+    /**
+     * Issue a cheap request to confirm the stored credentials work.
+     * @return Empty string on success, otherwise a human-readable error
+     */
+    std::string testConnection();
+
+    /**
+     * Reduce a user-entered URL to scheme and host, dropping any path and trailing slash.
+     */
+    static std::string normalizeSpaceUrl(const std::string& url);
 
 private:
     TimeTrackingService& timeTrackingService_;
@@ -87,18 +127,28 @@ private:
     int64_t parseIso8601(const std::string& iso8601);
 
     /**
-     * Extract base URL (part before '?') from full URL.
-     * @param url Full URL
-     * @return Base URL without query parameters
-     */
-    std::string extractBaseUrl(const std::string& url);
-
-    /**
      * Convert local datetime to UTC ISO 8601 format.
      * @param localDateTime Local datetime string in "YYYY-MM-DD HH:MM:SS" format
      * @return UTC ISO 8601 string in "YYYY-MM-DDTHH:mm:ss.sssZ" format, or empty string on error
      */
     std::string convertToUtcIso8601(const std::string& localDateTime);
+
+    /**
+     * Authorization headers for the configured token.
+     */
+    std::map<std::string, std::string> buildHeaders() const;
+
+    /**
+     * Fetch a single day's conferences.
+     * @param day Date in "YYYY-MM-DD" format
+     */
+    FetchResult fetchDay(const std::string& day);
+
+    /**
+     * List the days a range covers, inclusive, capped at KTALK_MAX_IMPORT_DAYS.
+     * @return Dates in "YYYY-MM-DD" format
+     */
+    std::vector<std::string> enumerateDays(const std::string& fromDate, const std::string& toDate);
 
     /**
      * Snap a Unix timestamp to the nearest multiple of intervalMinutes in local time.

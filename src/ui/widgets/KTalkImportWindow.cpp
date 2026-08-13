@@ -3,9 +3,11 @@
 #include "localization/LocalizationManager.hpp"
 #include <imgui.h>
 #include <cfloat>
+#include <cstdio>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <string>
 
 namespace timetracker {
 namespace ui {
@@ -13,7 +15,6 @@ namespace widgets {
 
 KTalkImportWindow::KTalkImportWindow(std::shared_ptr<services::KTalkImportService> importService)
     : importService_(std::move(importService)) {
-    fetchPayload_[0] = '\0';
     initializeDefaultDates();
 }
 
@@ -73,12 +74,7 @@ void KTalkImportWindow::handleImport() {
     std::string fromDateStr = dateToString(fromDate_, false);  // 00:00:00
     std::string toDateStr = dateToString(toDate_, true);       // 23:59:59
 
-    // Perform import
-    services::ImportResult result = importService_->importConferences(
-        std::string(fetchPayload_),
-        fromDateStr,
-        toDateStr
-    );
+    services::ImportResult result = importService_->importConferences(fromDateStr, toDateStr);
 
     isImporting_ = false;
 
@@ -91,12 +87,45 @@ void KTalkImportWindow::handleImport() {
         }
         statusMessage_ = buffer;
         showSuccess_ = true;
-
-        // Clear form and close on success (after showing message)
-        // User will see the success message for one frame before closing
     } else {
         statusMessage_ = result.errorMessage;
         showError_ = true;
+        // Credentials are edited in Settings, so offer the way there rather than a
+        // dead-end error message.
+        offerSettings_ = result.authFailed;
+    }
+}
+
+void KTalkImportWindow::renderConnectionStatus() {
+    auto& L = localization::L10n();
+
+    if (!importService_->hasConnection()) {
+        ImGui::TextDisabled("%s", L.get("KTalk is not configured"));
+    } else {
+        // U+25A0; the merged symbol subset is only ■ ▶ ◀, so a checkmark would be tofu.
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        ImGui::Text("%s %s", "\xE2\x96\xA0", importService_->getSpaceHost().c_str());
+        ImGui::PopStyleColor();
+
+        const int64_t savedAt = importService_->getTokenSavedAt();
+        if (savedAt > 0) {
+            const int64_t days = (static_cast<int64_t>(std::time(nullptr)) - savedAt) / (60 * 60 * 24);
+            char buffer[128];
+            if (days <= 0) {
+                snprintf(buffer, sizeof(buffer), "%s", L.get("Token saved today"));
+            } else {
+                snprintf(buffer, sizeof(buffer), L.get("Token saved %d days ago"), static_cast<int>(days));
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled("- %s", buffer);
+        }
+    }
+
+    if (!importService_->hasConnection() || offerSettings_) {
+        ImGui::Spacing();
+        if (ImGui::Button(L.get("Open settings"), ImVec2(180, 0)) && openSettingsCallback_) {
+            openSettingsCallback_();
+        }
     }
 }
 
@@ -147,20 +176,7 @@ void KTalkImportWindow::render() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        // Fetch payload text area
-        ImGui::Text("%s", L.get("Fetch payload:"));
-        ImGui::Spacing();
-
-        ImGui::InputTextMultiline(
-            "##fetchPayload",
-            fetchPayload_,
-            sizeof(fetchPayload_),
-            ImVec2(400, 200),
-            ImGuiInputTextFlags_None
-        );
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("%s", L.get("Copy the fetch() request from your browser's DevTools Network tab"));
-        }
+        renderConnectionStatus();
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -183,9 +199,11 @@ void KTalkImportWindow::render() {
         if (isImporting_) {
             ImGui::Text("%s", L.get("Importing..."));
         } else {
+            ImGui::BeginDisabled(!importService_->hasConnection());
             if (ImGui::Button(L.get("Import"), ImVec2(120, 0))) {
                 handleImport();
             }
+            ImGui::EndDisabled();
             ImGui::SameLine();
             if (ImGui::Button(L.get(showSuccess_ ? "Close" : "Cancel"), ImVec2(120, 0))) {
                 hide();

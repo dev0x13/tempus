@@ -1,5 +1,6 @@
 #include "SettingsService.hpp"
 #include "../database/Database.hpp"
+#include "utils/SecretStore.hpp"
 #include <iostream>
 #include <SQLiteCpp/SQLiteCpp.h>
 
@@ -11,6 +12,8 @@ SettingsService::SettingsService(std::shared_ptr<timetracker::database::Database
 bool SettingsService::loadSettings() {
     try {
         loadFromDatabase();
+        migratePlaintextSecrets();
+        migrateKTalkConnection();
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error loading settings: " << e.what() << std::endl;
@@ -56,12 +59,80 @@ void SettingsService::setSetting(const std::string& key, const std::string& valu
     }
 }
 
+std::string SettingsService::getSecretSetting(const std::string& key, const std::string& defaultValue) const {
+    auto it = settingsCache_.find(key);
+    if (it == settingsCache_.end() || it->second.empty()) {
+        return defaultValue;
+    }
+    return utils::SecretStore::retrieve(key, it->second);
+}
+
+void SettingsService::setSecretSetting(const std::string& key, const std::string& value) {
+    if (value.empty()) {
+        utils::SecretStore::erase(key);
+        setSetting(key, "");
+        return;
+    }
+
+    if (auto marker = utils::SecretStore::store(key, value)) {
+        setSetting(key, *marker);
+        return;
+    }
+
+    std::cerr << "Warning: no secret backend accepted '" << key
+              << "', storing it as plaintext" << std::endl;
+    setSetting(key, value);
+}
+
+void SettingsService::migratePlaintextSecrets() {
+    // Databases written before secrets were encrypted hold the raw value in the
+    // settings row; re-writing it through SecretStore replaces it with a marker.
+    static const char* const kSecretKeys[] = {"youtrack_token", "ktalk_token"};
+
+    for (const char* key : kSecretKeys) {
+        auto it = settingsCache_.find(key);
+        if (it == settingsCache_.end() || it->second.empty()) {
+            continue;
+        }
+        if (utils::SecretStore::isMarker(it->second)) {
+            continue;
+        }
+        setSecretSetting(key, it->second);
+    }
+}
+
+void SettingsService::migrateKTalkConnection() {
+    // Earlier builds captured a whole endpoint URL plus a header set from a pasted
+    // fetch() request. Only the space URL is needed now — the path and the single
+    // Authorization header are built by KTalkImportService.
+    if (!getSetting("ktalk_space_url").empty()) {
+        return;
+    }
+
+    const std::string legacyUrl = getSetting("ktalk_base_url");
+    if (legacyUrl.empty()) {
+        return;
+    }
+
+    const size_t schemeEnd = legacyUrl.find("://");
+    const size_t hostStart = (schemeEnd == std::string::npos) ? 0 : schemeEnd + 3;
+    const size_t hostEnd = legacyUrl.find('/', hostStart);
+    const std::string spaceUrl =
+        (hostEnd == std::string::npos) ? legacyUrl : legacyUrl.substr(0, hostEnd);
+
+    setSetting("ktalk_space_url", spaceUrl);
+    setSetting("ktalk_base_url", "");
+
+    utils::SecretStore::erase("ktalk_headers");
+    setSetting("ktalk_headers", "");
+}
+
 std::string SettingsService::getYouTrackUrl() const {
     return getSetting("youtrack_url", "");
 }
 
 std::string SettingsService::getYouTrackToken() const {
-    return getSetting("youtrack_token", "");
+    return getSecretSetting("youtrack_token", "");
 }
 
 std::map<std::string, std::string> SettingsService::getActivityAliases() const {
@@ -89,7 +160,7 @@ void SettingsService::setYouTrackUrl(const std::string& url) {
 }
 
 void SettingsService::setYouTrackToken(const std::string& token) {
-    setSetting("youtrack_token", token);
+    setSecretSetting("youtrack_token", token);
 }
 
 void SettingsService::setActivityAliases(const std::map<std::string, std::string>& aliases) {
@@ -121,6 +192,34 @@ int SettingsService::getKTalkSnapInterval() const {
 
 void SettingsService::setKTalkSnapInterval(int intervalMinutes) {
     setSetting("ktalk_snap_interval", std::to_string(intervalMinutes < 0 ? 0 : intervalMinutes));
+}
+
+std::string SettingsService::getKTalkSpaceUrl() const {
+    return getSetting("ktalk_space_url", "");
+}
+
+void SettingsService::setKTalkSpaceUrl(const std::string& url) {
+    setSetting("ktalk_space_url", url);
+}
+
+std::string SettingsService::getKTalkToken() const {
+    return getSecretSetting("ktalk_token", "");
+}
+
+void SettingsService::setKTalkToken(const std::string& token) {
+    setSecretSetting("ktalk_token", token);
+}
+
+int64_t SettingsService::getKTalkTokenSavedAt() const {
+    try {
+        return std::stoll(getSetting("ktalk_token_saved_at", "0"));
+    } catch (...) {
+        return 0;
+    }
+}
+
+void SettingsService::setKTalkTokenSavedAt(int64_t timestamp) {
+    setSetting("ktalk_token_saved_at", std::to_string(timestamp));
 }
 
 std::string SettingsService::getLanguage() const {

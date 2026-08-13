@@ -67,6 +67,7 @@ set(SOURCES
     src/ui/widgets/AutoFillWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
+    src/utils/SecretStore.cpp
     src/bindings/imgui_impl_glfw.cpp
     src/bindings/imgui_impl_opengl3.cpp
 )
@@ -83,6 +84,11 @@ if(APPLE)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GTK3_INCLUDE_DIRS})
     target_link_directories(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARY_DIRS})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARIES})
+
+    # SecretStore: Keychain backend
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        "-framework Security"
+        "-framework CoreFoundation")
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -109,17 +115,30 @@ if(WIN32)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
     endif()
+
+    # SecretStore: DPAPI backend
+    target_link_libraries(${PROJECT_NAME} PRIVATE crypt32)
 elseif(UNIX AND NOT APPLE)
     # Linux-specific dependencies for system tray
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(AYATANA REQUIRED ayatana-appindicator3-0.1)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 
+    # SecretStore: libsecret backend, with an OpenSSL keyfile fallback when no
+    # Secret Service is running
+    pkg_check_modules(LIBSECRET REQUIRED libsecret-1)
+    find_package(OpenSSL REQUIRED)
+
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${AYATANA_INCLUDE_DIRS}
-        ${GTK3_INCLUDE_DIRS})
+        ${GTK3_INCLUDE_DIRS}
+        ${LIBSECRET_INCLUDE_DIRS})
+
+    target_link_directories(${PROJECT_NAME} PRIVATE ${LIBSECRET_LIBRARY_DIRS})
 
     target_link_libraries(${PROJECT_NAME} PRIVATE
         ${AYATANA_LIBRARIES}
-        ${GTK3_LIBRARIES})
+        ${GTK3_LIBRARIES}
+        ${LIBSECRET_LIBRARIES}
+        OpenSSL::Crypto)
 endif()

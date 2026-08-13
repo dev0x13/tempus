@@ -1,5 +1,6 @@
 #pragma once
 
+#include "services/KTalkImportService.hpp"
 #include "services/SettingsService.hpp"
 #include <memory>
 #include <string>
@@ -16,7 +17,8 @@ struct ActivityAlias {
 
 class SettingsWindow {
 public:
-    explicit SettingsWindow(std::shared_ptr<services::SettingsService> settingsService);
+    SettingsWindow(std::shared_ptr<services::SettingsService> settingsService,
+                   std::shared_ptr<services::KTalkImportService> ktalkImportService);
     ~SettingsWindow() = default;
 
     // Render the window (call this every frame if visible)
@@ -32,6 +34,7 @@ public:
 
 private:
     std::shared_ptr<services::SettingsService> settingsService_;
+    std::shared_ptr<services::KTalkImportService> ktalkImportService_;
     bool visible_{false};
 
     // Form fields
@@ -40,6 +43,12 @@ private:
     std::vector<ActivityAlias> aliases_;
     bool ktalkIncludeUnplanned_{true};
     int ktalkSnapInterval_{0};
+    char ktalkSpaceUrl_[256]{};
+    char ktalkToken_[512]{};
+
+    // Result of the last "Test connection" click
+    std::string ktalkTestMessage_;
+    bool ktalkTestFailed_{false};
     int selectedLanguage_{1};  // 0 = English, 1 = Russian
 
     // Block schedule settings
@@ -72,6 +81,9 @@ private:
     void renderActivityAliases();
     void renderKTalkSettings();
     void renderAbout();
+
+    // Save the KTalk credentials and probe the API with them
+    void handleKTalkTestConnection();
 };
 
 } // namespace timetracker::ui::widgets

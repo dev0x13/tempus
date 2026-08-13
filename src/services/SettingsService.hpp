@@ -3,6 +3,7 @@
 #include "models/AutoFillProfile.hpp"
 
 #include <nlohmann/json.hpp>
+#include <cstdint>
 #include <string>
 #include <map>
 #include <memory>
@@ -227,6 +228,43 @@ public:
      */
     void setAutoFillProfile(const models::AutoFillProfile& profile);
 
+    /**
+     * Get the KTalk space URL, e.g. "https://example.ktalk.ru".
+     * The API path is appended by KTalkImportService, not stored here.
+     * @return Space URL, or empty string if not configured
+     */
+    std::string getKTalkSpaceUrl() const;
+
+    /**
+     * Set the KTalk space URL.
+     * @param url Space URL, scheme and host only
+     */
+    void setKTalkSpaceUrl(const std::string& url);
+
+    /**
+     * Get the saved KTalk session token.
+     * @return Token, or empty string if none is stored
+     */
+    std::string getKTalkToken() const;
+
+    /**
+     * Set the KTalk session token.
+     * @param token Session token; an empty value clears the stored secret
+     */
+    void setKTalkToken(const std::string& token);
+
+    /**
+     * Get when the KTalk token was last saved.
+     * @return Unix timestamp in seconds, or 0 if never saved
+     */
+    int64_t getKTalkTokenSavedAt() const;
+
+    /**
+     * Set when the KTalk token was last saved.
+     * @param timestamp Unix timestamp in seconds
+     */
+    void setKTalkTokenSavedAt(int64_t timestamp);
+
 private:
     std::shared_ptr<timetracker::database::Database> database_;
     std::map<std::string, std::string> settingsCache_;
@@ -235,6 +273,30 @@ private:
      * Load all settings from database into cache.
      */
     void loadFromDatabase();
+
+    /**
+     * Read a setting whose stored value is a utils::SecretStore marker.
+     * Values written before secrets were encrypted are returned as-is.
+     */
+    std::string getSecretSetting(const std::string& key, const std::string& defaultValue = "") const;
+
+    /**
+     * Write a setting through utils::SecretStore, persisting only the marker.
+     * Falls back to storing the raw value if no platform backend accepts it.
+     */
+    void setSecretSetting(const std::string& key, const std::string& value);
+
+    /**
+     * Re-write any secret still held as plaintext through utils::SecretStore.
+     * Idempotent; runs once per start from loadSettings().
+     */
+    void migratePlaintextSecrets();
+
+    /**
+     * Convert a connection captured from a pasted fetch() request into the space URL the
+     * app now builds its own requests from. Idempotent; runs once per start.
+     */
+    void migrateKTalkConnection();
 };
 
 } // namespace timetracker::services

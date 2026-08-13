@@ -2,7 +2,6 @@
 #include "localization/LocalizationManager.hpp"
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
-#include <regex>
 #include <sstream>
 #include <iomanip>
 #include <ctime>
@@ -12,77 +11,95 @@
 namespace timetracker {
 namespace services {
 
+namespace {
+
+std::string trim(const std::string& value) {
+    const size_t first = value.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return "";
+    }
+    const size_t last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
+}
+
+}  // namespace
+
 KTalkImportService::KTalkImportService(TimeTrackingService& timeTrackingService, SettingsService& settingsService)
     : timeTrackingService_(timeTrackingService), settingsService_(settingsService) {}
 
-std::optional<FetchPayload> KTalkImportService::parseFetchPayload(const std::string& payload) {
-    FetchPayload result;
-
-    // Extract URL using regex: fetch("URL", ...)
-    std::regex urlRegex(R"(fetch\s*\(\s*"([^"]+))");
-    std::smatch urlMatch;
-    if (!std::regex_search(payload, urlMatch, urlRegex)) {
-        return std::nullopt;  // Could not extract URL
-    }
-    result.url = urlMatch[1].str();
-
-    // Extract the options object (everything between the outer braces after the URL)
-    // Pattern: fetch("url", { ... })
-    size_t firstBrace = payload.find('{');
-    if (firstBrace == std::string::npos) {
-        return std::nullopt;  // No options object found
+std::string KTalkImportService::normalizeSpaceUrl(const std::string& url) {
+    std::string value = trim(url);
+    if (value.empty()) {
+        return "";
     }
 
-    // Find matching closing brace
-    int braceCount = 0;
-    size_t lastBrace = firstBrace;
-    for (size_t i = firstBrace; i < payload.size(); ++i) {
-        if (payload[i] == '{') {
-            braceCount++;
-        } else if (payload[i] == '}') {
-            braceCount--;
-            if (braceCount == 0) {
-                lastBrace = i;
-                break;
-            }
-        }
+    // A space is identified by scheme and host; anything the user pasted beyond that
+    // (an API path, a room link) is dropped because the path is ours to build.
+    if (value.find("://") == std::string::npos) {
+        value = "https://" + value;
     }
 
-    if (braceCount != 0) {
-        return std::nullopt;  // Unmatched braces
-    }
+    const size_t hostStart = value.find("://") + 3;
+    const size_t hostEnd = value.find('/', hostStart);
 
-    std::string optionsJson = payload.substr(firstBrace, lastBrace - firstBrace + 1);
-
-    // Parse JSON options
-    try {
-        nlohmann::json options = nlohmann::json::parse(optionsJson);
-
-        // Extract headers
-        if (options.contains("headers") && options["headers"].is_object()) {
-            for (auto& [key, value] : options["headers"].items()) {
-                if (value.is_string()) {
-                    result.headers[key] = value.get<std::string>();
-                }
-            }
-        } else {
-            return std::nullopt;  // No headers found
-        }
-
-    } catch (const nlohmann::json::exception& e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        return std::nullopt;
-    }
-
-    return result;
+    return hostEnd == std::string::npos ? value : value.substr(0, hostEnd);
 }
 
-std::string KTalkImportService::extractBaseUrl(const std::string& url) {
-    size_t queryPos = url.find('?');
-    if (queryPos != std::string::npos) {
-        return url.substr(0, queryPos);
+std::map<std::string, std::string> KTalkImportService::buildHeaders() const {
+    return {
+        {"Authorization", "Session " + settingsService_.getKTalkToken()},
+        {"Accept", "application/json"},
+    };
+}
+
+bool KTalkImportService::hasConnection() const {
+    return !settingsService_.getKTalkSpaceUrl().empty() && !settingsService_.getKTalkToken().empty();
+}
+
+std::string KTalkImportService::getSpaceHost() const {
+    const std::string url = settingsService_.getKTalkSpaceUrl();
+    const size_t schemeEnd = url.find("://");
+    return schemeEnd == std::string::npos ? url : url.substr(schemeEnd + 3);
+}
+
+int64_t KTalkImportService::getTokenSavedAt() const {
+    return settingsService_.getKTalkTokenSavedAt();
+}
+
+void KTalkImportService::setConnection(const std::string& spaceUrl, const std::string& token) {
+    settingsService_.setKTalkSpaceUrl(normalizeSpaceUrl(spaceUrl));
+
+    // An untouched password field comes back empty; that must not wipe a working token.
+    const std::string trimmedToken = trim(token);
+    if (!trimmedToken.empty() && trimmedToken != settingsService_.getKTalkToken()) {
+        settingsService_.setKTalkToken(trimmedToken);
+        settingsService_.setKTalkTokenSavedAt(static_cast<int64_t>(std::time(nullptr)));
     }
-    return url;
+}
+
+std::string KTalkImportService::testConnection() {
+    auto& L = localization::L10n();
+
+    if (settingsService_.getKTalkSpaceUrl().empty()) {
+        return L.get("Enter the KTalk space address first");
+    }
+    if (settingsService_.getKTalkToken().empty()) {
+        return L.get("Enter the KTalk token first");
+    }
+
+    // A single past day keeps the reply small enough to come back immediately.
+    std::tm yesterdayTm = {};
+    const std::time_t yesterday = std::time(nullptr) - 24 * 60 * 60;
+#ifdef _WIN32
+    localtime_s(&yesterdayTm, &yesterday);
+#else
+    localtime_r(&yesterday, &yesterdayTm);
+#endif
+    char day[16];
+    std::strftime(day, sizeof(day), "%Y-%m-%d", &yesterdayTm);
+
+    const FetchResult probe = fetchDay(day);
+    return probe.errorMessage;
 }
 
 std::string KTalkImportService::convertToUtcIso8601(const std::string& localDateTime) {
@@ -116,51 +133,125 @@ std::string KTalkImportService::convertToUtcIso8601(const std::string& localDate
     return oss.str();
 }
 
-std::string KTalkImportService::buildApiUrl(const std::string& baseUrl, const std::string& fromDate, const std::string& toDate) {
+std::string KTalkImportService::buildApiUrl(const std::string& spaceUrl, const std::string& fromDateTime, const std::string& toDateTime) {
     // Convert local datetime strings to UTC ISO 8601 format
-    std::string fromDateUtc = convertToUtcIso8601(fromDate);
-    std::string toDateUtc = convertToUtcIso8601(toDate);
+    std::string fromDateUtc = convertToUtcIso8601(fromDateTime);
+    std::string toDateUtc = convertToUtcIso8601(toDateTime);
+
+    const std::string endpoint = spaceUrl + KTALK_API_PATH;
 
     if (fromDateUtc.empty() || toDateUtc.empty()) {
         std::cerr << "Failed to convert dates to UTC" << std::endl;
-        return baseUrl;  // Return base URL without parameters on error
+        return endpoint;  // Return endpoint without parameters on error
     }
 
-    int top = KTALK_MAX_IMPORT_DAYS * KTALK_MAX_MEETINGS_PER_DAY;
-    return baseUrl + "?fromDate=" + fromDateUtc + "&toDate=" + toDateUtc + "&top=" + std::to_string(top);
+    return endpoint + "?fromDate=" + fromDateUtc + "&toDate=" + toDateUtc +
+           "&top=" + std::to_string(KTALK_MAX_MEETINGS_PER_DAY);
 }
 
-std::pair<std::vector<models::KTalkConference>, std::string> KTalkImportService::fetchConferences(
-    const std::string& url,
-    const std::map<std::string, std::string>& headers) {
+std::vector<std::string> KTalkImportService::enumerateDays(const std::string& fromDate, const std::string& toDate) {
+    std::vector<std::string> days;
 
-    std::vector<models::KTalkConference> conferences;
+    if (fromDate.size() < 10 || toDate.size() < 10) {
+        return days;
+    }
+    const std::string lastDay = toDate.substr(0, 10);
+
+    std::tm cursor = {};
+    std::istringstream ss(fromDate.substr(0, 10));
+    ss >> std::get_time(&cursor, "%Y-%m-%d");
+    if (ss.fail()) {
+        return days;
+    }
+    cursor.tm_isdst = -1;
+
+    for (int i = 0; i < KTALK_MAX_IMPORT_DAYS; ++i) {
+        char day[16];
+        std::strftime(day, sizeof(day), "%Y-%m-%d", &cursor);
+        days.emplace_back(day);
+
+        if (std::string(day) >= lastDay) {
+            break;
+        }
+
+        // mktime normalises the month/year rollover that ++tm_mday can produce.
+        cursor.tm_mday += 1;
+        cursor.tm_isdst = -1;
+        if (std::mktime(&cursor) == -1) {
+            break;
+        }
+    }
+
+    return days;
+}
+
+FetchResult KTalkImportService::fetchConferences(const std::string& fromDate, const std::string& toDate) {
+    auto& L = localization::L10n();
+
+    FetchResult result;
+
+    const std::vector<std::string> days = enumerateDays(fromDate, toDate);
+    if (days.empty()) {
+        result.errorMessage = L.get("Please select both from and to dates");
+        return result;
+    }
+
+    // One request per day. The API stops responding altogether once a single reply would
+    // carry more than roughly a dozen conferences, and a day comfortably stays under that
+    // while answering in well under a second.
+    for (const std::string& day : days) {
+        FetchResult dayResult = fetchDay(day);
+        if (!dayResult.errorMessage.empty()) {
+            dayResult.conferences.clear();
+            return dayResult;
+        }
+        result.conferences.insert(result.conferences.end(),
+                                  dayResult.conferences.begin(), dayResult.conferences.end());
+    }
+
+    return result;
+}
+
+FetchResult KTalkImportService::fetchDay(const std::string& day) {
+    auto& L = localization::L10n();
+
+    FetchResult result;
+
+    const std::string url = buildApiUrl(settingsService_.getKTalkSpaceUrl(),
+                                        day + " 00:00:00", day + " 23:59:59");
 
     try {
         // Build CPR headers
         cpr::Header cprHeaders;
-        for (const auto& [key, value] : headers) {
+        for (const auto& [key, value] : buildHeaders()) {
             cprHeaders[key] = value;
         }
 
-        // Make GET request
+        // Make GET request. The call blocks the render thread, so cap how long a stalled
+        // connection can freeze the UI.
         auto response = cpr::Get(
             cpr::Url{url},
-            cprHeaders
+            cprHeaders,
+            cpr::Timeout{30000}
         );
 
         // Check for network/connection errors
         if (response.error.code != cpr::ErrorCode::OK) {
-            return {conferences, "Failed to connect to KTalk API: " + response.error.message};
+            result.errorMessage = std::string(L.get("Failed to connect to KTalk API: ")) + response.error.message;
+            return result;
         }
 
         // Check HTTP status
         if (response.status_code == 401 || response.status_code == 403) {
-            return {conferences, "Authentication failed. Please copy a fresh fetch payload from your browser."};
+            result.errorMessage = L.get("KTalk rejected the saved credentials. The session token has most likely expired.");
+            result.authFailed = true;
+            return result;
         } else if (response.status_code >= 500) {
-            return {conferences, "KTalk API error. Please try again later."};
+            result.errorMessage = L.get("KTalk API error. Please try again later.");
+            return result;
         } else if (response.status_code >= 400) {
-            return {conferences, "KTalk API error " + std::to_string(response.status_code) + ": " + response.text};
+            result.errorMessage = std::string(L.get("KTalk API error ")) + std::to_string(response.status_code) + ": " + response.text;
+            return result;
         }
 
         // Parse JSON response
@@ -168,7 +259,8 @@ std::pair<std::vector<models::KTalkConference>, std::string> KTalkImportService:
 
         // Extract conferences array
         if (!jsonResponse.contains("conferences") || !jsonResponse["conferences"].is_array()) {
-            return {conferences, "Unexpected response format from KTalk API"};
+            result.errorMessage = L.get("Unexpected response format from KTalk API");
+            return result;
         }
 
         for (const auto& conf : jsonResponse["conferences"]) {
@@ -178,17 +270,19 @@ std::pair<std::vector<models::KTalkConference>, std::string> KTalkImportService:
                 conference.endTime = conf["endTime"].get<std::string>();
                 // Title is optional - use empty string if missing
                 conference.title = conf.contains("title") ? conf["title"].get<std::string>() : "";
-                conferences.push_back(conference);
+                result.conferences.push_back(conference);
             }
         }
 
     } catch (const nlohmann::json::exception& e) {
-        return {conferences, "Unexpected response format from KTalk API"};
+        result.conferences.clear();
+        result.errorMessage = "Unexpected response format from KTalk API";
     } catch (const std::exception& e) {
-        return {conferences, std::string("Exception during import: ") + e.what()};
+        result.conferences.clear();
+        result.errorMessage = std::string(L.get("Exception during import: ")) + e.what();
     }
 
-    return {conferences, ""};  // Success
+    return result;
 }
 
 int64_t KTalkImportService::parseIso8601(const std::string& iso8601) {
@@ -279,7 +373,6 @@ int64_t KTalkImportService::computeSnappedEndTime(int64_t rawEndTime, int64_t sn
 }
 
 ImportResult KTalkImportService::importConferences(
-    const std::string& fetchPayload,
     const std::string& fromDate,
     const std::string& toDate) {
 
@@ -317,25 +410,20 @@ ImportResult KTalkImportService::importConferences(
         }
     }
 
-    // Parse fetch payload
-    auto payloadOpt = parseFetchPayload(fetchPayload);
-    if (!payloadOpt.has_value()) {
-        result.errorMessage = L.get("Invalid fetch payload. Expected JavaScript fetch() code.");
+    if (!hasConnection()) {
+        result.errorMessage = L.get("KTalk is not configured yet. Set the space address and token in Settings.");
+        result.authFailed = true;
         return result;
     }
 
-    FetchPayload payload = *payloadOpt;
-
-    // Build API URL
-    std::string baseUrl = extractBaseUrl(payload.url);
-    std::string apiUrl = buildApiUrl(baseUrl, fromDate, toDate);
-
-    // Fetch conferences
-    auto [conferences, error] = fetchConferences(apiUrl, payload.headers);
-    if (!error.empty()) {
-        result.errorMessage = error;
+    FetchResult fetched = fetchConferences(fromDate, toDate);
+    if (!fetched.errorMessage.empty()) {
+        result.errorMessage = fetched.errorMessage;
+        result.authFailed = fetched.authFailed;
         return result;
     }
+
+    const std::vector<models::KTalkConference>& conferences = fetched.conferences;
 
     if (conferences.empty()) {
         result.errorMessage = L.get("No meetings found in selected date range");

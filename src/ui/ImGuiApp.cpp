@@ -189,7 +189,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     });
 
     // Create settings window
-    settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_);
+    settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_, kTalkImportService_);
 
     // Create export log window
     exportLogWindow_ = std::make_unique<widgets::ExportLogWindow>(exportLogRepository_);
@@ -201,6 +201,11 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Create KTalk import window
     kTalkImportWindow_ = std::make_unique<widgets::KTalkImportWindow>(kTalkImportService_);
+
+    // KTalk credentials live in the settings window, so the import window links there
+    kTalkImportWindow_->setOpenSettingsCallback([this]() {
+        settingsWindow_->show();
+    });
 
     // Create auto-fill window
     autoFillWindow_ = std::make_unique<widgets::AutoFillWindow>(autoFillService_, settingsService_);

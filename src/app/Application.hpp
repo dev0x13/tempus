@@ -10,6 +10,7 @@
 #include "services/SettingsService.hpp"
 #include "services/YouTrackExportService.hpp"
 #include "services/KTalkImportService.hpp"
+#include "services/AutoFillService.hpp"
 #include "ui/ImGuiApp.hpp"
 #include "tray/SystemTray.hpp"
 #include <memory>
@@ -55,6 +56,7 @@ private:
     std::shared_ptr<services::ExportService> exportService_;
     std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
     std::shared_ptr<services::KTalkImportService> kTalkImportService_;
+    std::shared_ptr<services::AutoFillService> autoFillService_;
 
     // UI
     std::unique_ptr<ui::ImGuiApp> uiApp_;

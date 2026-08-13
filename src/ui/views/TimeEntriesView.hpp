@@ -34,6 +34,8 @@ public:
     // Set callbacks for external buttons
     void setKTalkImportCallback(std::function<void()> callback) { kTalkImportCallback_ = std::move(callback); }
     void setSettingsCallback(std::function<void()> callback) { settingsCallback_ = std::move(callback); }
+    // Receives the range currently on screen so the auto-fill window can prefill it
+    void setAutoFillCallback(std::function<void(int64_t, int64_t)> callback) { autoFillCallback_ = std::move(callback); }
 
 private:
     std::shared_ptr<services::TimeTrackingService> timeService_;
@@ -84,6 +86,7 @@ private:
     // External button callbacks
     std::function<void()> kTalkImportCallback_;
     std::function<void()> settingsCallback_;
+    std::function<void(int64_t, int64_t)> autoFillCallback_;
 
     // YouTrack export state
     bool showExportConfirmation_{false};

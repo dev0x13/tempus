@@ -64,6 +64,7 @@ set(SOURCES
     src/ui/widgets/SettingsWindow.cpp
     src/ui/widgets/ExportLogWindow.cpp
     src/ui/widgets/KTalkImportWindow.cpp
+    src/ui/widgets/AutoFillWindow.cpp
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     src/bindings/imgui_impl_glfw.cpp

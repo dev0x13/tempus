@@ -206,7 +206,18 @@ inline std::unordered_map<std::string, std::string> getTranslations() {
         {"No meetings found in selected date range", "Не найдено встреч в выбранные даты"},
         {"KTalk meeting", "Встреча в Толке"},
         {"Date range exceeds maximum of %d days", "Диапазон дат превышает максимум в %d дней"},
-        {"End date must be after start date", "Дата окончания должна быть больше либо равна дате начала"}
+        {"End date must be after start date", "Дата окончания должна быть больше либо равна дате начала"},
+
+        // Auto-fill
+        {"Start date must not be after end date", "Дата начала не должна быть позже даты окончания"},
+        {"Add at least one activity", "Добавьте хотя бы одну активность"},
+        {"Activity name cannot be empty", "Название активности не может быть пустым"},
+        {"Each percentage must be between 0 and 100", "Каждый процент должен быть в диапазоне от 0 до 100"},
+        {"Percentages must sum to more than zero", "Сумма процентов должна быть больше нуля"},
+        {"Available hours must be greater than zero", "Количество часов должно быть больше нуля"},
+        {"Earliest start time must be a valid time of day", "Время начала должно быть корректным временем суток"},
+        {"Grid step must be between 1 and 60 minutes", "Шаг сетки должен быть от 1 до 60 минут"},
+        {"Minimum block must be at least one minute", "Минимальный блок должен быть не меньше одной минуты"}
     };
 }
 

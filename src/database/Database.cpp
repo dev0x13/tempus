@@ -14,6 +14,7 @@ SQLite::Database& Database::getHandle() {
 
 void Database::initSchema() {
     createTables();
+    migrateSchema();
     createIndexes();
 }
 
@@ -63,6 +64,25 @@ void Database::createTables() {
             exported_at INTEGER NOT NULL
         )
     )");
+}
+
+bool Database::hasColumn(const std::string& table, const std::string& column) {
+    // pragma_table_info() cannot be parameterized on the table name, but the callers
+    // pass compile-time literals only.
+    SQLite::Statement query(*db_, "SELECT COUNT(*) FROM pragma_table_info('" + table + "') WHERE name = ?");
+    query.bind(1, column);
+    if (query.executeStep()) {
+        return query.getColumn(0).getInt() > 0;
+    }
+    return false;
+}
+
+void Database::migrateSchema() {
+    // CREATE TABLE IF NOT EXISTS never touches an existing table, so columns added
+    // after a release need an explicit guarded ALTER TABLE.
+    if (!hasColumn("facts", "auto_generated")) {
+        db_->exec("ALTER TABLE facts ADD COLUMN auto_generated INTEGER NOT NULL DEFAULT 0");
+    }
 }
 
 void Database::createIndexes() {

@@ -14,7 +14,6 @@ class TempusRecipe(ConanFile):
         self.requires("portable-file-dialogs/0.1.0")
         self.requires("nlohmann_json/3.11.3")
         self.requires("cpr/1.10.5")
-        self.requires("icu/74.2")
         self.requires("ghc-filesystem/1.5.14")
         # Already in the graph transitively via cpr; pinned explicitly because
         # SecretStore's Linux fallback links against libcrypto directly.

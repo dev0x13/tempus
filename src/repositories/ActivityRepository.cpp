@@ -1,6 +1,5 @@
 #include "ActivityRepository.hpp"
-#include <unicode/unistr.h>
-#include <unicode/locid.h>
+#include "utils/Utf8.hpp"
 #include <algorithm>
 #include <string>
 
@@ -9,12 +8,9 @@ namespace timetracker::repositories {
 ActivityRepository::ActivityRepository(database::Database& db) : db_(db) {}
 
 std::string ActivityRepository::toLower(const std::string& str) {
-    // Use ICU for proper UTF-8 case folding
-    icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(str);
-    ustr.toLower();
-    std::string result;
-    ustr.toUTF8String(result);
-    return result;
+    // Activity names are user text in any language, so this needs real Unicode case folding
+    // rather than std::tolower.
+    return utils::Utf8::toLower(str);
 }
 
 models::Activity ActivityRepository::mapRow(SQLite::Statement& query) {

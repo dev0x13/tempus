@@ -30,7 +30,6 @@ find_package(OpenGL REQUIRED)
 find_package(portable-file-dialogs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(cpr REQUIRED)
-find_package(ICU REQUIRED COMPONENTS uc)
 find_package(ghc_filesystem REQUIRED)
 
 # ImGui backends
@@ -68,6 +67,7 @@ set(SOURCES
     src/tray/SystemTray.cpp
     src/utils/TimeUtils.cpp
     src/utils/SecretStore.cpp
+    src/utils/Utf8.cpp
     src/bindings/imgui_impl_glfw.cpp
     src/bindings/imgui_impl_opengl3.cpp
 )
@@ -105,7 +105,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     portable-file-dialogs::portable-file-dialogs
     nlohmann_json::nlohmann_json
     cpr::cpr
-    ICU::uc
     ghcFilesystem::ghc_filesystem
 )
 

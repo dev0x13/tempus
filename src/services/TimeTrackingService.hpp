@@ -53,8 +53,10 @@ public:
     // started earlier and reach into the window
     std::vector<models::Fact> getEntriesOverlappingRange(int64_t startTime, int64_t endTime) const;
 
-    // Check if an entry with the given activity name and exact timestamps already exists
-    bool hasMatchingEntry(const std::string& activityName, int64_t startTime, int64_t endTime) const;
+    // Look up an activity by name without creating it. The lookup is case-insensitive, and the
+    // returned activity carries the name as it is stored, which may differ in case from the
+    // argument — compare facts by activity id rather than by name
+    std::optional<models::Activity> findActivity(const std::string& activityName) const;
 
     // Get all activities
     std::vector<models::Activity> getAllActivities() const;

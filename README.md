@@ -121,6 +121,11 @@ activity name to an issue ID.
 KTalk session tokens expire roughly every 30 days. When one does, the import fails with an
 authentication error and offers a link back to Settings — repeat step 2.
 
+Importing the same range twice is safe: a meeting already present is reported as skipped rather than
+added again. A meeting counts as present when an entry with the same activity and the same title
+overlaps it, so trimming or moving an imported entry afterwards — by hand, or by auto-fill resolving
+an overlap — does not make the next import duplicate it.
+
 ### Where credentials are stored
 
 API tokens are kept in the operating system's own facility rather than in the database: DPAPI on

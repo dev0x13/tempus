@@ -1,3 +1,6 @@
+// cpr pulls in <windows.h>, whose min/max macros would break std::min/std::max below.
+#define NOMINMAX
+
 #include "KTalkImportService.hpp"
 #include "localization/LocalizationManager.hpp"
 #include <cpr/cpr.h>
@@ -372,6 +375,34 @@ int64_t KTalkImportService::computeSnappedEndTime(int64_t rawEndTime, int64_t sn
     return snappedEnd;
 }
 
+bool KTalkImportService::isAlreadyImported(int64_t activityId, const std::string& title,
+                                          int64_t startTime, int64_t endTime) const {
+    // Nothing has ever been imported under this name, so nothing can be a duplicate.
+    if (activityId < 0) {
+        return false;
+    }
+
+    // An imported meeting is identified by its activity plus its title, not by its exact
+    // timestamps. The stored interval drifts away from what a later import computes: end-time
+    // snapping consults neighbouring facts (which only exist from the second import on), and
+    // auto-fill, clipFactsOverlappingStart or a manual edit can clip an imported fact
+    // afterwards. Matching on overlap survives all of that and keeps the import idempotent.
+    // Clipping can only shrink a fact from within, so a survivor still overlaps the original
+    // interval; a fact clipped away entirely is deleted, and re-importing it is correct.
+    const int64_t windowEnd = std::max(endTime, startTime + 60);
+
+    for (const auto& fact : timeTrackingService_.getEntriesOverlappingRange(startTime, windowEnd)) {
+        // The ongoing fact has no end and is never an import.
+        if (!fact.endTime.has_value()) {
+            continue;
+        }
+        if (fact.activityId == activityId && fact.description == title) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ImportResult KTalkImportService::importConferences(
     const std::string& fromDate,
     const std::string& toDate) {
@@ -461,6 +492,14 @@ ImportResult KTalkImportService::importConferences(
     int imported = 0;
     int duplicatesSkipped = 0;
     std::string activityName = L.get("KTalk meeting");
+
+    // Resolve the activity up front for the duplicate check. The lookup is case-insensitive, so
+    // this is the row addManualEntry will reuse even when its stored name differs in case from
+    // the localized one (older builds wrote "KTalk Meeting"). Facts must be matched against this
+    // id, not against activityName. Absent means no meeting has ever been imported under it.
+    const auto importActivity = timeTrackingService_.findActivity(activityName);
+    int64_t importActivityId = importActivity.has_value() ? importActivity->id : -1;
+
     std::vector<int64_t> batchSnappedStarts;  // snapped starts of already-processed batch meetings
     for (const auto& conf : filteredConferences) {
         // Parse timestamps
@@ -473,6 +512,9 @@ ImportResult KTalkImportService::importConferences(
             continue;
         }
 
+        const int64_t rawStartTime = startTime;
+        const int64_t rawEndTime = endTime;
+
         // Apply snapping if enabled
         if (snapInterval > 0) {
             int64_t snappedStart = snapGridTime(startTime, snapInterval);
@@ -482,21 +524,29 @@ ImportResult KTalkImportService::importConferences(
             endTime = snappedEnd;
         }
 
-        // Check for duplicate before inserting
-        if (timeTrackingService_.hasMatchingEntry(activityName, startTime, endTime)) {
-            duplicatesSkipped++;
-            continue;
-        }
-
-        // Create description: "{title} (KTalk)" or "Unplanned meeting (KTalk)" if no title
+        // Create description: "{title}", or empty for an unplanned meeting
         std::string description;
         if (!conf.title.empty()) {
             description = conf.title;
         }
 
+        // Check for duplicate before inserting. Snapping can move the interval in either
+        // direction, so look for an existing import anywhere across the raw and the snapped
+        // interval.
+        if (isAlreadyImported(importActivityId, description,
+                              std::min(rawStartTime, startTime), std::max(rawEndTime, endTime))) {
+            duplicatesSkipped++;
+            continue;
+        }
+
         try {
-            // Create time entry with activity name "KTalk Meeting" and conference title in description
-            timeTrackingService_.addManualEntry(activityName, startTime, endTime, description);
+            // The activity holds the meeting; the conference title becomes the fact description.
+            const models::Fact fact =
+                timeTrackingService_.addManualEntry(activityName, startTime, endTime, description);
+            // The first insert is what creates the activity on a first-ever import; pick the id up
+            // so the rest of this batch is still deduplicated (a meeting spanning midnight comes
+            // back in both days' responses).
+            importActivityId = fact.activityId;
             imported++;
         } catch (const std::exception& e) {
             std::string displayTitle = conf.title.empty() ? "Untitled meeting" : conf.title;

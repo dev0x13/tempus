@@ -137,14 +137,8 @@ std::vector<models::Fact> TimeTrackingService::getEntriesOverlappingRange(int64_
     return factRepo_->findOverlappingRange(startTime, endTime);
 }
 
-bool TimeTrackingService::hasMatchingEntry(const std::string& activityName, int64_t startTime, int64_t endTime) const {
-    auto entries = factRepo_->findByDateRange(startTime, startTime);
-    for (const auto& entry : entries) {
-        if (entry.activityName == activityName && entry.startTime == startTime && entry.endTime.has_value() && *entry.endTime == endTime) {
-            return true;
-        }
-    }
-    return false;
+std::optional<models::Activity> TimeTrackingService::findActivity(const std::string& activityName) const {
+    return activityRepo_->findByName(activityName);
 }
 
 std::vector<models::Activity> TimeTrackingService::getAllActivities() const {

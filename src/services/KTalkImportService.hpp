@@ -172,6 +172,21 @@ private:
      */
     int64_t computeSnappedEndTime(int64_t rawEndTime, int64_t snappedStart, int intervalMinutes,
                                    const std::vector<int64_t>& batchSnappedStarts);
+
+    /**
+     * Whether this meeting is already present as a fact.
+     * Matches on activity id plus title over any fact overlapping the interval rather than on
+     * exact timestamps, because a stored interval drifts (snapping, auto-fill clipping, manual
+     * edits) from what a later import would compute. The id is what getOrCreate resolves the
+     * import activity to; comparing names instead misses a stored name that only differs in case.
+     * @param activityId Activity imported meetings belong to, or a negative value if none exists
+     * @param title Meeting title, stored as the fact description (empty for unplanned meetings)
+     * @param startTime Interval start in seconds
+     * @param endTime Interval end in seconds; widened to a minute if it is not after startTime
+     * @return true if a completed fact with the same activity and title overlaps the interval
+     */
+    bool isAlreadyImported(int64_t activityId, const std::string& title,
+                           int64_t startTime, int64_t endTime) const;
 };
 
 }  // namespace services

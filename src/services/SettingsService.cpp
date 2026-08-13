@@ -156,4 +156,99 @@ void SettingsService::setBlockScheduleWorkdayEnd(const std::string& time) {
     setSetting("block_schedule_workday_end", time);
 }
 
+namespace {
+
+// Shared shape of the numeric auto-fill settings: parse, fall back on garbage, clamp.
+int readClampedInt(const std::string& value, int defaultValue, int minValue, int maxValue) {
+    int parsed = defaultValue;
+    try {
+        parsed = std::stoi(value);
+    } catch (...) {
+        return defaultValue;
+    }
+    if (parsed < minValue) return minValue;
+    if (parsed > maxValue) return maxValue;
+    return parsed;
+}
+
+int clampInt(int value, int minValue, int maxValue) {
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
+}
+
+} // namespace
+
+std::string SettingsService::getAutoFillDayStart() const {
+    return getSetting("autofill_day_start", "09:00");
+}
+
+void SettingsService::setAutoFillDayStart(const std::string& time) {
+    setSetting("autofill_day_start", time);
+}
+
+int SettingsService::getAutoFillAvailableMinutes() const {
+    return readClampedInt(getSetting("autofill_available_minutes", "480"), 480, 1, 24 * 60);
+}
+
+void SettingsService::setAutoFillAvailableMinutes(int minutes) {
+    setSetting("autofill_available_minutes", std::to_string(clampInt(minutes, 1, 24 * 60)));
+}
+
+int SettingsService::getAutoFillGridMinutes() const {
+    return readClampedInt(getSetting("autofill_grid_minutes", "15"), 15, 1, 60);
+}
+
+void SettingsService::setAutoFillGridMinutes(int minutes) {
+    setSetting("autofill_grid_minutes", std::to_string(clampInt(minutes, 1, 60)));
+}
+
+int SettingsService::getAutoFillMinBlockMinutes() const {
+    return readClampedInt(getSetting("autofill_min_block_minutes", "15"), 15, 1, 24 * 60);
+}
+
+void SettingsService::setAutoFillMinBlockMinutes(int minutes) {
+    setSetting("autofill_min_block_minutes", std::to_string(clampInt(minutes, 1, 24 * 60)));
+}
+
+models::AutoFillProfile SettingsService::getAutoFillProfile() const {
+    models::AutoFillProfile profile;
+    std::string profileJson = getSetting("autofill_profile", "[]");
+
+    // A JSON array (not an object like activity_aliases) because row order is meaningful:
+    // it decides who wins ties when allocating and who absorbs the rounding remainder.
+    try {
+        nlohmann::json j = nlohmann::json::parse(profileJson);
+        if (j.is_array()) {
+            for (const auto& item : j) {
+                if (!item.is_object()) {
+                    continue;
+                }
+                models::AutoFillAllocation allocation;
+                if (item.contains("activity") && item["activity"].is_string()) {
+                    allocation.activityName = item["activity"].get<std::string>();
+                }
+                if (item.contains("percent") && item["percent"].is_number_integer()) {
+                    allocation.percent = item["percent"].get<int>();
+                }
+                if (!allocation.activityName.empty()) {
+                    profile.push_back(allocation);
+                }
+            }
+        }
+    } catch (const nlohmann::json::exception& e) {
+        std::cerr << "Warning: Failed to parse auto-fill profile JSON: " << e.what() << std::endl;
+    }
+
+    return profile;
+}
+
+void SettingsService::setAutoFillProfile(const models::AutoFillProfile& profile) {
+    nlohmann::json j = nlohmann::json::array();
+    for (const auto& allocation : profile) {
+        j.push_back({{"activity", allocation.activityName}, {"percent", allocation.percent}});
+    }
+    setSetting("autofill_profile", j.dump());
+}
+
 } // namespace timetracker::services

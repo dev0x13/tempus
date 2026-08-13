@@ -1,5 +1,7 @@
 #pragma once
 
+#include "models/AutoFillProfile.hpp"
+
 #include <nlohmann/json.hpp>
 #include <string>
 #include <map>
@@ -163,6 +165,67 @@ public:
      * @param time End time as "HH:MM" string
      */
     void setBlockScheduleWorkdayEnd(const std::string& time);
+
+    /**
+     * Get the time of day auto-fill starts filling from.
+     * Independent of the block schedule window, which is usually kept wide for manual entry.
+     * @return Start time as "HH:MM" string, defaults to "09:00"
+     */
+    std::string getAutoFillDayStart() const;
+
+    /**
+     * Set the time of day auto-fill starts filling from.
+     * @param time Start time as "HH:MM" string
+     */
+    void setAutoFillDayStart(const std::string& time);
+
+    /**
+     * Get the amount of time auto-fill should account for on a single day.
+     * @return Minutes per day, defaults to 480 (8 hours)
+     */
+    int getAutoFillAvailableMinutes() const;
+
+    /**
+     * Set the amount of time auto-fill should account for on a single day.
+     * @param minutes Minutes per day (clamped to at least 1)
+     */
+    void setAutoFillAvailableMinutes(int minutes);
+
+    /**
+     * Get the grid that generated block boundaries snap to.
+     * @return Grid step in minutes, defaults to 15
+     */
+    int getAutoFillGridMinutes() const;
+
+    /**
+     * Set the grid that generated block boundaries snap to.
+     * @param minutes Grid step in minutes (clamped to 1..60)
+     */
+    void setAutoFillGridMinutes(int minutes);
+
+    /**
+     * Get the shortest block auto-fill is allowed to create.
+     * @return Minimum block length in minutes, defaults to 15
+     */
+    int getAutoFillMinBlockMinutes() const;
+
+    /**
+     * Set the shortest block auto-fill is allowed to create.
+     * @param minutes Minimum block length in minutes (clamped to at least 1)
+     */
+    void setAutoFillMinBlockMinutes(int minutes);
+
+    /**
+     * Get the saved auto-fill percentage profile.
+     * @return Activity/percent pairs in the order the user entered them, empty if unset
+     */
+    models::AutoFillProfile getAutoFillProfile() const;
+
+    /**
+     * Set the auto-fill percentage profile.
+     * @param profile Activity/percent pairs; order is preserved
+     */
+    void setAutoFillProfile(const models::AutoFillProfile& profile);
 
 private:
     std::shared_ptr<timetracker::database::Database> database_;

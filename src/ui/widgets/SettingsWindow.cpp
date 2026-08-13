@@ -3,6 +3,7 @@
 #include "utils/Platform.hpp"
 #include "version.hpp"
 #include "imgui.h"
+#include <cfloat>
 #include <cstring>
 #include <algorithm>
 
@@ -22,6 +23,11 @@ void SettingsWindow::render() {
     // Center the window
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    // The wrapped description text and the two stretched layout columns measure themselves against
+    // the window, which AlwaysAutoResize measures against them — the window creeps a little wider
+    // or narrower every frame unless the width is pinned. Height still auto-fits.
+    constexpr float kWindowWidth = 780.0f;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(kWindowWidth, 0.0f), ImVec2(kWindowWidth, FLT_MAX));
 
     if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         if (ImGui::BeginTable("##settings_layout", 2, ImGuiTableFlags_None)) {

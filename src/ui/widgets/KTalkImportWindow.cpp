@@ -2,6 +2,7 @@
 #include "DatePicker.hpp"
 #include "localization/LocalizationManager.hpp"
 #include <imgui.h>
+#include <cfloat>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
@@ -109,7 +110,11 @@ void KTalkImportWindow::render() {
     // Center the window on first appearance
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Appearing);
+    // Wrapped status text sizes itself against the window while AlwaysAutoResize sizes the window
+    // against its content; without a pinned width the two chase each other and the window creeps.
+    // Height still auto-fits.
+    constexpr float kWindowWidth = 440.0f;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(kWindowWidth, 0.0f), ImVec2(kWindowWidth, FLT_MAX));
 
     if (ImGui::Begin(L.get("Import from KTalk"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         // Date range selectors

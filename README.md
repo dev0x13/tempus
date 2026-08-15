@@ -40,12 +40,13 @@ Tempus is heavily inspired by [Hamster](https://github.com/projecthamster/hamste
 - GCC 11+ or Clang 14+
 - GTK 3
 - libayatana-appindicator3 (for system tray)
+- libsecret (for storing API tokens in the system keyring)
 - X11 or Wayland
 
 Install dependencies on Ubuntu/Debian:
 
 ```bash
-sudo apt install build-essential cmake libgtk-3-dev libayatana-appindicator3-dev libgl1-mesa-dev
+sudo apt install build-essential cmake libgtk-3-dev libayatana-appindicator3-dev libsecret-1-dev libgl1-mesa-dev
 ```
 
 ### Windows
@@ -98,6 +99,42 @@ On Windows:
 ```bash
 build\Release\tempus.exe
 ```
+
+## Configuration
+
+Both integrations are configured in **Settings**.
+
+### YouTrack export
+
+Fill in the YouTrack base URL and a permanent token. Activity names that already look like
+`PROJECT-123` are exported as-is; anything else needs an entry in the **Aliases** table mapping the
+activity name to an issue ID.
+
+### KTalk import
+
+1. **Space address** — the root of your KTalk space, e.g. `https://example.ktalk.ru`.
+2. **Session token** — press **Copy command**, then on a browser tab where you are logged in to
+   KTalk press <kbd>F12</kbd>, paste the command into the Console and press <kbd>Enter</kbd>. The
+   token is placed in your clipboard; paste it into the token field.
+3. Press **Test connection** to confirm both values work.
+
+KTalk session tokens expire roughly every 30 days. When one does, the import fails with an
+authentication error and offers a link back to Settings — repeat step 2.
+
+Importing the same range twice is safe: a meeting already present is reported as skipped rather than
+added again. A meeting counts as present when an entry with the same activity and the same title
+overlaps it, so trimming or moving an imported entry afterwards — by hand, or by auto-fill resolving
+an overlap — does not make the next import duplicate it.
+
+### Where credentials are stored
+
+API tokens are kept in the operating system's own facility rather than in the database: DPAPI on
+Windows, Keychain on macOS, and the Secret Service (libsecret) on Linux, falling back to an
+encrypted key file when no keyring is available. The `settings` table holds only a reference.
+
+One consequence on Windows: the stored tokens are bound to your Windows user account, so copying
+`data.db` to another machine or user carries the settings but not the tokens, which have to be
+entered again.
 
 ## License
 

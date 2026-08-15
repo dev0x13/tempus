@@ -32,7 +32,11 @@ private:
     std::unique_ptr<SQLite::Database> db_;
 
     void createTables();
+    void migrateSchema();
     void createIndexes();
+
+    // Check whether a column already exists on a table (for guarded ALTER TABLE)
+    bool hasColumn(const std::string& table, const std::string& column);
 };
 
 } // namespace timetracker::database

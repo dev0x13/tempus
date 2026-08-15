@@ -3,15 +3,20 @@
 #include "utils/Platform.hpp"
 #include "version.hpp"
 #include "imgui.h"
+#include <cfloat>
 #include <cstring>
 #include <algorithm>
 
 namespace timetracker::ui::widgets {
 
-SettingsWindow::SettingsWindow(std::shared_ptr<services::SettingsService> settingsService)
-    : settingsService_(std::move(settingsService)) {
+SettingsWindow::SettingsWindow(std::shared_ptr<services::SettingsService> settingsService,
+                               std::shared_ptr<services::KTalkImportService> ktalkImportService)
+    : settingsService_(std::move(settingsService)),
+      ktalkImportService_(std::move(ktalkImportService)) {
     memset(youtrackUrl_, 0, sizeof(youtrackUrl_));
     memset(youtrackToken_, 0, sizeof(youtrackToken_));
+    memset(ktalkSpaceUrl_, 0, sizeof(ktalkSpaceUrl_));
+    memset(ktalkToken_, 0, sizeof(ktalkToken_));
 }
 
 void SettingsWindow::render() {
@@ -22,6 +27,11 @@ void SettingsWindow::render() {
     // Center the window
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    // The wrapped description text and the two stretched layout columns measure themselves against
+    // the window, which AlwaysAutoResize measures against them — the window creeps a little wider
+    // or narrower every frame unless the width is pinned. Height still auto-fits.
+    constexpr float kWindowWidth = 780.0f;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(kWindowWidth, 0.0f), ImVec2(kWindowWidth, FLT_MAX));
 
     if (ImGui::Begin(L.get("Settings"), &visible_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
         if (ImGui::BeginTable("##settings_layout", 2, ImGuiTableFlags_None)) {
@@ -126,6 +136,17 @@ void SettingsWindow::loadSettings() {
     ktalkIncludeUnplanned_ = settingsService_->getKTalkIncludeUnplanned();
     ktalkSnapInterval_ = settingsService_->getKTalkSnapInterval();
 
+    std::string spaceUrl = settingsService_->getKTalkSpaceUrl();
+    strncpy(ktalkSpaceUrl_, spaceUrl.c_str(), sizeof(ktalkSpaceUrl_) - 1);
+    ktalkSpaceUrl_[sizeof(ktalkSpaceUrl_) - 1] = '\0';
+
+    std::string ktalkToken = settingsService_->getKTalkToken();
+    strncpy(ktalkToken_, ktalkToken.c_str(), sizeof(ktalkToken_) - 1);
+    ktalkToken_[sizeof(ktalkToken_) - 1] = '\0';
+
+    ktalkTestMessage_.clear();
+    ktalkTestFailed_ = false;
+
     // Load language
     std::string lang = settingsService_->getLanguage();
     selectedLanguage_ = (lang == "en") ? 0 : 1;
@@ -162,6 +183,7 @@ void SettingsWindow::saveSettings() {
     // Save KTalk settings
     settingsService_->setKTalkIncludeUnplanned(ktalkIncludeUnplanned_);
     settingsService_->setKTalkSnapInterval(ktalkSnapInterval_);
+    ktalkImportService_->setConnection(ktalkSpaceUrl_, ktalkToken_);
 
     // Save and apply language
     std::string lang = (selectedLanguage_ == 0) ? "en" : "ru";
@@ -373,9 +395,58 @@ void SettingsWindow::renderBlockScheduleSettings() {
     }
 }
 
+void SettingsWindow::handleKTalkTestConnection() {
+    auto& L = localization::L10n();
+
+    // Probe whatever is currently in the form, not what was last saved.
+    ktalkImportService_->setConnection(ktalkSpaceUrl_, ktalkToken_);
+
+    const std::string error = ktalkImportService_->testConnection();
+    ktalkTestFailed_ = !error.empty();
+    ktalkTestMessage_ = ktalkTestFailed_ ? error : std::string(L.get("Connection works"));
+}
+
 void SettingsWindow::renderKTalkSettings() {
     auto& L = localization::L10n();
     ImGui::TextColored(ImVec4(0.7f, 0.9f, 1.0f, 1.0f), "%s", L.get("KTalk import"));
+    ImGui::Spacing();
+
+    // Space address
+    ImGui::Text("%s", L.get("Space address:"));
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::InputTextWithHint("##ktalk_space_url", "https://example.ktalk.ru", ktalkSpaceUrl_, sizeof(ktalkSpaceUrl_));
+
+    ImGui::Spacing();
+
+    // Session token. Expires roughly monthly, hence the console snippet next to it.
+    ImGui::Text("%s", L.get("Session token:"));
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::InputText("##ktalk_token", ktalkToken_, sizeof(ktalkToken_), ImGuiInputTextFlags_Password);
+
+    ImGui::Spacing();
+    if (ImGui::Button(L.get("Copy command"), ImVec2(0, 0))) {
+        ImGui::SetClipboardText(services::KTALK_TOKEN_SNIPPET);
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", L.get("Open a logged-in KTalk tab, press F12, paste this into the Console and press Enter.\nThe token lands in your clipboard."));
+    }
+
+    ImGui::SameLine();
+    ImGui::BeginDisabled(strlen(ktalkSpaceUrl_) == 0 || strlen(ktalkToken_) == 0);
+    if (ImGui::Button(L.get("Test connection"), ImVec2(0, 0))) {
+        handleKTalkTestConnection();
+    }
+    ImGui::EndDisabled();
+
+    if (!ktalkTestMessage_.empty()) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ktalkTestFailed_ ? ImVec4(1.0f, 0.4f, 0.4f, 1.0f)
+                                                              : ImVec4(0.4f, 0.9f, 0.4f, 1.0f));
+        ImGui::TextWrapped("%s", ktalkTestMessage_.c_str());
+        ImGui::PopStyleColor();
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
     ImGui::Spacing();
 
     // Include unplanned meetings checkbox

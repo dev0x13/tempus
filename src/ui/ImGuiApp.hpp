@@ -5,6 +5,7 @@
 #include "services/ExportService.hpp"
 #include "services/YouTrackExportService.hpp"
 #include "services/KTalkImportService.hpp"
+#include "services/AutoFillService.hpp"
 #include "services/SettingsService.hpp"
 #include "repositories/YouTrackExportLogRepository.hpp"
 #include <memory>
@@ -26,6 +27,7 @@ class QuickAddDialog;
 class SettingsWindow;
 class ExportLogWindow;
 class KTalkImportWindow;
+class AutoFillWindow;
 }
 
 class ImGuiApp {
@@ -36,6 +38,7 @@ public:
         std::shared_ptr<services::ExportService> exportService,
         std::shared_ptr<services::YouTrackExportService> youTrackExportService,
         std::shared_ptr<services::KTalkImportService> kTalkImportService,
+        std::shared_ptr<services::AutoFillService> autoFillService,
         std::shared_ptr<services::SettingsService> settingsService,
         std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository);
     ~ImGuiApp();
@@ -85,6 +88,7 @@ private:
     std::shared_ptr<services::ExportService> exportService_;
     std::shared_ptr<services::YouTrackExportService> youTrackExportService_;
     std::shared_ptr<services::KTalkImportService> kTalkImportService_;
+    std::shared_ptr<services::AutoFillService> autoFillService_;
     std::shared_ptr<services::SettingsService> settingsService_;
 
     // Repositories
@@ -104,6 +108,9 @@ private:
 
     // KTalk import window
     std::unique_ptr<widgets::KTalkImportWindow> kTalkImportWindow_;
+
+    // Auto-fill window
+    std::unique_ptr<widgets::AutoFillWindow> autoFillWindow_;
 
     // System tray (not owned)
     tray::SystemTray* systemTray_{nullptr};

@@ -72,14 +72,15 @@ void Application::initServices() {
     exportService_ = std::make_shared<services::ExportService>(factRepo_);
     youTrackExportService_ = std::make_shared<services::YouTrackExportService>(*settingsService_, *factRepo_, *exportLogRepo_);
     kTalkImportService_ = std::make_shared<services::KTalkImportService>(*timeService_, *settingsService_);
+    autoFillService_ = std::make_shared<services::AutoFillService>(*timeService_);
 }
 
 void Application::initUI() {
-    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, kTalkImportService_, settingsService_, exportLogRepo_);
+    uiApp_ = std::make_unique<ui::ImGuiApp>(timeService_, statsService_, exportService_, youTrackExportService_, kTalkImportService_, autoFillService_, settingsService_, exportLogRepo_);
 
     auto& L = localization::L10n();
     std::string windowTitle = std::string(L.get("Tempus")) + " " + APP_VERSION_STRING;
-    if (!uiApp_->init(900, 900, windowTitle.c_str())) {
+    if (!uiApp_->init(920, 900, windowTitle.c_str())) {
         throw std::runtime_error("Failed to initialize UI");
     }
 

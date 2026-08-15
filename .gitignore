@@ -5,6 +5,7 @@ cmake-build-*/
 # Conan
 CMakeUserPresets.json
 graph_info.json
+.conan2/
 
 # IDE
 .vscode/

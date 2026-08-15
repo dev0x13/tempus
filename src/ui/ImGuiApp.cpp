@@ -7,6 +7,7 @@
 #include "widgets/SettingsWindow.hpp"
 #include "widgets/ExportLogWindow.hpp"
 #include "widgets/KTalkImportWindow.hpp"
+#include "widgets/AutoFillWindow.hpp"
 #include "tray/SystemTray.hpp"
 #include "utils/Platform.hpp"
 #include "resources/PTSansFont.hpp"
@@ -47,6 +48,7 @@ ImGuiApp::ImGuiApp(
     std::shared_ptr<services::ExportService> exportService,
     std::shared_ptr<services::YouTrackExportService> youTrackExportService,
     std::shared_ptr<services::KTalkImportService> kTalkImportService,
+    std::shared_ptr<services::AutoFillService> autoFillService,
     std::shared_ptr<services::SettingsService> settingsService,
     std::shared_ptr<repositories::YouTrackExportLogRepository> exportLogRepository)
     : timeService_(std::move(timeService))
@@ -54,6 +56,7 @@ ImGuiApp::ImGuiApp(
     , exportService_(std::move(exportService))
     , youTrackExportService_(std::move(youTrackExportService))
     , kTalkImportService_(std::move(kTalkImportService))
+    , autoFillService_(std::move(autoFillService))
     , settingsService_(std::move(settingsService))
     , exportLogRepository_(std::move(exportLogRepository)) {}
 
@@ -171,6 +174,9 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     timeEntriesView_->setSettingsCallback([this]() {
         settingsWindow_->show();
     });
+    timeEntriesView_->setAutoFillCallback([this](int64_t rangeStart, int64_t rangeEnd) {
+        autoFillWindow_->show(rangeStart, rangeEnd);
+    });
 
     // Create quick add dialog
     quickAddDialog_ = std::make_unique<widgets::QuickAddDialog>(timeService_);
@@ -183,7 +189,7 @@ bool ImGuiApp::init(int width, int height, const char* title) {
     });
 
     // Create settings window
-    settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_);
+    settingsWindow_ = std::make_unique<widgets::SettingsWindow>(settingsService_, kTalkImportService_);
 
     // Create export log window
     exportLogWindow_ = std::make_unique<widgets::ExportLogWindow>(exportLogRepository_);
@@ -195,6 +201,14 @@ bool ImGuiApp::init(int width, int height, const char* title) {
 
     // Create KTalk import window
     kTalkImportWindow_ = std::make_unique<widgets::KTalkImportWindow>(kTalkImportService_);
+
+    // KTalk credentials live in the settings window, so the import window links there
+    kTalkImportWindow_->setOpenSettingsCallback([this]() {
+        settingsWindow_->show();
+    });
+
+    // Create auto-fill window
+    autoFillWindow_ = std::make_unique<widgets::AutoFillWindow>(autoFillService_, settingsService_);
 
     // Set up close callback
     glfwSetWindowUserPointer(window_, this);
@@ -294,6 +308,9 @@ void ImGuiApp::render() {
 
     // Render KTalk import window
     kTalkImportWindow_->render();
+
+    // Render auto-fill window
+    autoFillWindow_->render();
 
     // Rendering
     ImGui::Render();

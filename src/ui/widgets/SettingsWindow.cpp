@@ -424,7 +424,7 @@ void SettingsWindow::renderKTalkSettings() {
     ImGui::InputText("##ktalk_token", ktalkToken_, sizeof(ktalkToken_), ImGuiInputTextFlags_Password);
 
     ImGui::Spacing();
-    if (ImGui::Button(L.get("Copy command"), ImVec2(150, 0))) {
+    if (ImGui::Button(L.get("Copy command"), ImVec2(0, 0))) {
         ImGui::SetClipboardText(services::KTALK_TOKEN_SNIPPET);
     }
     if (ImGui::IsItemHovered()) {
@@ -433,7 +433,7 @@ void SettingsWindow::renderKTalkSettings() {
 
     ImGui::SameLine();
     ImGui::BeginDisabled(strlen(ktalkSpaceUrl_) == 0 || strlen(ktalkToken_) == 0);
-    if (ImGui::Button(L.get("Test connection"), ImVec2(170, 0))) {
+    if (ImGui::Button(L.get("Test connection"), ImVec2(0, 0))) {
         handleKTalkTestConnection();
     }
     ImGui::EndDisabled();

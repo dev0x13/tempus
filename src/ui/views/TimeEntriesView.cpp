@@ -197,7 +197,7 @@ void TimeEntriesView::renderTopButtons() {
 
     // Auto-fill button
     ImGui::SameLine();
-    if (ImGui::Button(L.get("Auto-fill"), ImVec2(110, 0))) {
+    if (ImGui::Button(L.get("Auto-fill"), ImVec2(130, 0))) {
         if (autoFillCallback_) {
             autoFillCallback_(displayStartTime_, displayEndTime_);
         }

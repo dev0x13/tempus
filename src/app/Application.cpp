@@ -80,7 +80,7 @@ void Application::initUI() {
 
     auto& L = localization::L10n();
     std::string windowTitle = std::string(L.get("Tempus")) + " " + APP_VERSION_STRING;
-    if (!uiApp_->init(900, 900, windowTitle.c_str())) {
+    if (!uiApp_->init(920, 900, windowTitle.c_str())) {
         throw std::runtime_error("Failed to initialize UI");
     }
 
